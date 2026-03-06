@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { Droplets, Wind, ThermometerSun } from "lucide-react"
-import { weatherIconFromCondition } from "@/lib/utils"
+import { getWeatherIcon } from "@/lib/utils"
 import { useWeatherData } from "@/hooks/use-api-data"
 
 function fmtDay(iso: string) {
@@ -14,7 +14,7 @@ function fmtDay(iso: string) {
 
 export function WeatherPanel() {
   const weather = useWeatherData()
-  const icon = weatherIconFromCondition(weather?.condition)
+  const icon = getWeatherIcon(weather?.symbolCode ?? undefined, weather?.updatedAt)
   const days = weather?.forecastDays ?? []
 
   return (
@@ -73,7 +73,7 @@ export function WeatherPanel() {
                   <p className="text-white/30">{fmtDay(day.date)}</p>
                 </div>
                 <Image
-                  src={weatherIconFromCondition(day.condition)}
+                  src={getWeatherIcon(day.symbolCode)}
                   alt={day.condition}
                   width={28}
                   height={28}

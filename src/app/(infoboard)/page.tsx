@@ -204,7 +204,8 @@ export default function InfoBoardHome() {
     switch (id) {
       case "afgange": {
         const d = departures[0]
-        return d ? `${d.line} → ${d.time}` : null
+        if (!d) return null
+        return d.cancelled ? `${d.line} → Aflyst` : `${d.line} → ${d.time}`
       }
       case "kantine":
         return dailyDish?.name ?? null
@@ -274,7 +275,11 @@ export default function InfoBoardHome() {
                   {nextDeparture ? `${nextDeparture.line} → ${nextDeparture.destination}` : "Ingen data endnu"}
                 </p>
                 <p className="mt-1 text-xs text-white/50">
-                  {nextDeparture ? `${nextDeparture.time}${nextDeparture.delayMin > 0 ? ` (+${nextDeparture.delayMin})` : ""}` : "Opdateres automatisk"}
+                  {nextDeparture
+                    ? nextDeparture.cancelled
+                      ? "Aflyst"
+                      : `${nextDeparture.time}${nextDeparture.delayMin > 0 ? ` (+${nextDeparture.delayMin})` : ""}`
+                    : "Opdateres automatisk"}
                 </p>
               </div>
 

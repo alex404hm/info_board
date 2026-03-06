@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 
-import { weatherIconFromCondition } from "@/lib/utils"
+import { getWeatherIcon } from "@/lib/utils"
 import { useWeatherData } from "@/hooks/use-api-data"
 
 /**
@@ -27,20 +28,22 @@ export function StatusBar() {
     day: "numeric",
     month: "long",
   })
-  const iconSrc = weatherIconFromCondition(weather?.condition)
+  const iconSrc = getWeatherIcon(weather?.symbolCode ?? undefined, weather?.updatedAt)
 
   return (
     <header className="flex w-full min-h-[68px] shrink-0 items-center justify-between overflow-hidden border-b border-white/[0.06] bg-[#0d1528] px-2 sm:px-6 lg:px-10">
       {/* Left — Branding */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-4">
-        <Image
-          src="/logo.svg"
-          alt="TEC"
-          width={100}
-          height={36}
-          priority
-          className="h-7 w-auto brightness-0 invert sm:h-9"
-        />
+        <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+          <Image
+            src="/logo.svg"
+            alt="TEC"
+            width={100}
+            height={36}
+            priority
+            className="h-7 w-auto brightness-0 invert sm:h-9"
+          />
+        </Link>
         <div className="hidden h-6 w-px bg-white/10 sm:block" />
         <span className="hidden text-sm font-semibold text-white/40 md:inline">Infotavle</span>
       </div>

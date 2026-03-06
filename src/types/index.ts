@@ -2,10 +2,31 @@ export type Departure = {
   line: string
   destination: string
   from: string
+  sourceStopId: string
+  sourceStopName: string
+  sourceStopSlot: 1 | 2
   time: string
   type: "bus" | "train"
   platform: string
   delayMin: number
+  cancelled: boolean
+}
+
+export type DepartureGroup = {
+  id: string
+  sourceStopSlot: 1 | 2
+  title: string
+  sourceStopId: string
+  sourceStopName: string
+  departures: Departure[]
+  error?: string
+}
+
+export type DeparturesApiResponse = {
+  fetchedAt: string
+  stopIds: string[]
+  groups: DepartureGroup[]
+  departures?: Departure[]
 }
 
 export type WeatherApiResponse = {
@@ -21,6 +42,7 @@ export type WeatherApiResponse = {
     minC: number | null
     maxC: number | null
     condition: string
+    symbolCode?: string
   }>
 }
 

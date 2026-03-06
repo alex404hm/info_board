@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 
 import type {
+  DeparturesApiResponse,
+  DepartureGroup,
   DailyDishApiResponse,
   Departure,
   WeatherApiResponse,
@@ -81,9 +83,11 @@ export function useDeparturesData() {
         return (
           item.line !== prev?.line ||
           item.destination !== prev?.destination ||
+          item.sourceStopId !== prev?.sourceStopId ||
           item.time !== prev?.time ||
           item.platform !== prev?.platform ||
-          item.delayMin !== prev?.delayMin
+          item.delayMin !== prev?.delayMin ||
+          item.cancelled !== prev?.cancelled
         )
       })
     }
@@ -94,10 +98,16 @@ export function useDeparturesData() {
       try {
         const response = await fetch("/api/departures", { cache: "no-store" })
         if (!response.ok) return
-        const data = (await response.json()) as { departures?: Departure[] }
-        if (mounted && Array.isArray(data.departures) && hasChanged(data.departures)) {
-          departuresRef.current = data.departures
-          setDepartures(data.departures)
+        const data = (await response.json()) as DeparturesApiResponse
+        const nextDepartures = Array.isArray(data.departures)
+          ? data.departures
+          : Array.isArray(data.groups)
+            ? data.groups.flatMap((group) => group.departures)
+            : []
+
+        if (mounted && hasChanged(nextDepartures)) {
+          departuresRef.current = nextDepartures
+          setDepartures(nextDepartures)
         }
       } catch {
         // Keep previous departures on transient errors.
@@ -140,4 +150,60 @@ export function useDeparturesData() {
   }, [])
 
   return departures
+}
+
+export function useDepartureGroupsData() {
+  const [groups, setGroups] = useState<DepartureGroup[]>([])
+  const groupsRef = useRef<DepartureGroup[]>([])
+
+  useEffect(() => {
+    let mounted = true
+
+    const hasChanged = (next: DepartureGroup[]) => {
+      const prev = groupsRef.current
+      if (next.length !== prev.length) return true
+
+      const signature = (items: DepartureGroup[]) =>
+        items
+          .map((group) => {
+            const first = group.departures[0]
+            return [
+              group.id,
+              group.sourceStopId,
+              group.sourceStopName,
+              group.departures.length,
+              first?.line ?? "",
+              first?.time ?? "",
+              first?.cancelled ? "1" : "0",
+            ].join("|")
+          })
+          .join("||")
+
+      return signature(next) !== signature(prev)
+    }
+
+    const load = async () => {
+      try {
+        const response = await fetch("/api/departures", { cache: "no-store" })
+        if (!response.ok) return
+        const data = (await response.json()) as DeparturesApiResponse
+        const nextGroups = Array.isArray(data.groups) ? data.groups : []
+        if (mounted && hasChanged(nextGroups)) {
+          groupsRef.current = nextGroups
+          setGroups(nextGroups)
+        }
+      } catch {
+        // Keep previous data on transient errors.
+      }
+    }
+
+    void load()
+    const id = setInterval(load, 60_000)
+    return () => {
+      mounted = false
+      clearInterval(id)
+    }
+  }, [])
+
+  return groups
 }

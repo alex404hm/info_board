@@ -86,6 +86,7 @@ function buildForecastDays(timeseries: MetTimePoint[]) {
         minC,
         maxC,
         condition: toDanishCondition(symbol),
+        symbolCode: symbol ?? undefined,
       }
     })
 }

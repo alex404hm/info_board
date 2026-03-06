@@ -1,0 +1,181 @@
+[
+  {
+    "id": "clearsky",
+    "description": {
+      "en": "clear sky",
+      "nb": "klarvær",
+      "nn": "klårvêr"
+    },
+    "icons": {
+      "day": "01d.svg",
+      "night": "01n.svg",
+      "polar_twilight": "01m.svg"
+    }
+  },
+  {
+    "id": "fair",
+    "description": {
+      "en": "fair",
+      "nb": "lettskyet",
+      "nn": "lettskya"
+    },
+    "icons": {
+      "day": "02d.svg",
+      "night": "02n.svg",
+      "polar_twilight": "02m.svg"
+    }
+  },
+  {
+    "id": "partlycloudy",
+    "description": {
+      "en": "partly cloudy",
+      "nb": "delvis skyet",
+      "nn": "delvis skya"
+    },
+    "icons": {
+      "day": "03d.svg",
+      "night": "03n.svg",
+      "polar_twilight": "03m.svg"
+    }
+  },
+  {
+    "id": "cloudy",
+    "description": {
+      "en": "cloudy",
+      "nb": "skyet",
+      "nn": "skya"
+    },
+    "icons": {
+      "default": "04.svg"
+    }
+  },
+  {
+    "id": "rainshowers",
+    "description": {
+      "en": "rain showers",
+      "nb": "regnbyger",
+      "nn": "regnbyer"
+    },
+    "icons": {
+      "day": "05d.svg",
+      "night": "05n.svg",
+      "polar_twilight": "05m.svg"
+    }
+  },
+  {
+    "id": "rainshowersandthunder",
+    "description": {
+      "en": "rain showers and thunder",
+      "nb": "regnbyger og torden",
+      "nn": "regnbyer og torevêr"
+    },
+    "icons": {
+      "day": "06d.svg",
+      "night": "06n.svg",
+      "polar_twilight": "06m.svg"
+    }
+  },
+  {
+    "id": "sleetshowers",
+    "description": {
+      "en": "sleet showers",
+      "nb": "sluddbyger",
+      "nn": "sluddbyer"
+    },
+    "icons": {
+      "day": "07d.svg",
+      "night": "07n.svg",
+      "polar_twilight": "07m.svg"
+    }
+  },
+  {
+    "id": "snowshowers",
+    "description": {
+      "en": "snow showers",
+      "nb": "snøbyger",
+      "nn": "snøbyer"
+    },
+    "icons": {
+      "day": "08d.svg",
+      "night": "08n.svg",
+      "polar_twilight": "08m.svg"
+    }
+  },
+  {
+    "id": "rain",
+    "description": {
+      "en": "rain",
+      "nb": "regn",
+      "nn": "regn"
+    },
+    "icons": {
+      "default": "09.svg"
+    }
+  },
+  {
+    "id": "heavyrain",
+    "description": {
+      "en": "heavy rain",
+      "nb": "kraftig regn",
+      "nn": "kraftig regn"
+    },
+    "icons": {
+      "default": "10.svg"
+    }
+  },
+  {
+    "id": "heavyrainandthunder",
+    "description": {
+      "en": "heavy rain and thunder",
+      "nb": "kraftig regn og torden",
+      "nn": "kraftig regn og torevêr"
+    },
+    "icons": {
+      "default": "11.svg"
+    }
+  },
+  {
+    "id": "sleet",
+    "description": {
+      "en": "sleet",
+      "nb": "sludd",
+      "nn": "sludd"
+    },
+    "icons": {
+      "default": "12.svg"
+    }
+  },
+  {
+    "id": "snow",
+    "description": {
+      "en": "snow",
+      "nb": "snø",
+      "nn": "snø"
+    },
+    "icons": {
+      "default": "13.svg"
+    }
+  },
+  {
+    "id": "snowandthunder",
+    "description": {
+      "en": "snow and thunder",
+      "nb": "snø og torden",
+      "nn": "snø og torevêr"
+    },
+    "icons": {
+      "default": "14.svg"
+    }
+  },
+  {
+    "id": "fog",
+    "description": {
+      "en": "fog",
+      "nb": "tåke",
+      "nn": "skodde"
+    },
+    "icons": {
+      "default": "15.svg"
+    }
+  }
+]

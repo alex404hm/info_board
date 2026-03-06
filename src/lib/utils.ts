@@ -6,20 +6,55 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Get weather icon SVG path from condition string
+ * Get weather icon SVG path from Yr symbolCode
+ * Examples: "clearsky_day", "rain_day", "cloudy", etc.
  */
-export function weatherIconFromCondition(condition?: string): string {
-  const text = (condition ?? "").toLowerCase()
-  if (text.includes("torden")) return "/weather/thunderstorms-rain.svg"
-  if (text.includes("sne")) return "/weather/snow.svg"
-  if (text.includes("slud") || text.includes("sleet")) return "/weather/sleet.svg"
-  if (text.includes("drizzle")) return "/weather/drizzle.svg"
-  if (text.includes("regn") || text.includes("rain")) return "/weather/rain.svg"
-  if (text.includes("tåge") || text.includes("fog")) return "/weather/fog.svg"
-  if (text.includes("delvist")) return "/weather/partly-cloudy-day.svg"
-  if (text.includes("overskyet") || text.includes("cloudy")) return "/weather/cloudy.svg"
-  if (text.includes("klart") || text.includes("clear")) return "/weather/clear-day.svg"
-  return "/weather/partly-cloudy-day.svg"
+export function getWeatherIcon(symbolCode?: string, currentTime?: string): string {
+  if (!symbolCode) return "/weather/04.svg" // cloudy fallback
+
+  const code = symbolCode.toLowerCase()
+
+  // Weather symbols mapping from weather-symbols.json
+  const symbolMap: Record<string, Record<string, string>> = {
+    clearsky: { day: "01d.svg", night: "01n.svg", polar_twilight: "01m.svg" },
+    fair: { day: "02d.svg", night: "02n.svg", polar_twilight: "02m.svg" },
+    partlycloudy: { day: "03d.svg", night: "03n.svg", polar_twilight: "03m.svg" },
+    cloudy: { default: "04.svg" },
+    rainshowers: { day: "05d.svg", night: "05n.svg", polar_twilight: "05m.svg" },
+    rainshowersandthunder: { day: "06d.svg", night: "06n.svg", polar_twilight: "06m.svg" },
+    sleetshowers: { day: "07d.svg", night: "07n.svg", polar_twilight: "07m.svg" },
+    snowshowers: { day: "08d.svg", night: "08n.svg", polar_twilight: "08m.svg" },
+    rain: { default: "09.svg" },
+    heavyrain: { default: "10.svg" },
+    heavyrainandthunder: { default: "11.svg" },
+    sleet: { default: "12.svg" },
+    snow: { default: "13.svg" },
+    snowandthunder: { default: "14.svg" },
+    fog: { default: "15.svg" },
+  }
+
+  // Extract base condition and variant from symbolCode
+  // e.g., "clearsky_day" -> condition: "clearsky", variant: "day"
+  const [baseCondition, variant] = code.split("_")
+
+  // Look up the condition in our map
+  const icons = symbolMap[baseCondition]
+  if (!icons) return "/weather/04.svg" // fallback to cloudy
+
+  // If it has variants (day/night/polar_twilight), determine which one to use
+  if (icons.default) {
+    return `/weather/${icons.default}`
+  }
+
+  // Determine day/night/polar_twilight
+  let timeVariant = variant
+  if (!timeVariant && currentTime) {
+    const hour = new Date(currentTime).getHours()
+    timeVariant = hour >= 6 && hour < 22 ? "day" : "night"
+  }
+
+  const icon = icons[timeVariant as keyof typeof icons] || icons.day || icons.night || icons.polar_twilight
+  return icon ? `/weather/${icon}` : "/weather/04.svg"
 }
 
 /**
