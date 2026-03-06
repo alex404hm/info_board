@@ -199,7 +199,7 @@ export async function GET() {
       { stopId: stop1, sourceStopSlot: 1, title: "Alternativt stoppested" },
     ]
 
-    const settled = await Promise.allSettleYd(configs.map(fetchStopDepartures))
+    const settled = await Promise.allSettled(configs.map(fetchStopDepartures))
 
     const groups: DepartureGroup[] = settled.map((result, index) => {
       if (result.status === "fulfilled") return result.value
