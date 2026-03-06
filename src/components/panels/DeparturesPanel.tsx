@@ -82,7 +82,7 @@ function DeparturesBox({
               )}
             >
               <span
-                className="inline-flex min-w-[52px] items-center justify-center rounded-lg px-2.5 py-1 text-sm font-bold shadow-sm"
+                className="inline-flex min-w-[52px] items-center justify-center rounded px-2.5 py-1 text-sm font-bold"
                 style={{ backgroundColor: badge.bg, color: badge.text }}
               >
                 {dep.line}
