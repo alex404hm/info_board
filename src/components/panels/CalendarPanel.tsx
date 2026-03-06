@@ -6,8 +6,6 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  MapPin,
   RefreshCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -94,11 +92,21 @@ export function CalendarPanel() {
   const isToday = (d: number) => d === now.getDate() && vm === now.getMonth() && vy === now.getFullYear()
   const isSel = (d: number) => d === sd && vm === sm && vy === sy
   const evtsOn = (d: number) => events.filter((e) => onDay(e, vy, vm, d))
-  const selEvts = events.filter((e) => onDay(e, sy, sm, sd)).sort((a, b) => a.start.localeCompare(b.start))
 
-  const selLabel = new Date(sy, sm, sd).toLocaleDateString("da-DK", {
-    weekday: "long", day: "numeric", month: "long",
-  })
+  // Get all events in next 30 days
+  const upcomingEvts = (() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const thirtyDaysLater = new Date(today)
+    thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30)
+
+    return events
+      .filter((e) => {
+        const eventDate = new Date(e.start)
+        return eventDate >= today && eventDate < thirtyDaysLater
+      })
+      .sort((a, b) => a.start.localeCompare(b.start))
+  })()
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_460px]">
@@ -167,44 +175,30 @@ export function CalendarPanel() {
         </div>
       </div>
 
-      {/* Events sidebar */}
+      {/* Events sidebar - Next 30 days */}
       <div className="ib-panel p-6">
-        <h3 className="mb-4 text-sm font-semibold capitalize text-white/60">{selLabel}</h3>
+        <h3 className="mb-4 text-sm font-semibold capitalize text-white/60">Kommende 30 dage</h3>
 
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-white/40">
             <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Henter…
           </div>
-        ) : selEvts.length === 0 ? (
+        ) : upcomingEvts.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-12">
             <CalendarDays className="h-7 w-7 text-white/20" />
             <p className="text-sm text-white/40">Ingen begivenheder</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {selEvts.map((ev) => {
+          <div className="space-y-2">
+            {upcomingEvts.map((ev) => {
               const col = catColor(ev.category)
+              const dateStr = new Date(ev.start).toLocaleDateString("da-DK", { day: "numeric", month: "short" })
               return (
-                <div key={ev.id} className="ib-panel-soft p-3.5">
-                  <div className="flex items-start gap-2">
-                    <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", col.dot)} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white/90">{ev.title}</p>
-                      {ev.category && (
-                        <span className={cn("mt-1 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium", col.badge)}>
-                          {ev.category}
-                        </span>
-                      )}
-                      <p className="mt-1.5 flex items-center gap-1 text-[11px] text-white/35">
-                        <Clock className="h-3 w-3" />
-                        {ev.allDay ? "Hele dagen" : `${fmtTime(ev.start)}${ev.end ? ` – ${fmtTime(ev.end)}` : ""}`}
-                      </p>
-                      {ev.location && (
-                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/35">
-                          <MapPin className="h-3 w-3" /> {ev.location}
-                        </p>
-                      )}
-                    </div>
+                <div key={ev.id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 hover:bg-white/[0.06] transition-colors">
+                  <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", col.dot)} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-white/80 truncate">{ev.title}</p>
+                    <p className="text-[10px] text-white/40">{dateStr} {!ev.allDay && fmtTime(ev.start)}</p>
                   </div>
                 </div>
               )

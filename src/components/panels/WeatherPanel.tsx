@@ -37,6 +37,11 @@ export function WeatherPanel() {
           <p className="mt-1 text-sm text-white/50">
             {weather?.condition ?? "Henter…"}
           </p>
+          {weather?.location?.address && (
+            <p className="mt-2 text-xs text-white/40">
+              {weather.location.address}
+            </p>
+          )}
         </div>
         <div className="ml-auto flex gap-3">
           <div className="ib-panel-soft px-4 py-3 text-center">

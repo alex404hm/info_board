@@ -30,6 +30,11 @@ export type DeparturesApiResponse = {
 }
 
 export type WeatherApiResponse = {
+  location?: {
+    address: string
+    lat: number
+    lon: number
+  }
   updatedAt: string
   temperatureC: number | null
   humidityPct: number | null
