@@ -13,6 +13,7 @@
     "seed": "npx tsx --env-file=.env.local src/db/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "axios": "^1.13.6",
     "better-auth": "^1.5.4",
     "class-variance-authority": "^0.7.1",
@@ -28,6 +29,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-map-gl": "^8.1.0",
+    "recharts": "^3.8.0",
     "resend": "^4.8.0",
     "tailwind-merge": "^3.5.0"
   },

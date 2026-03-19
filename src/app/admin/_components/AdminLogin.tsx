@@ -68,7 +68,7 @@ export default function AdminLogin() {
     e.preventDefault()
     setForgotError("")
     setForgotLoading(true)
-    const { error } = await authClient.forgetPassword({
+    const { error } = await authClient.requestPasswordReset({
       email: forgotEmail.trim().toLowerCase(),
       redirectTo: "/reset-password",
     })

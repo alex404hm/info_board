@@ -19,6 +19,7 @@ const PATH_TO_TILE: Record<string, TileId> = {
   "/trafik":    "trafik",
   "/kokkenvagt": "kokkenvagt",
   "/intranet":  "intranet",
+  "/beskeder":  "beskeder",
 }
 
 type ShellProps = {

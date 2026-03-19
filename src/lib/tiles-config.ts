@@ -1,7 +1,7 @@
-import { Train, Utensils, CalendarDays, Newspaper, Users, CloudSun, Car, Coffee, Globe } from "lucide-react"
+import { Train, Utensils, CalendarDays, Newspaper, Users, CloudSun, Car, Coffee, Globe, MessageSquare } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
-export type TileId = "afgange" | "kantine" | "kalender" | "nyheder" | "kontakter" | "vejr" | "trafik" | "kokkenvagt" | "intranet"
+export type TileId = "afgange" | "kantine" | "kalender" | "nyheder" | "kontakter" | "vejr" | "trafik" | "kokkenvagt" | "intranet" | "beskeder"
 
 export type TileDefinition = {
   id: TileId
@@ -98,6 +98,14 @@ export const TILE_DEFINITIONS: TileDefinition[] = [
     icon: Globe,
     iconBg: "bg-indigo-500/10",
     iconWrapBg: "bg-indigo-500/15",
+  },
+  {
+    id: "beskeder",
+    defaultLabel: "Beskeder",
+    href: "/beskeder",
+    icon: MessageSquare,
+    iconBg: "bg-yellow-500/10",
+    iconWrapBg: "bg-yellow-500/15",
   },
 ]
 

@@ -224,7 +224,7 @@ export default function SettingsPage() {
     setSendingReset(true)
     setResetError("")
     setResetSent(false)
-    const { error } = await authClient.forgetPassword({
+    const { error } = await authClient.requestPasswordReset({
       email: currentUser.email,
       redirectTo: "/reset-password",
     })

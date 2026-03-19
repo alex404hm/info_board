@@ -1,454 +1,158 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
-import {
-  Phone, Mail, Search, ChevronDown, ChevronUp,
-  X, Check, SlidersHorizontal, Users, Star,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useEffect, useMemo, useState } from "react"
+import { Mail, Phone, ShieldCheck } from "lucide-react"
+
 import type { Employee } from "@/types"
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getFeatured(list: Employee[], n = 4): Employee[] {
-  const withImg = list.filter((e) => !!e.image)
-  const pool = withImg.length >= n ? withImg : list
-  return pool.slice(0, n)
+type PriorityContact = {
+  name: string
+  email: string
+  phone?: string
+  title: string
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+const CONTACT_ORDER: PriorityContact[] = [
+  {
+    name: "Kristian Kure",
+    email: "kku@tec.dk",
+    title: "Instruktør",
+  },
+  {
+    name: "Casper Nordkvist Vestergaard",
+    email: "cv@tec.dk",
+    phone: "+45 2545 3757",
+    title: "Instruktør",
+  },
+  {
+    name: "Tuner Budanur",
+    email: "tbu@tec.dk",
+    phone: "+45 2545 3314",
+    title: "Instruktør",
+  },
+  {
+    name: "Mathias Casper Lynge Le-Holding",
+    email: "mcll@tec.dk",
+    title: "Instruktør",
+  },
+]
 
-function Avatar({
-  employee,
-  className,
-  textClass = "text-sm",
-}: {
-  employee: Employee
-  className?: string
-  textClass?: string
-}) {
-  const [err, setErr] = useState(false)
-  const initials = `${employee.firstName?.[0] ?? ""}${employee.lastName?.[0] ?? ""}`.toUpperCase()
-
-  if (employee.image && !err) {
-    return (
-      <img
-        src={employee.image}
-        alt={employee.name}
-        onError={() => setErr(true)}
-        className={cn("rounded-full object-cover object-top shrink-0", className)}
-      />
-    )
+function splitName(name: string) {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length <= 1) return { firstLine: name, secondLine: "" }
+  return {
+    firstLine: parts.slice(0, -1).join(" "),
+    secondLine: parts[parts.length - 1],
   }
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-center rounded-full font-bold text-violet-300 shrink-0",
-        textClass,
-        className,
-      )}
-      style={{ background: "var(--accent-soft)" }}
-    >
-      {initials || <Users className="h-1/2 w-1/2 opacity-50" />}
-    </div>
-  )
 }
 
-// ─── Featured card ────────────────────────────────────────────────────────────
-
-function FeaturedCard({ employee }: { employee: Employee }) {
-  return (
-    <div className="surface-panel flex flex-col items-center gap-4 rounded-xl p-5 text-center">
-      <Avatar employee={employee} className="h-20 w-20" textClass="text-2xl" />
-
-      <div className="min-w-0 w-full">
-        <p className="text-[15px] font-semibold leading-snug text-foreground-strong">{employee.name}</p>
-        <p className="mt-0.5 text-xs text-subtle">
-          {employee.title}
-        </p>
-      </div>
-
-      <div className="w-full space-y-1.5 text-left">
-        {employee.email && (
-          <a
-            href={`mailto:${employee.email}`}
-            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted transition-colors hover:bg-white/[0.06]"
-          >
-            <Mail className="h-3.5 w-3.5 shrink-0 text-subtle" />
-            <span className="truncate">{employee.email}</span>
-          </a>
-        )}
-        {employee.phone && (
-          <a
-            href={`tel:${employee.phone}`}
-            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted transition-colors hover:bg-white/[0.06]"
-          >
-            <Phone className="h-3.5 w-3.5 shrink-0 text-subtle" />
-            {employee.phone}
-          </a>
-        )}
-      </div>
-    </div>
-  )
+function toDisplayContact(base: PriorityContact, match?: Employee): PriorityContact {
+  if (!match) return base
+  return {
+    name: match.name,
+    email: match.email,
+    phone: match.phone ?? base.phone,
+    title: "Instruktør",
+  }
 }
-
-// ─── Employee grid card ───────────────────────────────────────────────────────
-
-function EmployeeCard({ employee }: { employee: Employee }) {
-  return (
-    <div className="surface-panel flex items-center gap-3 rounded-xl p-4">
-      <Avatar employee={employee} className="h-12 w-12" textClass="text-sm" />
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold text-foreground-strong">{employee.name}</p>
-        <p className="mt-0.5 truncate text-xs text-muted">
-          {employee.title}
-        </p>
-        <p className="mt-0.5 truncate text-xs text-subtle">
-          {employee.email}
-        </p>
-      </div>
-
-      {employee.phone && (
-        <a
-          href={`tel:${employee.phone}`}
-          title={employee.phone}
-          className="flex shrink-0 flex-col items-center gap-1 rounded-lg p-2 transition-colors hover:bg-white/[0.06] text-subtle"
-        >
-          <Phone className="h-4 w-4 text-soft" />
-          <span className="hidden text-[9px] tabular-nums sm:block text-soft">
-            {employee.phone.replace("+45 ", "")}
-          </span>
-        </a>
-      )}
-    </div>
-  )
-}
-
-// ─── Title dropdown ───────────────────────────────────────────────────────────
-
-function TitleDropdown({
-  titles,
-  active,
-  onChange,
-}: {
-  titles: { title: string; count: number }[]
-  active: string | null
-  onChange: (t: string | null) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState("")
-  const ref = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    function close(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", close)
-    return () => document.removeEventListener("mousedown", close)
-  }, [])
-
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 40)
-    else setQuery("")
-  }, [open])
-
-  const visible = query.trim()
-    ? titles.filter((t) => t.title.toLowerCase().includes(query.toLowerCase()))
-    : titles
-
-  const activeEntry = titles.find((t) => t.title === active)
-
-  return (
-    <div ref={ref} className="relative">
-      {/* Trigger */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors select-none border",
-          active
-            ? "bg-[color:rgba(139,92,246,0.18)] border-[color:rgba(139,92,246,0.40)] text-accent"
-            : "bg-[color:var(--surface)] border-[color:var(--surface-border)] text-muted"
-        )}
-      >
-        <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
-        <span className="max-w-[160px] truncate">
-          {active ? (activeEntry?.title ?? active) : "All titles"}
-        </span>
-        {active && (
-        <span
-          className="flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold tabular-nums bg-[color:rgba(139,92,246,0.35)] text-white"
-        >
-            {activeEntry?.count}
-          </span>
-        )}
-        <ChevronDown
-          className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-150", open && "rotate-180")}
-        />
-      </button>
-
-      {/* Panel */}
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-72 rounded-xl surface-panel">
-          {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-light">
-            <Search className="h-3.5 w-3.5 shrink-0 text-subtle" />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search titles…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent text-sm outline-none text-foreground-strong"
-            />
-            {query && (
-              <button onClick={() => setQuery("")}>
-                <X className="h-3 w-3 text-subtle" />
-              </button>
-            )}
-          </div>
-
-          {/* Clear row */}
-          {active && (
-            <button
-              onClick={() => { onChange(null); setOpen(false) }}
-              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-white/[0.04] border-b border-light text-destructive"
-            >
-              <X className="h-3.5 w-3.5" />
-              Clear filter
-            </button>
-          )}
-
-          {/* List */}
-          <div className="max-h-72 overflow-y-auto py-1">
-            {visible.length === 0 ? (
-              <p className="px-3 py-3 text-sm text-subtle">
-                No titles match
-              </p>
-            ) : (
-              visible.map(({ title, count }) => {
-                const isActive = active === title
-                return (
-                  <button
-                    key={title}
-                    onClick={() => { onChange(isActive ? null : title); setOpen(false) }}
-                    className={cn(
-                      "flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]",
-                      isActive ? "text-accent" : "text-muted"
-                    )}
-                  >
-                    <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-                      {isActive && <Check className="h-3.5 w-3.5 text-violet-300" />}
-                    </span>
-                    <span className="flex-1 truncate text-left">{title}</span>
-                    <span
-                      className={cn(
-                        "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums font-medium",
-                        isActive
-                          ? "bg-[color:rgba(139,92,246,0.25)] text-foreground-strong"
-                          : "bg-white/7 text-subtle"
-                      )}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                )
-              })
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function ContactsPanel() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [activeTitle, setActiveTitle] = useState<string | null>(null)
-  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
-    fetch("/api/employees")
-      .then((r) => r.json())
+    fetch("/api/employees", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { employees: [] }))
       .then((data) => {
-        const list: Employee[] = data.employees ?? []
-        setEmployees(list)
+        setEmployees(Array.isArray(data.employees) ? data.employees : [])
       })
       .catch(() => setEmployees([]))
       .finally(() => setLoading(false))
   }, [])
 
-  const featured = useMemo(() => getFeatured(employees, 4), [employees])
+  const contacts = useMemo(() => {
+    const instructorEmployees = employees.filter((employee) => employee.title.trim() === "Instruktør")
 
-  const titles = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const e of employees) counts.set(e.title, (counts.get(e.title) ?? 0) + 1)
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([title, count]) => ({ title, count }))
+    return CONTACT_ORDER.map((contact) => {
+      const match = instructorEmployees.find(
+        (employee) =>
+          employee.email.toLowerCase() === contact.email.toLowerCase() ||
+          employee.name.toLowerCase() === contact.name.toLowerCase(),
+      )
+      return toDisplayContact(contact, match)
+    })
   }, [employees])
 
-  const filtered = useMemo(() => {
-    let r = employees
-    if (activeTitle) r = r.filter((e) => e.title === activeTitle)
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      r = r.filter(
-        (e) =>
-          e.name.toLowerCase().includes(q) ||
-          e.title.toLowerCase().includes(q) ||
-          e.email.toLowerCase().includes(q),
-      )
-    }
-    return r
-  }, [employees, activeTitle, search])
-
-  const visible = showAll ? filtered : filtered.slice(0, 12)
-  const hasFilter = !!activeTitle || !!search.trim()
-
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-72 animate-pulse rounded-[28px]" style={{ background: "var(--surface)" }} />
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-8">
-
-      {/* ── Featured staff ────────────────────────────────────────────────── */}
-      <section>
-        <div className="mb-4 flex items-center gap-2">
-          <Star className="h-4 w-4 text-violet-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wide text-violet-400">
-            Featured Staff
-          </h3>
+    <section className="space-y-6">
+      <div className="contact-hero">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color: "#8ab4ff" }}>
+            Kontakter
+          </p>
+          <h2 className="mt-2 text-2xl font-bold" style={{ color: "#edf4ff" }}>
+            Vigtigste instruktører
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: "#8ea6c8" }}>
+            De vigtigste kontaktpersoner er samlet her, så de er hurtige at finde på skærmen.
+          </p>
         </div>
-
-        {loading ? (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-64 animate-pulse rounded-2xl bg-[color:var(--surface)]" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {featured.map((emp) => (
-              <FeaturedCard key={emp.email} employee={emp} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── All employees ─────────────────────────────────────────────────── */}
-      <section>
-        {/* Toolbar */}
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          {/* Dropdown — leftmost */}
-          {!loading && (
-            <TitleDropdown
-              titles={titles}
-              active={activeTitle}
-              onChange={(t) => { setActiveTitle(t); setShowAll(false) }}
-            />
-          )}
-
-          {/* Active filter pill */}
-          {activeTitle && (
-            <span
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium border bg-[color:rgba(139,92,246,0.15)] border-[color:rgba(139,92,246,0.30)] text-accent"
-            >
-              <span className="max-w-[140px] truncate">{activeTitle}</span>
-              <button onClick={() => setActiveTitle(null)} className="hover:text-white transition-colors">
-                <X className="h-2.5 w-2.5" />
-              </button>
-            </span>
-          )}
-
-          {/* Push remaining controls right */}
-          <div className="flex-1" />
-
-          {/* Heading + count */}
-          <h3 className="text-sm font-bold uppercase tracking-wide text-violet-400">
-            All Employees
-            <span className="ml-2 font-normal normal-case tracking-normal text-subtle">
-              {hasFilter ? `${filtered.length} / ${employees.length}` : employees.length}
-            </span>
-          </h3>
-
-          {/* Search */}
-          <div
-            className="flex items-center gap-2 rounded-lg px-3 py-2 bg-[color:var(--surface)] border border-[color:var(--surface-border)]"
-          >
-            <Search className="h-3.5 w-3.5 shrink-0 text-subtle" />
-            <input
-              type="text"
-              placeholder="Search…"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setShowAll(false) }}
-              className="w-36 bg-transparent text-sm outline-none text-foreground-strong"
-            />
-            {search && (
-              <button onClick={() => setSearch("")}>
-                <X className="h-3 w-3 text-subtle" />
-              </button>
-            )}
-          </div>
-
-          {/* Clear all */}
-          {hasFilter && (
-            <button
-              onClick={() => { setActiveTitle(null); setSearch(""); setShowAll(false) }}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors border border-[color:var(--surface-border)] bg-[color:var(--surface)] text-muted hover:bg-white/[0.04]"
-            >
-              <X className="h-3 w-3" /> Clear
-            </button>
-          )}
+        <div className="contact-hero-badge">
+          <ShieldCheck className="h-4 w-4" />
+          Prioriterede kontakter
         </div>
+      </div>
 
-        {/* Employee grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="h-20 animate-pulse rounded-xl bg-[color:var(--surface)]" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-14">
-            <p className="text-sm text-muted">No employees found</p>
-            {hasFilter && (
-              <button
-                onClick={() => { setActiveTitle(null); setSearch("") }}
-                className="text-xs underline underline-offset-2 text-accent"
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {visible.map((emp) => (
-                <EmployeeCard key={emp.email} employee={emp} />
-              ))}
-            </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {contacts.map((contact) => {
+          const { firstLine, secondLine } = splitName(contact.name)
 
-            {filtered.length > 12 && (
-            <div className="mt-5 flex justify-center">
-              <button
-                onClick={() => setShowAll((v) => !v)}
-                className="flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors border border-[color:var(--surface-border)] bg-[color:var(--surface)] text-muted hover:bg-white/[0.04]"
-              >
-                  {showAll ? (
-                    <>Show less <ChevronUp className="h-4 w-4" /></>
-                  ) : (
-                    <>Show all {filtered.length} employees <ChevronDown className="h-4 w-4" /></>
-                  )}
-                </button>
+          return (
+            <article key={contact.email} className="priority-contact-card">
+              <div className="priority-contact-card-top">
+                <span className="priority-contact-chip">Instruktør</span>
               </div>
-            )}
-          </>
-        )}
-      </section>
-    </div>
+
+              <div className="space-y-1">
+                <p className="priority-contact-name">{firstLine}</p>
+                {secondLine ? <p className="priority-contact-name">{secondLine}</p> : null}
+              </div>
+
+              <p className="priority-contact-title">{contact.title}</p>
+
+              <div className="priority-contact-details">
+                <div className="priority-contact-row">
+                  <span className="priority-contact-label">Email</span>
+                  <a href={`mailto:${contact.email}`} className="priority-contact-value">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{contact.email}</span>
+                  </a>
+                </div>
+
+                {contact.phone ? (
+                  <div className="priority-contact-row">
+                    <span className="priority-contact-label">Telefon</span>
+                    <a href={`tel:${contact.phone}`} className="priority-contact-value">
+                      <Phone className="h-3.5 w-3.5 shrink-0" />
+                      <span>{contact.phone}</span>
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    </section>
   )
 }

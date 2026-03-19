@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Settings,
   Users,
+  BarChart2,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -31,6 +32,7 @@ const teacherSections = [
       { title: "Messages",        url: "/admin/messages", icon: MessageSquare },
       { title: "Calendar",        url: "/admin/calendar", icon: CalendarDays },
       { title: "Display & Layout", url: "/admin/display", icon: LayoutGrid },
+      { title: "Feedback",         url: "/admin/feedback", icon: BarChart2 },
     ],
   },
   {

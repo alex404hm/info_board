@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, json } from "drizzle-orm/pg-core"
+import { pgTable, text, boolean, timestamp, json, integer } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 export const user = pgTable("user", {
@@ -95,6 +95,14 @@ export const drNewsArticle = pgTable("dr_news_article", {
   author: text("author"),
   bodyParagraphs: json("bodyParagraphs").$type<string[]>().default([]),
   fetchedAt: timestamp("fetchedAt").notNull(),
+})
+
+export const feedback = pgTable("feedback", {
+  id: text("id").primaryKey(),
+  rating: integer("rating").notNull(),           // 1-5
+  comment: text("comment"),
+  ideas: json("ideas").$type<string[]>().default([]),
+  createdAt: timestamp("createdAt").notNull(),
 })
 
 export const messageRelations = relations(message, ({ one }) => ({

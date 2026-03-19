@@ -36,8 +36,8 @@ interface ConfigSlide {
 }
 
 const STATIC_SLIDES: ConfigSlide[] = [
-  { id: "slide-1", hero: "canteen",  normals: ["calendar", "messages"] },
-  { id: "slide-2", hero: null,       normals: ["dr-news", "transport", "traffic"] },
+  { id: "slide-1", hero: null, normals: ["canteen", "calendar"] },
+  { id: "slide-2", hero: null, normals: ["dr-news", "transport"] },
 ]
 
 // ── FoodIllustration ──────────────────────────────────────────────────────────
@@ -87,37 +87,28 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
   switch (id) {
     case "canteen":
       return (
-        <div className="flex h-full flex-col overflow-hidden rounded-xl" style={card}>
-          <div className="p-4 pb-3 shrink-0">
-            <div className="mb-2 flex items-center gap-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
-                <Image src="/logo/kanpla.png" alt="Kanpla" width={18} height={18} className="h-full w-full rounded-[3px] object-fill" />
-              </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Kantine · Dagens ret</p>
+        <div className="ib-panel flex h-full flex-col items-center justify-center p-6 text-center shadow-xl shadow-black/30"
+          style={{ background: "#2a272a", border: "1px solid rgba(251,191,36,0.25)" }}>
+          <div className="mb-5 flex flex-col items-center gap-3">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/30">
+              <Image src="/logo/kanpla.png" alt="Kanpla" width={32} height={32} className="h-full w-full rounded-[4px] object-fill" />
             </div>
-            <p className="text-xl font-bold leading-snug" style={{ color: C1 }}>
-              {hasDishData ? decodeHtmlEntities(dailyDish?.name ?? "Ingen ret i dag") : "Henter dagens ret…"}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/70">Kantine</p>
+              <h3 className="text-xl font-bold" style={{ color: "#d6ecea" }}>Dagens ret</h3>
+            </div>
+          </div>
+
+          <p className="text-2xl font-bold tracking-tight leading-snug" style={{ color: "#d6ecea" }}>
+            {hasDishData ? decodeHtmlEntities(dailyDish?.name ?? "Ingen ret i dag") : "Henter dagens ret…"}
+          </p>
+
+          {!isServingToday && dailyDish?.nextDishName ? (
+            <p className="mt-4 text-xs text-amber-300/60">
+              Næste: <span className="font-medium text-amber-300/90">{decodeHtmlEntities(dailyDish.nextDishName)}</span>
+              {dailyDish.nextDishDateLabel ? ` · ${dailyDish.nextDishDateLabel}` : ""}
             </p>
-            {isServingToday ? (
-              <span className="badge-accent mt-2 inline-flex w-fit items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Serveres i dag
-              </span>
-            ) : dailyDish?.nextDishName ? (
-              <p className="mt-1.5 text-xs" style={{ color: C2 }}>
-                Næste: <span className="font-medium" style={{ color: C1 }}>{decodeHtmlEntities(dailyDish.nextDishName)}</span>
-                {dailyDish.nextDishDateLabel ? ` · ${dailyDish.nextDishDateLabel}` : ""}
-              </p>
-            ) : null}
-          </div>
-          <div className="relative mx-3 mb-3 flex-1 min-h-[120px] overflow-hidden rounded-lg" style={{ background: C4, border: `1px solid ${C3}` }}>
-            {isServingToday && dailyDish?.imageUrl ? (
-              <Image src={dailyDish.imageUrl} alt={dailyDish.name || "Dagens ret"} fill className="object-cover" unoptimized />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <div className="h-28 w-28 opacity-50"><FoodIllustration /></div>
-              </div>
-            )}
-          </div>
+          ) : null}
         </div>
       )
 
@@ -165,60 +156,118 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
 
     case "messages": {
       const priorityMeta = (p: string) =>
-        p === "urgent" ? { dot: "bg-red-500",    border: "var(--status-critical-border)", label: "Akut",  labelCls: "bg-red-500/15 text-red-400" }
-        : p === "high" ? { dot: "bg-orange-500", border: "var(--status-high-border)",     label: "Vigtig", labelCls: "bg-orange-500/15 text-orange-400" }
-        :                { dot: "bg-violet-500", border: C3,                               label: null,    labelCls: "" }
+        p === "urgent"
+          ? { bg: "#fecaca", fold: "#fca5a5", tape: "#dc2626", textDark: "#450a0a", textMid: "#7f1d1d", textFaint: "#991b1b", label: "AKUT", avatarBg: "#dc2626" }
+          : p === "high"
+          ? { bg: "#fed7aa", fold: "#fdba74", tape: "#ea580c", textDark: "#431407", textMid: "#7c2d12", textFaint: "#9a3412", label: "VIGTIG", avatarBg: "#ea580c" }
+          : { bg: "#fef08a", fold: "#fde047", tape: "#ca8a04", textDark: "#422006", textMid: "#713f12", textFaint: "#92400e", label: null, avatarBg: "#d97706" }
+
+      const msg = boardMessages[0] ?? null
+
+      if (!msg) {
+        return (
+          <div className="relative flex h-full flex-col items-center justify-center gap-2"
+            style={{ background: "#fef08a", transform: "rotate(-0.8deg)", boxShadow: "4px 6px 20px rgba(0,0,0,0.45), 1px 2px 5px rgba(0,0,0,0.2)", borderRadius: "2px" }}>
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 h-6 w-14 rounded-sm opacity-60"
+              style={{ background: "#ca8a04", boxShadow: "0 2px 4px rgba(0,0,0,0.25)" }} />
+            <MessageSquare className="h-6 w-6 opacity-20" style={{ color: "#713f12" }} />
+            <p className="text-xs font-medium opacity-40" style={{ color: "#713f12" }}>Ingen meddelelser</p>
+          </div>
+        )
+      }
+
+      const meta = priorityMeta(msg.priority)
+      const initials = (msg.authorName ?? "??")
+        .split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+      const dateStr = new Date(msg.createdAt).toLocaleDateString("da-DK", { day: "numeric", month: "long" })
+
       return (
-        <div className="flex h-full flex-col overflow-hidden rounded-xl p-4" style={card}>
-          {/* Header */}
-          <div className="mb-3 flex items-center gap-2.5 shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 shrink-0">
-              <MessageSquare className="h-4 w-4 text-accent" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Beskeder</p>
-              <p className="truncate text-sm font-semibold" style={{ color: C1 }}>Meddelelser fra skolen</p>
-            </div>
-            {boardMessages.length > 0 && (
-              <span className="shrink-0 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-400">
-                {boardMessages.length}
+        <div
+          key={msg.id}
+          className="relative flex h-full flex-col"
+          style={{
+            background: meta.bg,
+            transform: "rotate(-1deg)",
+            boxShadow: "4px 6px 20px rgba(0,0,0,0.45), 1px 2px 5px rgba(0,0,0,0.2)",
+            borderRadius: "2px",
+          }}
+        >
+          {/* Tape strip at top */}
+          <div
+            className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 h-7 w-16 rounded-sm"
+            style={{ background: meta.tape, opacity: 0.65, boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}
+          />
+
+          {/* Folded bottom-right corner shadow */}
+          <div className="absolute bottom-0 right-0 z-10" style={{
+            width: 0, height: 0, borderStyle: "solid",
+            borderWidth: "0 0 28px 28px",
+            borderColor: `transparent transparent rgba(0,0,0,0.15) transparent`,
+          }} />
+          {/* Folded corner face */}
+          <div className="absolute bottom-0 right-0 z-10" style={{
+            width: 0, height: 0, borderStyle: "solid",
+            borderWidth: "28px 28px 0 0",
+            borderColor: `${meta.fold} transparent transparent transparent`,
+            opacity: 0.6,
+          }} />
+
+          {/* Content */}
+          <div className="flex h-full flex-col px-5 pb-5 pt-8">
+
+            {/* Priority badge */}
+            {meta.label && (
+              <span
+                className="mb-3 self-start rounded-sm px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white"
+                style={{ background: meta.tape, opacity: 0.88 }}
+              >
+                {meta.label}
               </span>
             )}
-          </div>
 
-          {/* Message list */}
-          <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
-            {boardMessages.length > 0 ? (
-              boardMessages.slice(0, 3).map((msg) => {
-                const meta = priorityMeta(msg.priority)
-                return (
-                  <div key={msg.id} className="flex min-w-0 items-start gap-2.5 rounded-lg px-3 py-2.5"
-                    style={{ background: C4, border: `1px solid ${meta.border}`, flexShrink: 0 }}>
-                    <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-                    <div className="min-w-0 flex-1 overflow-hidden">
-                      <div className="flex items-center gap-2">
-                        <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug" style={{ color: C1 }}>
-                          {msg.title}
-                        </p>
-                        {meta.label && (
-                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${meta.labelCls}`}>
-                            {meta.label}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 truncate text-xs leading-snug" style={{ color: C2 }}>{msg.content}</p>
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/10">
-                  <MessageSquare className="h-5 w-5 opacity-40" style={{ color: C2 }} />
-                </div>
-                <p className="text-xs font-medium" style={{ color: C3 }}>Ingen aktive meddelelser</p>
+            {/* Title */}
+            <h3
+              className="text-base font-black leading-snug"
+              style={{ color: meta.textDark, fontFamily: "sans-serif", letterSpacing: "-0.01em" }}
+            >
+              {msg.title}
+            </h3>
+
+            {/* Ruled lines decoration */}
+            <div className="my-3 flex flex-col gap-2">
+              {[0,1,2,3].map((i) => (
+                <div key={i} className="h-px w-full" style={{ background: `${meta.textFaint}22` }} />
+              ))}
+            </div>
+
+            {/* Body text */}
+            <p
+              className="flex-1 overflow-hidden text-sm leading-relaxed"
+              style={{ color: meta.textMid, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+            >
+              {msg.content}
+            </p>
+
+            {/* Teacher row */}
+            <div
+              className="mt-4 flex items-center gap-3 border-t pt-3"
+              style={{ borderColor: `${meta.textDark}18` }}
+            >
+              {/* Avatar */}
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-white shadow-sm"
+                style={{ background: meta.avatarBg }}
+              >
+                {initials}
               </div>
-            )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold truncate" style={{ color: meta.textDark }}>
+                  {msg.authorName ?? "Skolen"}
+                </p>
+                <p className="text-[10px]" style={{ color: meta.textFaint }}>Klasselærer · 7.B</p>
+              </div>
+              <p className="shrink-0 text-[9px]" style={{ color: meta.textFaint, opacity: 0.6 }}>{dateStr}</p>
+            </div>
           </div>
         </div>
       )
@@ -344,7 +393,7 @@ function SlideContent({
 
   if (heroNode) {
     return (
-      <div className="grid gap-4 pb-4 md:grid-cols-[1fr_340px] items-stretch">
+      <div className="grid gap-4 pb-4 md:grid-cols-[360px_1fr] items-stretch">
         <div className="flex flex-col">{heroNode}</div>
         <div className="flex h-full flex-col gap-4">
           {normalNodes.map(({ id, node }) => (
@@ -370,12 +419,52 @@ function SlideContent({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function TopCarousel() {
-  const [currentSlide, setCurrentSlide] = useState(0)
   const slides = STATIC_SLIDES
+  const N = slides.length
+
+  // Infinite carousel: render [lastClone, ...slides, firstClone]
+  // visualIdx 0 = lastClone, 1..N = real slides, N+1 = firstClone
+  const extSlides = N > 1 ? [slides[N - 1], ...slides, slides[0]] : slides
+  const [visualIdx, setVisualIdx] = useState(N > 1 ? 1 : 0)
+  const [jumping, setJumping] = useState(false)
+
+  // The real slide index (for dots)
+  const realIdx = N <= 1 ? 0 : visualIdx <= 0 ? N - 1 : visualIdx >= N + 1 ? 0 : visualIdx - 1
+
+  // After a no-transition snap, re-enable transitions on the next frame
+  useEffect(() => {
+    if (!jumping) return
+    const id = requestAnimationFrame(() => setJumping(false))
+    return () => cancelAnimationFrame(id)
+  }, [jumping])
+
+  // ── Idle dimming ────────────────────────────────────────────────────────────
+  const [idle, setIdle] = useState(false)
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const resetIdle = useCallback(() => {
+    setIdle(false)
+    if (idleTimer.current) clearTimeout(idleTimer.current)
+    idleTimer.current = setTimeout(() => setIdle(true), 15_000)
+  }, [])
+
+  useEffect(() => {
+    resetIdle()
+    return () => { if (idleTimer.current) clearTimeout(idleTimer.current) }
+  }, [resetIdle])
 
   // Live data for widgets
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
-  const [boardMessages,  setBoardMessages]  = useState<BoardMessage[]>([])
+  const [boardMessages,  setBoardMessages]  = useState<BoardMessage[]>([
+    {
+      id: "demo-1",
+      title: "Skolefest fredag d. 28. marts",
+      content: "Kære elever og forældre — vi afholder vores årlige skolefest på fredag kl. 18.00 i gymnastiksalen. Der vil være musik, mad og masser af hygge. Alle er velkomne, og vi håber at se jer der!",
+      priority: "normal",
+      authorName: "Mette Andersen",
+      createdAt: new Date().toISOString(),
+    },
+  ])
   const [drNewsItems,    setDrNewsItems]    = useState<DrNewsItem[]>([])
   const [departures,     setDepartures]     = useState<Departure[]>([])
   const [trafikPosts,    setTrafikPosts]    = useState<TrafikPost[]>([])
@@ -393,14 +482,6 @@ export function TopCarousel() {
         if (!res.ok) return
         const data = (await res.json()) as { events?: CalendarEvent[] }
         if (mounted && Array.isArray(data.events)) setCalendarEvents(data.events)
-      } catch { /* keep snapshot */ }
-    }
-    const loadMessages = async () => {
-      try {
-        const res = await fetch("/api/messages", { cache: "no-store" })
-        if (!res.ok) return
-        const data = (await res.json()) as BoardMessage[]
-        if (mounted && Array.isArray(data)) setBoardMessages(data)
       } catch { /* keep snapshot */ }
     }
     const loadDrNews = async () => {
@@ -431,15 +512,14 @@ export function TopCarousel() {
       } catch { /* keep snapshot */ }
     }
 
-    void loadCalendar(); void loadMessages(); void loadDrNews(); void loadDepartures(); void loadTrafik()
+    void loadCalendar(); void loadDrNews(); void loadDepartures(); void loadTrafik()
     const calId  = setInterval(loadCalendar,  10 * 60 * 1000)
-    const msgId  = setInterval(loadMessages,   5 * 60 * 1000)
     const newsId = setInterval(loadDrNews,     5 * 60 * 1000)
     const depId  = setInterval(loadDepartures,     30 * 1000)
     const trafId = setInterval(loadTrafik,     2 * 60 * 1000)
     return () => {
       mounted = false
-      clearInterval(calId); clearInterval(msgId); clearInterval(newsId); clearInterval(depId); clearInterval(trafId)
+      clearInterval(calId); clearInterval(newsId); clearInterval(depId); clearInterval(trafId)
     }
   }, [])
 
@@ -448,7 +528,39 @@ export function TopCarousel() {
     dailyDish, hasDishData, isServingToday,
   }), [calendarEvents, boardMessages, drNewsItems, departures, trafikPosts, dailyDish, hasDishData, isServingToday])
 
-  const slideCount = slides.length
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  const goToPrevious = useCallback(() => {
+    if (N <= 1) return
+    resetIdle()
+    setJumping(false)
+    setVisualIdx((v) => v - 1)
+  }, [N, resetIdle])
+
+  const goToNext = useCallback(() => {
+    if (N <= 1) return
+    resetIdle()
+    setJumping(false)
+    setVisualIdx((v) => v + 1)
+  }, [N, resetIdle])
+
+  const goTo = useCallback((i: number) => {
+    if (N <= 1) return
+    resetIdle()
+    setJumping(false)
+    setVisualIdx(i + 1)
+  }, [N, resetIdle])
+
+  // After the slide animation ends, snap from clone to real slide (no transition)
+  const handleTransitionEnd = useCallback(() => {
+    if (N <= 1) return
+    if (visualIdx >= N + 1) {
+      setJumping(true)
+      setVisualIdx(1)
+    } else if (visualIdx <= 0) {
+      setJumping(true)
+      setVisualIdx(N)
+    }
+  }, [N, visualIdx])
 
   // ── Swipe ──────────────────────────────────────────────────────────────────
   const pointerStartX = useRef<number | null>(null)
@@ -468,34 +580,15 @@ export function TopCarousel() {
     return Boolean(target.closest("a,button,input,textarea,select,option,[role='button'],[data-no-swipe]"))
   }
 
-  useEffect(() => {
-    if (slideCount > 0 && currentSlide >= slideCount) setCurrentSlide(slideCount - 1)
-  }, [slideCount, currentSlide])
-
-  // ── Navigation ─────────────────────────────────────────────────────────────
-  const goToPrevious = useCallback(() => {
-    if (!slideCount) return
-    setCurrentSlide((p) => (p - 1 + slideCount) % slideCount)
-  }, [slideCount])
-
-  const goToNext = useCallback(() => {
-    if (!slideCount) return
-    setCurrentSlide((p) => (p + 1) % slideCount)
-  }, [slideCount])
-
-  const goTo = useCallback((i: number) => {
-    setCurrentSlide(i)
-  }, [])
-
-  // ── Pointer / swipe ────────────────────────────────────────────────────────
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === "mouse") return
-    if (slideCount <= 1) return
+    if (N <= 1) return
+    resetIdle()
     if (isInteractiveTarget(e.target)) { swipeDisabled.current = true; didSwipe.current = false; return }
     e.currentTarget.setPointerCapture(e.pointerId)
     pointerStartX.current = e.clientX; pointerStartT.current = e.timeStamp
     didSwipe.current = false; swipeDisabled.current = false; setDragDelta(0)
-  }, [slideCount])
+  }, [N, resetIdle])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (pointerStartX.current === null || swipeDisabled.current) return
@@ -511,16 +604,21 @@ export function TopCarousel() {
     const elapsed  = e.timeStamp - pointerStartT.current
     const velocity = elapsed > 0 ? Math.abs(delta) / elapsed : 0
     pointerStartX.current = null; setDragDelta(0)
+    resetIdle()
     const isFlick = velocity >= SWIPE_VELOCITY_THRESHOLD && Math.abs(delta) >= SWIPE_MIN_DISTANCE
     const isSweep = Math.abs(delta) >= window.innerWidth * 0.15
     if (isFlick || isSweep) {
       didSwipe.current = true
-      if (delta < 0) setCurrentSlide((p) => (p + 1) % slideCount)
-      else           setCurrentSlide((p) => (p - 1 + slideCount) % slideCount)
+      setJumping(false)
+      if (delta < 0) setVisualIdx((v) => v + 1)
+      else           setVisualIdx((v) => v - 1)
     } else {
       if (Math.abs(delta) <= SWIPE_CLICK_THRESHOLD) didSwipe.current = false
     }
-  }, [slideCount])
+  }, [resetIdle])
+
+  const ctrlOpacity = idle ? 0.15 : 1
+  const ctrlTransition = "opacity 800ms ease"
 
   return (
     <div className="relative px-16">
@@ -530,8 +628,8 @@ export function TopCarousel() {
           {/* Prev */}
           <button
             onClick={goToPrevious}
-            className="absolute -left-20 top-1/2 z-10 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-150 hover:bg-white/[0.08] active:scale-90"
-            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)" }}
+            className="absolute -left-20 top-1/2 z-10 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90"
+            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)", opacity: ctrlOpacity, transition: ctrlTransition }}
             aria-label="Previous slide"
           >
             <ChevronLeft className="h-6 w-6" style={{ color: C2 }} />
@@ -551,13 +649,14 @@ export function TopCarousel() {
             <div
               className="flex"
               style={{
-                transform: `translateX(calc(-${currentSlide * 100}% + ${dragDelta}px))`,
-                transition: dragDelta !== 0 ? "none" : "transform 320ms cubic-bezier(0.25,0.46,0.45,0.94)",
+                transform: `translateX(calc(-${visualIdx * 100}% + ${dragDelta}px))`,
+                transition: jumping || dragDelta !== 0 ? "none" : "transform 320ms cubic-bezier(0.25,0.46,0.45,0.94)",
                 willChange: "transform",
               }}
+              onTransitionEnd={handleTransitionEnd}
             >
-              {slides.map((slide) => (
-                <div key={slide.id} className="w-full shrink-0">
+              {extSlides.map((slide, i) => (
+                <div key={`${slide.id}-${i}`} className="w-full shrink-0">
                   <SlideContent slide={slide} widgetProps={widgetProps} />
                 </div>
               ))}
@@ -567,8 +666,8 @@ export function TopCarousel() {
           {/* Next */}
           <button
             onClick={goToNext}
-            className="absolute -right-20 top-1/2 z-10 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-150 hover:bg-white/[0.08] active:scale-90"
-            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)" }}
+            className="absolute -right-20 top-1/2 z-10 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90"
+            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)", opacity: ctrlOpacity, transition: ctrlTransition }}
             aria-label="Next slide"
           >
             <ChevronRight className="h-6 w-6" style={{ color: C2 }} />
@@ -576,7 +675,7 @@ export function TopCarousel() {
         </div>
 
         {/* Dot indicators */}
-        <div className="mt-3 flex justify-center gap-2">
+        <div className="mt-3 flex justify-center gap-2" style={{ opacity: ctrlOpacity, transition: ctrlTransition }}>
           {slides.map((slide, i) => (
             <button
               key={slide.id}
@@ -584,9 +683,9 @@ export function TopCarousel() {
               className="transition-all duration-300"
               style={{
                 height: "6px",
-                width: i === currentSlide ? "22px" : "6px",
+                width: i === realIdx ? "22px" : "6px",
                 borderRadius: "9999px",
-                background: i === currentSlide ? C1 : "rgba(255,255,255,0.2)",
+                background: i === realIdx ? C1 : "rgba(255,255,255,0.2)",
               }}
               aria-label={`Go to slide ${i + 1}`}
             />

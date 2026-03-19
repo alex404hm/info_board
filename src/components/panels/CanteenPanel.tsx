@@ -57,11 +57,11 @@ export function CanteenPanel({ onSelectionChange }: CanteenPanelProps) {
   }
 
   const countFor = useMemo(() => {
-    const map: Record<string, number> = {}
+    const map: Partial<Record<CategoryKey, number>> = {}
     if (!data?.items) return map
     for (const item of data.items) {
       const hit = CATEGORIES.find(c => c.key === item.category)
-      const k   = hit ? item.category : "Diverse"
+      const k: CategoryKey = hit ? hit.key : "Diverse"
       map[k] = (map[k] ?? 0) + 1
     }
     return map
@@ -69,9 +69,9 @@ export function CanteenPanel({ onSelectionChange }: CanteenPanelProps) {
 
   const visibleItems = useMemo(() => {
     if (!data?.items || !selected) return []
-    const defined = new Set(CATEGORIES.map(c => c.key))
+    const defined = new Set<CategoryKey>(CATEGORIES.map(c => c.key))
     let list = selected === "Diverse"
-      ? data.items.filter(i => !defined.has(i.category) || i.category === "Diverse")
+      ? data.items.filter(i => !defined.has(i.category as CategoryKey) || i.category === "Diverse")
       : data.items.filter(i => i.category === selected)
     if (sortDir === "asc")  list = [...list].sort((a, b) => parsePrice(a.price) - parsePrice(b.price))
     if (sortDir === "desc") list = [...list].sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
