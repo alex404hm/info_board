@@ -61,6 +61,15 @@ export function getWeatherIcon(symbolCode?: string, currentTime?: string): strin
  * Get badge colors for transit line badge
  */
 export function lineBadgeStyle(line: string) {
+  // Special case for route 139 - darker/more black text
+  if (line === "139") {
+    return {
+      bg: "rgb(253,174,0)",
+      text: "rgb(0,0,0)", // Black text for better contrast
+      border: "rgb(217,119,6)",
+    }
+  }
+
   if (line.endsWith("C")) {
     return {
       bg: "rgb(22, 193, 201)",
@@ -91,7 +100,27 @@ export function lineBadgeStyle(line: string) {
   }
   return {
     bg: "rgb(253,174,0)",
-    text: "rgb(17,24,39)",
+    text: "rgb(255,255,255)",
     border: "rgb(217,119,6)",
+  }
+}
+/**
+ * Decode HTML entities in text content
+ */
+export function decodeHtmlEntities(text: string): string {
+  if (typeof window !== 'undefined') {
+    // Client-side: use DOM API
+    const textarea = document.createElement('textarea')
+    textarea.innerHTML = text
+    return textarea.value
+  } else {
+    // Server-side: manual replacement for common entities
+    return text
+      .replace(/&#x27;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
   }
 }

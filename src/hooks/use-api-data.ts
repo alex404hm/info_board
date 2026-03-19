@@ -9,29 +9,42 @@ import type {
   Departure,
   WeatherApiResponse,
 } from "@/types"
+import type { PollenApiResponse } from "@/app/api/pollen/route"
 
 export function useWeatherData() {
   const [weather, setWeather] = useState<WeatherApiResponse | null>(null)
 
   useEffect(() => {
     let mounted = true
+    let inFlight = false
 
     const loadWeather = async () => {
+      if (inFlight) return
+      inFlight = true
       try {
-        const response = await fetch("/api/weather")
+        const response = await fetch("/api/weather", { cache: "no-store" })
         if (!response.ok) return
         const data = (await response.json()) as WeatherApiResponse
         if (mounted) setWeather(data)
       } catch {
         // Keep last known values on transient failure.
+      } finally {
+        inFlight = false
       }
     }
 
     loadWeather()
     const id = setInterval(loadWeather, 10 * 60 * 1000)
+    const onVisible = () => {
+      if (document.visibilityState === "visible") loadWeather()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    window.addEventListener("online", onVisible)
     return () => {
       mounted = false
       clearInterval(id)
+      document.removeEventListener("visibilitychange", onVisible)
+      window.removeEventListener("online", onVisible)
     }
   }, [])
 
@@ -150,6 +163,27 @@ export function useDeparturesData() {
   }, [])
 
   return departures
+}
+
+export function usePollenData() {
+  const [pollen, setPollen] = useState<PollenApiResponse | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const res = await fetch("/api/pollen", { cache: "no-store" })
+        if (!res.ok) return
+        const data = (await res.json()) as PollenApiResponse
+        if (mounted) setPollen(data)
+      } catch { /* keep last known */ }
+    }
+    load()
+    const id = setInterval(load, 60 * 60 * 1000)
+    return () => { mounted = false; clearInterval(id) }
+  }, [])
+
+  return pollen
 }
 
 export function useDepartureGroupsData() {

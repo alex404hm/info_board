@@ -3,7 +3,7 @@ import { NewsPanel } from "@/components/panels/NewsPanel"
 
 export default function NewsPage() {
   return (
-    <SectionPageShell title="Nyheder" subtitle="DR.dk artikler med direkte laes-link">
+    <SectionPageShell title="Nyheder" subtitle="Seneste nyheder fra DR.dk">
       <NewsPanel />
     </SectionPageShell>
   )

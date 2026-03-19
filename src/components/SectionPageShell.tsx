@@ -2,8 +2,24 @@
 
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
 
 import { StatusBar } from "@/components/StatusBar"
+import { InfoBoardIdleGuard } from "@/components/InfoBoardIdleGuard"
+import type { TileId, TileConfig } from "@/lib/tiles-config"
+
+const PATH_TO_TILE: Record<string, TileId> = {
+  "/afgange":   "afgange",
+  "/kantine":   "kantine",
+  "/kalender":  "kalender",
+  "/nyheder":   "nyheder",
+  "/kontakter": "kontakter",
+  "/vejr":      "vejr",
+  "/trafik":    "trafik",
+  "/kokkenvagt": "kokkenvagt",
+  "/intranet":  "intranet",
+}
 
 type ShellProps = {
   title: string
@@ -12,32 +28,72 @@ type ShellProps = {
 }
 
 export function SectionPageShell({ title, subtitle, children }: ShellProps) {
+  const pathname = usePathname()
+  const router   = useRouter()
+  const mainRef  = useRef<HTMLElement>(null)
+
+  // ── Tile visibility guard ────────────────────────────────────────────────
+  const [allowed, setAllowed] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const tileId = PATH_TO_TILE[pathname]
+    if (!tileId) { setAllowed(true); return }
+
+    let mounted = true
+    fetch("/api/tiles-config", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: TileConfig[] | null) => {
+        if (!mounted) return
+        if (!Array.isArray(data)) { setAllowed(true); return }
+        const cfg = data.find((c) => c.id === tileId)
+        if (cfg && !cfg.visible) {
+          router.replace("/")
+        } else {
+          setAllowed(true)
+        }
+      })
+      .catch(() => { if (mounted) setAllowed(true) })
+    return () => { mounted = false }
+  }, [pathname, router])
+
+  // While checking visibility, show blank screen to prevent flash
+  if (allowed === null) {
+    return <div className="h-screen bg-background" />
+  }
+
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-[#0B1120] via-[#0d1526] to-[#0B1120]">
+    <div className="home-theme flex h-screen flex-col bg-background text-foreground">
+      <InfoBoardIdleGuard />
       <StatusBar />
 
-      <div className="shrink-0 border-b border-white/[0.08] bg-[#0B1120]/95 px-4 py-3 backdrop-blur-sm md:px-6">
+      {/* Header */}
+      <div className="shrink-0 px-4 py-3 md:px-6"
+        style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}>
         <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition-colors hover:bg-white/[0.08]"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
+            style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Tilbage
           </Link>
-
           <div className="min-w-0 flex-1 text-right">
-            <h1 className="truncate text-base font-bold text-slate-100 md:text-lg">{title}</h1>
-            {subtitle ? <p className="text-xs text-slate-400">{subtitle}</p> : null}
+            <h1 className="truncate text-base font-bold md:text-lg" style={{ color: "var(--foreground)" }}>{title}</h1>
+            {subtitle && (
+              <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>{subtitle}</p>
+            )}
           </div>
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[1400px] px-4 pb-10 pt-5 md:px-6">
+      {/* Main content */}
+      <main ref={mainRef} className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="mx-auto w-full max-w-[1400px] px-4 pb-12 pt-8 md:px-10">
           {children}
         </div>
       </main>
+
     </div>
   )
 }

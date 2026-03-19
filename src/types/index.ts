@@ -48,6 +48,7 @@ export type WeatherApiResponse = {
     maxC: number | null
     condition: string
     symbolCode?: string
+    windMs?: number | null
   }>
 }
 
@@ -84,6 +85,16 @@ export type Instructor = {
   email: string
   phone: string
   room: string
+}
+
+export type Employee = {
+  name: string
+  firstName: string
+  lastName: string
+  title: string
+  email: string
+  phone?: string
+  image?: string
 }
 
 export type DrNewsItem = {
