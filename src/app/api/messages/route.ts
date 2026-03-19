@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { message, user } from "@/db/schema"
 import { auth } from "@/lib/auth"
+import { getUserRole } from "@/lib/session-role"
 import { eq, desc, and, or, isNull, gte } from "drizzle-orm"
 import { headers } from "next/headers"
 
@@ -11,19 +12,20 @@ export async function GET(request: NextRequest) {
     const isAdmin = request.nextUrl.searchParams.get("admin") === "true"
 
     if (isAdmin) {
-      // Admin: verify auth, return ALL messages with full data
       const session = await auth.api.getSession({ headers: await headers() })
-      if (!session || session.user.role !== "teacher") {
+      const role = getUserRole(session)
+      if (!session || !["teacher", "admin"].includes(role ?? "")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
 
-      const messages = await db
+      const rows = await db
         .select({
           id: message.id,
           title: message.title,
           content: message.content,
           priority: message.priority,
           active: message.active,
+          authorId: message.authorId,
           authorName: user.name,
           expiresAt: message.expiresAt,
           createdAt: message.createdAt,
@@ -32,6 +34,11 @@ export async function GET(request: NextRequest) {
         .from(message)
         .leftJoin(user, eq(message.authorId, user.id))
         .orderBy(desc(message.createdAt))
+
+      const messages = rows.map((msg) => ({
+        ...msg,
+        canManage: role === "admin" || msg.authorId === session.user.id,
+      }))
 
       return NextResponse.json(messages)
     }
@@ -71,7 +78,7 @@ export async function POST(request: NextRequest) {
   try {
     const MAX_MESSAGE_CHARS = 280
     const session = await auth.api.getSession({ headers: await headers() })
-    if (!session || session.user.role !== "teacher") {
+    if (!session || !["teacher", "admin"].includes(getUserRole(session) ?? "")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

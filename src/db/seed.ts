@@ -15,13 +15,13 @@ async function upsertUser({
   password: string
 }) {
   const now = new Date()
+  const normalizedEmail = email.trim().toLowerCase()
   const hashed = await hashPassword(password)
 
-  // Check if user exists
   const [existingUser] = await db
     .select()
     .from(user)
-    .where(eq(user.email, email))
+    .where(eq(user.email, normalizedEmail))
 
   let userId: string
 
@@ -29,22 +29,32 @@ async function upsertUser({
     userId = existingUser.id
     await db
       .update(user)
-      .set({ role, updatedAt: now })
+      .set({
+        name,
+        role,
+        emailVerified: true,
+        banned: false,
+        banReason: null,
+        banExpires: null,
+        updatedAt: now,
+      })
       .where(eq(user.id, userId))
   } else {
     userId = crypto.randomUUID()
     await db.insert(user).values({
       id: userId,
       name,
-      email,
+      email: normalizedEmail,
       emailVerified: true,
       role,
+      banned: false,
+      banReason: null,
+      banExpires: null,
       createdAt: now,
       updatedAt: now,
     })
   }
 
-  // Upsert account
   const [existingAccount] = await db
     .select()
     .from(account)
@@ -53,7 +63,7 @@ async function upsertUser({
   if (!existingAccount) {
     await db.insert(account).values({
       id: crypto.randomUUID(),
-      accountId: email,
+      accountId: normalizedEmail,
       providerId: "credential",
       userId,
       password: hashed,
@@ -63,11 +73,16 @@ async function upsertUser({
   } else {
     await db
       .update(account)
-      .set({ password: hashed, updatedAt: now })
+      .set({
+        accountId: normalizedEmail,
+        providerId: "credential",
+        password: hashed,
+        updatedAt: now,
+      })
       .where(eq(account.userId, userId))
   }
 
-  console.log(`✓ ${email} seeded with role=${role}`)
+  console.log(`Seeded ${normalizedEmail} with role=${role}`)
 }
 
 async function seed() {
@@ -84,11 +99,13 @@ async function seed() {
     role: "teacher",
     password: "password123",
   })
-
-  process.exit(0)
 }
 
-seed().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+seed()
+  .then(() => {
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })

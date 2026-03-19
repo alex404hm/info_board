@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { db } from "@/db"
@@ -9,7 +10,7 @@ import { MessageSquare, Users, Calendar, Activity } from "lucide-react"
 export default async function AdminDashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() })
 
-  if (session?.user.role === "admin") {
+  if (getUserRole(session) === "admin") {
     redirect("/admin/users")
   }
 

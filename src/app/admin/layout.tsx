@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import AdminHeader from "./_components/AdminHeader"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -14,7 +15,7 @@ export const metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() })
 
-  const role = session?.user.role
+  const role = getUserRole(session)
   if (!session || !["teacher", "admin"].includes(role ?? "")) {
     return <AdminLogin />
   }
@@ -23,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     id: session.user.id,
     name: session.user.name,
     email: session.user.email,
-    role: session.user.role ?? undefined,
+    role: getUserRole(session),
   }
 
   return (

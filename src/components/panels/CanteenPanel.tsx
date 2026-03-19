@@ -207,13 +207,6 @@ export function CanteenPanel({ onSelectionChange }: CanteenPanelProps) {
                   className="absolute inset-0"
                   style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(8,12,22,0.6) 100%)" }}
                 />
-                {/* Item count badge */}
-                {countFor[cat.key] != null && (
-                  <span className="absolute right-3 top-3 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums"
-                    style={{ background: "rgba(0,0,0,0.55)", color: "rgba(255,255,255,0.85)", backdropFilter: "blur(6px)" }}>
-                    {countFor[cat.key]}
-                  </span>
-                )}
               </div>
 
               {/* Label strip */}

@@ -3,6 +3,7 @@ import { db } from "@/db"
 import { feedback } from "@/db/schema"
 import { desc, count, avg, sql } from "drizzle-orm"
 import { auth } from "@/lib/auth"
+import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 
 // POST /api/feedback — submit feedback from info board
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 // GET /api/feedback — admin only, returns all feedback + aggregates
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() })
-  if (!session || !["teacher", "admin"].includes(session.user.role ?? "")) {
+  if (!session || !["teacher", "admin"].includes(getUserRole(session) ?? "")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

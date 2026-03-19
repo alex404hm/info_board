@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Plus, Trash2, X, AlertTriangle, AlertCircle, Info, CheckCircle } from "lucide-react"
+import { Plus, Trash2, X, AlertTriangle, AlertCircle, Info, CheckCircle, Pencil } from "lucide-react"
 
 interface Message {
   id: string
@@ -9,17 +9,19 @@ interface Message {
   content: string
   priority: string
   active: boolean
+  authorId: string
   authorName: string | null
   expiresAt: string | null
   createdAt: string
   updatedAt: string
+  canManage: boolean
 }
 
 const priorityConfig = {
   urgent: { label: "Vigtig", icon: AlertTriangle, color: "text-red-400", bg: "bg-red-400/10", border: "border-red-500/30" },
   high: { label: "Høj", icon: AlertCircle, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-500/30" },
   normal: { label: "Normal", icon: Info, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-500/30" },
-}
+} as const
 
 export default function MessagesPage() {
   const MAX_TITLE_CHARS = 80
@@ -27,6 +29,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [priority, setPriority] = useState("normal")
@@ -39,6 +42,15 @@ export default function MessagesPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  function resetForm() {
+    setTitle("")
+    setContent("")
+    setPriority("normal")
+    setExpiresAt("")
+    setEditingId(null)
+    setShowForm(false)
+  }
+
   const fetchMessages = useCallback(async () => {
     try {
       const res = await fetch("/api/messages?admin=true")
@@ -49,15 +61,34 @@ export default function MessagesPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchMessages() }, [fetchMessages])
+  useEffect(() => {
+    let mounted = true
+
+    fetch("/api/messages?admin=true")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!mounted) return
+        setMessages(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [fetchMessages])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
 
     try {
-      const res = await fetch("/api/messages", {
-        method: "POST",
+      const url = editingId ? `/api/messages/${editingId}` : "/api/messages"
+      const method = editingId ? "PATCH" : "POST"
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
@@ -68,22 +99,27 @@ export default function MessagesPage() {
       })
 
       if (res.ok) {
-        setTitle("")
-        setContent("")
-        setPriority("normal")
-        setExpiresAt("")
-        setShowForm(false)
-        showToast("success", "Besked blev oprettet")
+        resetForm()
+        showToast("success", editingId ? "Besked blev opdateret" : "Besked blev oprettet")
         fetchMessages()
       } else {
         const data = await res.json().catch(() => null)
-        showToast("error", data?.error || "Kunne ikke oprette besked")
+        showToast("error", data?.error || (editingId ? "Kunne ikke opdatere besked" : "Kunne ikke oprette besked"))
       }
     } catch {
-      showToast("error", "Netværksfejl — prøv igen")
+      showToast("error", "Netværksfejl - prøv igen")
     }
 
     setSubmitting(false)
+  }
+
+  function handleEdit(msg: Message) {
+    setEditingId(msg.id)
+    setTitle(msg.title)
+    setContent(msg.content)
+    setPriority(msg.priority)
+    setExpiresAt(msg.expiresAt ? new Date(msg.expiresAt).toISOString().slice(0, 16) : "")
+    setShowForm(true)
   }
 
   async function handleDelete(id: string) {
@@ -93,8 +129,13 @@ export default function MessagesPage() {
       if (res.ok) {
         showToast("success", "Besked slettet")
         fetchMessages()
+      } else {
+        const data = await res.json().catch(() => null)
+        showToast("error", data?.error || "Kunne ikke slette besked")
       }
-    } catch {}
+    } catch {
+      showToast("error", "Netværksfejl - prøv igen")
+    }
   }
 
   async function handleToggle(id: string, active: boolean) {
@@ -107,8 +148,13 @@ export default function MessagesPage() {
       if (res.ok) {
         showToast("success", active ? "Besked deaktiveret" : "Besked aktiveret")
         fetchMessages()
+      } else {
+        const data = await res.json().catch(() => null)
+        showToast("error", data?.error || "Kunne ikke ændre besked")
       }
-    } catch {}
+    } catch {
+      showToast("error", "Netværksfejl - prøv igen")
+    }
   }
 
   const isExpired = (msg: Message) => {
@@ -118,17 +164,15 @@ export default function MessagesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg border text-sm font-medium animate-in slide-in-from-top-2 ${
-          toast.type === "success"
-            ? "bg-emerald-900/90 border-emerald-700/50 text-emerald-200"
-            : "bg-red-900/90 border-red-700/50 text-red-200"
-        }`}>
-          {toast.type === "success"
-            ? <CheckCircle className="w-4 h-4" />
-            : <AlertCircle className="w-4 h-4" />
-          }
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg animate-in slide-in-from-top-2 ${
+            toast.type === "success"
+              ? "bg-emerald-900/90 border-emerald-700/50 text-emerald-200"
+              : "bg-red-900/90 border-red-700/50 text-red-200"
+          }`}
+        >
+          {toast.type === "success" ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           {toast.text}
         </div>
       )}
@@ -138,11 +182,17 @@ export default function MessagesPage() {
           <h1 className="text-2xl font-bold text-foreground">Beskeder</h1>
           <p className="text-muted text-sm mt-1">
             Opret opslag til infoskærmen
-            {messages.length > 0 && <span className="text-muted"> — {messages.filter(m => m.active && !isExpired(m)).length} aktive</span>}
+            {messages.length > 0 && <span className="text-muted"> - {messages.filter((m) => m.active && !isExpired(m)).length} aktive</span>}
           </p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              resetForm()
+            } else {
+              setShowForm(true)
+            }
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-accent text-primary-foreground text-sm font-medium rounded-lg transition-colors"
         >
           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -213,7 +263,7 @@ export default function MessagesPage() {
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={resetForm}
               className="px-4 py-2.5 text-muted text-sm font-medium hover:text-foreground transition-colors"
             >
               Annuller
@@ -223,7 +273,7 @@ export default function MessagesPage() {
               disabled={submitting}
               className="px-6 py-2.5 bg-primary hover:bg-accent disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
             >
-              {submitting ? "Poster..." : "Send besked"}
+              {submitting ? (editingId ? "Gemmer..." : "Poster...") : editingId ? "Gem ændringer" : "Send besked"}
             </button>
           </div>
         </form>
@@ -246,7 +296,7 @@ export default function MessagesPage() {
             const dimmed = !msg.active || expired
 
             return (
-              <div key={msg.id} className={`admin-panel ${dimmed ? "" : ""} ${config.border} p-5 transition-opacity ${dimmed ? "opacity-50" : ""} overflow-hidden`}>
+              <div key={msg.id} className={`admin-panel ${config.border} p-5 transition-opacity ${dimmed ? "opacity-50" : ""} overflow-hidden`}>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className={`w-9 h-9 ${config.bg} rounded-lg flex items-center justify-center mt-0.5 shrink-0`}>
@@ -262,6 +312,9 @@ export default function MessagesPage() {
                         {expired && msg.active && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 shrink-0">Udløbet</span>
                         )}
+                        {!msg.canManage && (
+                          <span className="text-xs px-2 py-0.5 rounded-full admin-panel-soft text-muted shrink-0">Kun visning</span>
+                        )}
                       </div>
                       <p className="text-muted text-sm mt-1 line-clamp-2 break-all">{msg.content}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-2 text-muted text-xs">
@@ -270,13 +323,13 @@ export default function MessagesPage() {
                         </span>
                         {msg.authorName && (
                           <>
-                            <span>·</span>
+                            <span>-</span>
                             <span>af {msg.authorName}</span>
                           </>
                         )}
                         {msg.expiresAt && (
                           <>
-                            <span>·</span>
+                            <span>-</span>
                             <span className={expired ? "text-red-400" : ""}>
                               {expired ? "Udløbet" : "Udløber"} {new Date(msg.expiresAt).toLocaleDateString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                             </span>
@@ -286,22 +339,34 @@ export default function MessagesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 self-start">
-                    <button
-                      onClick={() => handleToggle(msg.id, msg.active)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                        msg.active
-                          ? "admin-panel-soft text-foreground hover:bg-[color:var(--surface-alt)]"
-                          : "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
-                      }`}
-                    >
-                      {msg.active ? "Deaktiver" : "Aktiver"}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(msg.id)}
-                      className="p-1.5 text-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {msg.canManage ? (
+                      <>
+                        <button
+                          onClick={() => handleEdit(msg)}
+                          className="p-1.5 text-muted hover:text-foreground hover:bg-[color:var(--surface-alt)] rounded-lg transition-colors"
+                          title="Rediger besked"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggle(msg.id, msg.active)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                            msg.active
+                              ? "admin-panel-soft text-foreground hover:bg-[color:var(--surface-alt)]"
+                              : "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
+                          }`}
+                        >
+                          {msg.active ? "Deaktiver" : "Aktiver"}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(msg.id)}
+                          className="p-1.5 text-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                          title="Slet besked"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 </div>
               </div>

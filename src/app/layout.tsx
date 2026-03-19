@@ -21,7 +21,7 @@ const kalam = Kalam({
 
 export const metadata: Metadata = {
   title: "TEC Infotavle",
-  description: "Teknisk Erhvervsskole Center – Infotavle",
+  description: "Teknisk Erhvervsskole Center - Infotavle",
 };
 
 export default function RootLayout({
@@ -30,16 +30,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="da">
+    <html lang="da" data-scroll-behavior="smooth">
       <head>
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${kalam.variable} antialiased`}
       >
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
+        <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
   );

@@ -32,7 +32,7 @@ export default function InfoBoardHome() {
                 Se hjemmesiden og giv feedback
               </p>
               <p className="mt-1 text-base font-semibold" style={{ color: "#b8d1f2" }}>
-                Gå til kortlink.dk/2u9fb og del din mening
+                Gå til <span className="font-bold" style={{ color: "#eef5ff" }}>kortlink.dk/2u9fb</span> og del din mening
               </p>
             </div>
             <div className="ml-2">

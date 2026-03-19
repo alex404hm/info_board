@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/db"
+import { getUserRole } from "@/lib/session-role"
 import { user } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
@@ -7,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() })
-  if (!session || session.user.role !== "admin") return null
+  if (!session || getUserRole(session) !== "admin") return null
   return session
 }
 

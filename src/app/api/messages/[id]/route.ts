@@ -2,8 +2,23 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { message } from "@/db/schema"
 import { auth } from "@/lib/auth"
+import { getUserRole } from "@/lib/session-role"
 import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
+
+async function canManageMessage(id: string, session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>) {
+  const role = getUserRole(session)
+  if (role === "admin") return true
+  if (role !== "teacher") return false
+
+  const existing = await db
+    .select({ authorId: message.authorId })
+    .from(message)
+    .where(eq(message.id, id))
+    .limit(1)
+
+  return existing[0]?.authorId === session.user.id
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -11,11 +26,15 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() })
-    if (!session || session.user.role !== "teacher") {
+    if (!session || !["teacher", "admin"].includes(getUserRole(session) ?? "")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { id } = await params
+    if (!(await canManageMessage(id, session))) {
+      return NextResponse.json({ error: "Du kan kun ændre dine egne beskeder" }, { status: 403 })
+    }
+
     const body = await request.json()
     const { title, content, priority, active, expiresAt } = body
 
@@ -37,7 +56,7 @@ export async function PATCH(
     }
 
     return NextResponse.json(updated[0])
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to update message" }, { status: 500 })
   }
 }
@@ -48,11 +67,15 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() })
-    if (!session || session.user.role !== "teacher") {
+    if (!session || !["teacher", "admin"].includes(getUserRole(session) ?? "")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { id } = await params
+    if (!(await canManageMessage(id, session))) {
+      return NextResponse.json({ error: "Du kan kun slette dine egne beskeder" }, { status: 403 })
+    }
+
     const deleted = await db
       .delete(message)
       .where(eq(message.id, id))
@@ -63,7 +86,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete message" }, { status: 500 })
   }
 }

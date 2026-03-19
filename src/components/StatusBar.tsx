@@ -28,20 +28,28 @@ export function StatusBar() {
     <header
       className="status-bar flex w-full min-h-[68px] shrink-0 items-center justify-between overflow-hidden px-2 sm:px-6 lg:px-10"
     >
-      {/* Left — Branding */}
+      {/* Left - Branding */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-4">
-        <Link href="/" className="flex items-center hover:opacity-75 transition-opacity">
-          <Image src="/logo.svg" alt="TEC" width={100} height={36} priority className="h-7 w-auto brightness-0 invert sm:h-9" />
+        <Link href="/" className="flex items-center transition-opacity hover:opacity-75">
+          <Image
+            src="/logo.svg"
+            alt="TEC"
+            width={100}
+            height={36}
+            priority
+            className="h-7 w-auto brightness-0 invert sm:h-9"
+            style={{ width: "auto" }}
+          />
         </Link>
         <div className="hidden h-6 w-px sm:block status-bar-divider" />
         <span className="hidden text-sm font-semibold text-soft md:inline">Infotavle</span>
       </div>
 
-      {/* Right — Weather · Clock · Date */}
+      {/* Right - Weather, Clock, Date */}
       <div className="ml-2 flex min-w-0 flex-1 items-center justify-end gap-2 sm:ml-3 sm:gap-6">
         <div className="hidden shrink-0 items-center gap-2 min-[390px]:flex">
           <Image src={iconSrc} alt="" width={28} height={28} className="h-6 w-6 sm:h-7 sm:w-7" />
-          <span className="text-sm font-bold tabular-nums sm:text-base text-foreground-strong">
+          <span className="text-sm font-bold tabular-nums text-foreground-strong sm:text-base">
             {weather?.temperatureC ?? "--"}°
           </span>
         </div>
@@ -49,10 +57,10 @@ export function StatusBar() {
         <div className="hidden h-6 w-px sm:block status-bar-divider" />
 
         <div className="min-w-0 text-right">
-          <p className="text-base leading-none font-bold tabular-nums tracking-tight sm:text-xl text-foreground-strong">
+          <p className="text-base leading-none font-bold tabular-nums tracking-tight text-foreground-strong sm:text-xl">
             {time}
           </p>
-          <p className="hidden max-w-[42vw] truncate text-[11px] font-medium capitalize md:block md:max-w-none text-soft">
+          <p className="hidden max-w-[42vw] truncate text-[11px] font-bold capitalize text-foreground-strong md:block md:max-w-none">
             {date}
           </p>
         </div>

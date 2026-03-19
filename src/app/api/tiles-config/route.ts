@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { setting } from "@/db/schema"
 import { auth } from "@/lib/auth"
+import { getUserRole } from "@/lib/session-role"
 import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
 import { DEFAULT_TILE_CONFIG, TILES_SETTING_KEY, type TileConfig } from "@/lib/tiles-config"
@@ -36,7 +37,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() })
-    if (!session || session.user.role !== "teacher") {
+    if (!session || getUserRole(session) !== "teacher") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

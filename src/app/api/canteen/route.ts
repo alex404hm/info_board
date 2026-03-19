@@ -1,102 +1,136 @@
 import { NextResponse } from "next/server"
 
+import { fetchKanplaData, formatPriceDkk, normalize, toDateKeyInCopenhagen, type KanplaItem } from "@/lib/kanpla-api"
+
 type CanteenItem = {
   name: string
   price: string
   category: string
 }
 
-async function fetchKanplaCanteenData() {
-  const response = await fetch("https://app.kanpla.io/api/internal/load/frontend", {
-    method: "POST",
-    headers: {
-      "accept": "application/json, text/plain, */*",
-      "accept-language": "da-DK,da;q=0.9,en-US;q=0.8,en;q=0.7",
-      "authorization": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhYWM0MWY3NTA4OGZlOGUwOWEwN2Q0NDRjZmQ2YjhjZTQ4MTJhMzEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20va2FucGxhLTg3YmUzIiwiYXVkIjoia2FucGxhLTg3YmUzIiwiYXV0aF90aW1lIjoxNzcyNDM1MTUyLCJ1c2VyX2lkIjoiNndvMjdNYjA3Vk5TRnVOR3FIVjg2WUYwTU5yMSIsInN1YiI6IjZ3bzI3TWIwN1ZOU0Z1TkdxSFY4NllGME1OcjEiLCJpYXQiOjE3NzMxMzc0NjksImV4cCI6MTc3MzE0MTA2OSwiZW1haWwiOiJhbG1vMzBAZWxldi50ZWMuZGsiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYWxtbzMwQGVsZXYudGVjLmRrIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.p6P4_ITzR37_j3BzsOJLzEiPDaCqGc2cy1PP0fDoDJ-4BbW8scKrfyN9o4L4x4H2IyvSprtN8SHg5Dxgliiayf6pkeXQH4IneCZFBc_OV0PFBxWr7rtAPSaL20UUhNBRFyfMZX1VgO13HFmEbsKdqNs0fqzJW0xZT_2w4yqsU1nYVa9RE0oy3i6QARuZbG2KNyX9yyL5lVp1NFNeuTeAPMDkhPTHKUm5cI7r-njhJoqRUdI7YmdwY59IW6v8Imcf6XSKpb7UrYAM96PLINW4-rMQu0j7vagP4ujSWRNYLcEAa_z2aynNNvcdAlcdzsDsuKzkVJaFm3KeE9MeBRpxEg",
-      "content-type": "application/json",
-      "kanpla-app-env": "PROD",
-      "kanpla-auth-provider": "GAuth",
-      "origin": "https://app.kanpla.io",
-      "referer": "https://app.kanpla.io/app"
-    },
-    body: JSON.stringify({
-      "userId": "6wo27Mb07VNSFuNGqHV86YF0MNr1",
-      "url": "app",
-      "language": "da"
-    }),
-    next: { revalidate: 600 }
-  })
+const PRIMARY_OFFER_ID = "n8JTISR5cgYOjM2dS4IE"
 
-  if (!response.ok) {
-    throw new Error(`Kanpla API returned status ${response.status}`)
+function isAvailableToday(item: KanplaItem) {
+  const dates = item.dates ?? {}
+  const todayKey = toDateKeyInCopenhagen(Math.floor(Date.now() / 1000))
+
+  return Object.entries(dates).some(([dateSeconds, value]) => {
+    const numericDate = Number(dateSeconds)
+    if (!Number.isFinite(numericDate) || !value?.available) return false
+    return toDateKeyInCopenhagen(numericDate) === todayKey
+  })
+}
+
+function normalizeCategory(name: string, description?: string) {
+  const s = normalize(`${name} ${description ?? ""}`).toLowerCase()
+
+  if (
+    s.includes("kaffe") ||
+    s.includes("espresso") ||
+    s.includes("americano") ||
+    s.includes("cappuccino") ||
+    s.includes("latte") ||
+    s.includes("macchiato") ||
+    s.includes("varm kakao") ||
+    s.includes("kakao lavazza") ||
+    /\bte\b/.test(s) ||
+    s.includes("chai")
+  ) {
+    return "Varme drikke"
   }
 
-  return response.json()
+  if (
+    s.includes("drik") ||
+    s.includes("juice") ||
+    s.includes("sodavand") ||
+    s.includes("kildevand") ||
+    s.includes("vand") ||
+    s.includes("iste") ||
+    s.includes("milkshake") ||
+    s.includes("smoothie") ||
+    s.includes("aloe vera") ||
+    s.includes("red bull") ||
+    s.includes("monster") ||
+    s.includes("vitamin well") ||
+    s.includes("cocio")
+  ) {
+    return "Drikkevarer"
+  }
+
+  if (
+    s.includes("morgenmad") ||
+    s.includes("bagel") ||
+    s.includes("bolle") ||
+    s.includes("croissant") ||
+    s.includes("wienerbrød") ||
+    s.includes("skyr") ||
+    s.includes("yoghurt") ||
+    s.includes("müsli") ||
+    s.includes("toast") ||
+    s.includes("sandwich") ||
+    s.includes("pizza") ||
+    s.includes("pølsehorn")
+  ) {
+    return "Morgenmad"
+  }
+
+  return "Diverse"
+}
+
+function pickOffer(data: Awaited<ReturnType<typeof fetchKanplaData>>) {
+  const offers = data.offers ?? {}
+
+  if (offers[PRIMARY_OFFER_ID]?.items?.length) {
+    return offers[PRIMARY_OFFER_ID]
+  }
+
+  const modulesById = new Map((data.modules ?? []).map((module) => [module.id, module.name ?? ""]))
+
+  const fallbackEntry = Object.entries(offers).find(([offerId, offer]) => {
+    const moduleName = (modulesById.get(offerId) ?? "").toLowerCase()
+    return offer.items?.length && (moduleName.includes("kantine") || moduleName.includes("menu"))
+  })
+
+  return fallbackEntry?.[1]
 }
 
 export async function GET() {
   try {
-    const data = await fetchKanplaCanteenData()
-    
-    // Get items from the specific offer ID
-    const targetOfferId = "n8JTISR5cgYOjM2dS4IE"
-    const offer = data.offers?.[targetOfferId]
-    
-    if (!offer || !offer.items) {
+    const data = await fetchKanplaData()
+    const offer = pickOffer(data)
+
+    if (!offer?.items?.length) {
       return NextResponse.json({ items: [] })
     }
 
-    // Extract items with name, price, and category
-    const items: CanteenItem[] = offer.items.map((item: any) => {
-      const name: string = item.name || "Unavngivet ret"
+    const items: CanteenItem[] = offer.items
+      .filter((item) => item.name)
+      .filter((item) => {
+        const hasDates = Object.keys(item.dates ?? {}).length > 0
+        return !hasDates || isAvailableToday(item)
+      })
+      .map((item) => {
+        const name = normalize(item.name ?? "Unavngivet vare")
+        const description = normalize(item.description ?? "")
+        const unitPrice = typeof item.unitPrice === "number" ? item.unitPrice : item.basePrice ?? null
 
-      // Try to get category from various possible Kanpla fields
-      let category: string =
-        item.category?.name ||
-        item.productLine?.name ||
-        item.labels?.[0] ||
-        item.group?.name ||
-        ""
-
-      // Normalise to one of the 4 UI categories
-      const normalise = (raw: string, itemName: string): string => {
-        const s = (raw + " " + itemName).toLowerCase()
-        // Varme drikke — check before generic drikkevarer
-        if (s.includes("varm") && (s.includes("drikke") || s.includes("kakao"))) return "Varme drikke"
-        if (s.includes("kaffe") || s.includes("espresso") || s.includes("cappuccino") ||
-            s.includes("latte") || s.includes("americano") || s.includes("macchiato") ||
-            s.includes(" te ") || s.match(/\bte\b/) || s.includes("chai"))             return "Varme drikke"
-        // Drikkevarer (cold)
-        if (s.includes("drikkevare") || s.includes("juice") || s.includes("smoothie") ||
-            s.includes("sodavand") || s.includes("cola") || s.includes("vand") ||
-            s.includes("mælk") || s.includes("shake") || s.includes("energi"))         return "Drikkevarer"
-        // Morgenmad
-        if (s.includes("morgenmad") || s.includes("breakfast") || s.includes("yoghurt") ||
-            s.includes("müsli") || s.includes("havregrød") || s.includes("grød") ||
-            s.includes("croissant") || s.includes("bagel") || s.includes("toast") ||
-            s.includes("sandwich") || s.includes("wrap") || s.includes("bolle") ||
-            s.includes("rundstykke") || s.includes("brød"))                             return "Morgenmad"
-        return "Diverse"
-      }
-
-      category = normalise(category, name)
-
-      return {
-        name,
-        price: item.unitPrice ? `${(item.unitPrice / 80).toFixed(2)} DKK` : "Dagspris",
-        category,
-      }
-    })
+        return {
+          name,
+          price: formatPriceDkk(unitPrice, item.unitSystem),
+          category: normalizeCategory(name, description),
+        }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "da-DK"))
 
     return NextResponse.json({ items })
   } catch (error) {
     console.error("Canteen API error:", error)
     return NextResponse.json(
-      { 
+      {
         error: "Could not read canteen data from Kanpla API",
-        message: error instanceof Error ? error.message : "Unknown error"
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
