@@ -14,7 +14,7 @@ export default function InfoBoardHome() {
       <div className="relative flex flex-1 min-h-0 flex-col px-4 sm:px-6 lg:px-10">
         <div className="mt-4 flex justify-center sm:mt-5">
           <div
-            className="flex w-full max-w-[680px] items-center gap-5 rounded-2xl px-8 py-5"
+            className="flex w-full max-w-[760px] items-center gap-5 rounded-2xl px-8 py-5"
             style={{
               background: "#0d2a52",
               border: "2px solid rgba(122, 173, 255, 0.34)",
@@ -29,10 +29,10 @@ export default function InfoBoardHome() {
             </span>
             <div className="flex-1">
               <p className="text-xl font-bold leading-snug" style={{ color: "#eef5ff" }}>
-                Demo-test af ny informationsskærm
+                Se hjemmesiden og giv feedback
               </p>
               <p className="mt-1 text-base font-semibold" style={{ color: "#b8d1f2" }}>
-                Giv gerne din mening
+                Gå til kortlink.dk/2u9fb og del din mening
               </p>
             </div>
             <div className="ml-2">
