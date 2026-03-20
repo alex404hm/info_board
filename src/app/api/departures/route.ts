@@ -40,11 +40,13 @@ type StopConfig = {
   title: string
 }
 
-function formatInMinutes(date: Date) {
-  const now = new Date()
-  const diffMs = date.getTime() - now.getTime()
-  const diffMin = Math.max(0, Math.round(diffMs / 60000))
-  return `${diffMin} min`
+function formatClockTime(date: Date) {
+  return date.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit", hour12: false })
+}
+
+function minutesUntil(date: Date) {
+  const diffMs = date.getTime() - new Date().getTime()
+  return Math.max(0, Math.round(diffMs / 60000))
 }
 
 function parseDateTime(date?: string, time?: string) {
@@ -108,8 +110,7 @@ function isCancelled(dep: RejseplanenDeparture): boolean {
 
 function etaSortValue(dep: Departure): number {
   if (dep.cancelled) return Number.MAX_SAFE_INTEGER
-  const minutes = Number.parseInt(dep.time, 10)
-  return Number.isFinite(minutes) ? minutes : Number.MAX_SAFE_INTEGER - 1
+  return dep.minutesUntil
 }
 
 async function fetchStopDepartures(config: StopConfig): Promise<DepartureGroup> {
@@ -147,10 +148,11 @@ async function fetchStopDepartures(config: StopConfig): Promise<DepartureGroup> 
       const cancelled = isCancelled(dep)
       const line = dep.ProductAtStop?.line ?? dep.Product?.[0]?.line ?? "?"
       const scheduledAt = parseDateTime(dep.rtDate ?? dep.date, dep.rtTime ?? dep.time)
+      const mins = scheduledAt ? minutesUntil(scheduledAt) : 0
       const time = cancelled
         ? "Aflyst"
         : scheduledAt
-          ? formatInMinutes(scheduledAt)
+          ? formatClockTime(scheduledAt)
           : dep.rtTime ?? dep.time ?? "--"
 
       return {
@@ -161,6 +163,7 @@ async function fetchStopDepartures(config: StopConfig): Promise<DepartureGroup> 
         sourceStopName: dep.stop ?? `Stoppested ${config.stopId}`,
         sourceStopSlot: config.sourceStopSlot,
         time,
+        minutesUntil: cancelled ? 0 : mins,
         type: toType(dep),
         platform: dep.rtTrack ?? dep.track ?? dep.rtPlatform ?? dep.platform ?? "?",
         delayMin: cancelled ? 0 : delayMinutes(dep),

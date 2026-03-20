@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import type { ReactNode } from "react"
 
 type YellowStickyNoteProps = {
   title: string
@@ -11,6 +12,9 @@ type YellowStickyNoteProps = {
   linkLabel?: string
   rotation?: string
   bodyClassName?: string
+  headerSlot?: ReactNode
+  footerSlot?: ReactNode
+  overlaySlot?: ReactNode
 }
 
 const LINE_COUNT = 6
@@ -19,11 +23,7 @@ const LINE_GAP = 26
 
 function formatDate(date?: string) {
   if (!date) return null
-
-  return new Date(date).toLocaleDateString("da-DK", {
-    day: "numeric",
-    month: "short",
-  })
+  return new Date(date).toLocaleDateString("da-DK", { day: "numeric", month: "short" })
 }
 
 export function YellowStickyNote({
@@ -35,13 +35,17 @@ export function YellowStickyNote({
   linkLabel,
   rotation,
   bodyClassName,
+  headerSlot,
+  footerSlot,
+  overlaySlot,
 }: YellowStickyNoteProps) {
   const dateStr = formatDate(createdAt)
   const showMeta = authorName || dateStr
 
   return (
-    <div style={rotation ? { rotate: rotation } : undefined}>
+    <div style={{ ...(rotation ? { rotate: rotation } : undefined), position: "relative" }}>
       <div className="yellow-sticky">
+        {/* Red margin line */}
         <div
           aria-hidden
           style={{
@@ -56,6 +60,7 @@ export function YellowStickyNote({
           }}
         />
 
+        {/* Ruled lines */}
         {Array.from({ length: LINE_COUNT }).map((_, i) => (
           <div
             key={i}
@@ -73,22 +78,27 @@ export function YellowStickyNote({
           />
         ))}
 
+        {headerSlot}
+
         <p className="sticky-y-title">{title}</p>
         <p className={bodyClassName ?? "sticky-y-body"}>{content}</p>
 
-        {showMeta ? (
+        {showMeta && (
           <div className="sticky-y-author-row">
             <span className="sticky-y-author">- {authorName ?? "Skolen"}</span>
-            {dateStr ? <span className="sticky-y-date">{dateStr}</span> : null}
+            {dateStr && <span className="sticky-y-date">{dateStr}</span>}
           </div>
-        ) : null}
+        )}
 
-        {href && linkLabel ? (
+        {href && linkLabel && (
           <Link href={href} className="sticky-y-link">
             {linkLabel}
           </Link>
-        ) : null}
+        )}
+
+        {footerSlot}
       </div>
+      {overlaySlot}
     </div>
   )
 }

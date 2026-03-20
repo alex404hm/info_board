@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import Image from "next/image"
-import { CheckCircle2, Clock3, Info, Newspaper, RefreshCw } from "lucide-react"
+import { ArrowUp, CheckCircle2, Clock3, Info, Newspaper, RefreshCw } from "lucide-react"
 
 import type { DrNewsApiResponse, DrNewsItem } from "@/types"
 import { decodeHtmlEntities } from "@/lib/utils"
@@ -92,6 +92,7 @@ export function NewsPanel() {
   const [lastUpdated, setLastUpdated] = useState<number>(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [toast, setToast] = useState<ToastInfo | null>(null)
+  const [showJumpTop, setShowJumpTop] = useState(false)
 
   const knownLinksRef = useRef<Set<string>>(new Set())
 
@@ -134,6 +135,24 @@ export function NewsPanel() {
     return () => clearInterval(id)
   }, [fetchDrNews])
 
+  useEffect(() => {
+    const scrollEl = document.querySelector("main.custom-scrollbar") as HTMLElement | null
+
+    const onScroll = () => {
+      const y = scrollEl ? scrollEl.scrollTop : window.scrollY
+      setShowJumpTop(y > 220)
+    }
+
+    onScroll()
+    if (scrollEl) {
+      scrollEl.addEventListener("scroll", onScroll, { passive: true })
+      return () => scrollEl.removeEventListener("scroll", onScroll)
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
   const handleRefresh = async () => {
     setIsRefreshing(true)
     await fetchDrNews(true)
@@ -142,7 +161,7 @@ export function NewsPanel() {
 
   const visibleItems = useMemo(() => items.slice(0, 14), [items])
 
-    if (items.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20">
         <div className="h-7 w-7 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
@@ -299,13 +318,38 @@ export function NewsPanel() {
         </div>
 
         {visibleItems.length === 0 && (
-        <div className="flex flex-col items-center gap-2 py-12 text-center">
-          <Newspaper className="h-7 w-7 text-soft" />
-          <p className="text-sm text-muted">Ingen DR-nyheder lige nu</p>
-        </div>
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <Newspaper className="h-7 w-7 text-soft" />
+            <p className="text-sm text-muted">Ingen DR-nyheder lige nu</p>
+          </div>
         )}
       </div>
 
+      <button
+        type="button"
+        onClick={() => {
+          const scrollEl = document.querySelector("main.custom-scrollbar") as HTMLElement | null
+          if (scrollEl) {
+            scrollEl.scrollTo({ top: 0, behavior: "smooth" })
+            return
+          }
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        }}
+        aria-label="Til toppen"
+        className={`fixed bottom-6 right-6 z-[80] inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${
+          showJumpTop
+            ? "translate-y-0 opacity-100 pointer-events-auto"
+            : "translate-y-2 opacity-0 pointer-events-none"
+        }`}
+        style={{
+          background: "var(--surface)",
+          borderColor: "var(--surface-border)",
+          color: "var(--foreground-muted)",
+          boxShadow: "0 8px 22px rgba(0,0,0,0.30)",
+        }}
+      >
+        <ArrowUp className="h-4 w-4" />
+      </button>
     </>
   )
 }

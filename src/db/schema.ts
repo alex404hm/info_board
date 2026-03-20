@@ -1,12 +1,25 @@
 import { pgTable, text, boolean, timestamp, json, integer } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
+export type WageStep = {
+  apprenticeshipPeriod: string
+  hourlySalaryDkk: number
+  monthlySalaryDkk: number
+}
+
+export type WageGroup = {
+  ageGroup: "under18" | "over18"
+  label: string
+  steps: WageStep[]
+}
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name"),
   email: text("email").unique().notNull(),
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
+  phoneNumber: text("phone_number"),
   role: text("role").notNull().default("user"),
   banned: boolean("banned").default(false),
   banReason: text("banReason"),
@@ -26,6 +39,7 @@ export const session = pgTable("session", {
   userId: text("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  impersonatedBy: text("impersonatedBy"),
 })
 
 export const account = pgTable("account", {
@@ -65,6 +79,8 @@ export const message = pgTable("message", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expiresAt"),
+  pinned: boolean("pinned").notNull().default(false),
+  repeatDays: json("repeat_days").$type<number[]>().default([]),
   createdAt: timestamp("createdAt").notNull(),
   updatedAt: timestamp("updatedAt").notNull(),
 })
@@ -105,7 +121,46 @@ export const feedback = pgTable("feedback", {
   rating: integer("rating").notNull(),           // 1-5
   comment: text("comment"),
   ideas: json("ideas").$type<string[]>().default([]),
+  ip: text("ip"),
   createdAt: timestamp("createdAt").notNull(),
+})
+
+export const requestLog = pgTable("request_log", {
+  id: text("id").primaryKey(),
+  timestamp: timestamp("timestamp").notNull(),
+  eventType: text("event_type").notNull(),        // page_view | login_success | login_failure | feedback | api_error | rate_limited
+  ip: text("ip"),
+  method: text("method").notNull().default("GET"),
+  path: text("path").notNull().default("/"),
+  statusCode: integer("status_code"),
+  userId: text("user_id"),
+  userEmail: text("user_email"),
+  userAgent: text("user_agent"),
+  details: json("details").$type<Record<string, unknown>>().default({}),
+})
+
+export const wageData = pgTable("wage_data", {
+  id: integer("id").primaryKey(),
+  groups: json("groups").$type<WageGroup[]>().notNull(),
+  currency: text("currency").notNull().default("DKK"),
+  lastUpdated: text("last_updated").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+})
+
+export const kokkenvagtEntry = pgTable("kokkenvagt_entry", {
+  id: text("id").primaryKey(),
+  week: integer("week").notNull(),
+  year: integer("year").notNull(),
+  person1: text("person1").notNull(),
+  person2: text("person2").notNull(),
+  note: text("note"),
+  startTime: text("start_time"),
+  endTime: text("end_time"),
+  authorId: text("authorId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
 })
 
 export const messageRelations = relations(message, ({ one }) => ({

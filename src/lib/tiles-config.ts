@@ -1,7 +1,7 @@
-import { Train, Utensils, CalendarDays, Newspaper, Users, CloudSun, Car, Coffee, Globe, MessageSquare } from "lucide-react"
+import { Train, Utensils, CalendarDays, Newspaper, Users, CloudSun, Car, Coffee, MessageSquare, FileText, Banknote } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
-export type TileId = "afgange" | "kantine" | "kalender" | "nyheder" | "kontakter" | "vejr" | "trafik" | "kokkenvagt" | "intranet" | "beskeder"
+export type TileId = "afgange" | "kantine" | "kalender" | "nyheder" | "kontakter" | "vejr" | "trafik" | "kokkenvagt" | "beskeder" | "befordringsrefusion" | "loen"
 
 export type TileDefinition = {
   id: TileId
@@ -92,20 +92,28 @@ export const TILE_DEFINITIONS: TileDefinition[] = [
     iconWrapBg: "bg-amber-700/15",
   },
   {
-    id: "intranet",
-    defaultLabel: "Intranet",
-    href: "/intranet",
-    icon: Globe,
-    iconBg: "bg-indigo-500/10",
-    iconWrapBg: "bg-indigo-500/15",
-  },
-  {
     id: "beskeder",
     defaultLabel: "Beskeder",
     href: "/beskeder",
     icon: MessageSquare,
     iconBg: "bg-yellow-500/10",
     iconWrapBg: "bg-yellow-500/15",
+  },
+  {
+    id: "befordringsrefusion",
+    defaultLabel: "Befordring",
+    href: "/befordringsrefusion",
+    icon: FileText,
+    iconBg: "bg-teal-500/10",
+    iconWrapBg: "bg-teal-500/15",
+  },
+  {
+    id: "loen",
+    defaultLabel: "Løn",
+    href: "/loen",
+    icon: Banknote,
+    iconBg: "bg-green-500/10",
+    iconWrapBg: "bg-green-500/15",
   },
 ]
 

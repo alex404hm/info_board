@@ -18,7 +18,6 @@ const PATH_TO_TILE: Record<string, TileId> = {
   "/vejr":      "vejr",
   "/trafik":    "trafik",
   "/kokkenvagt": "kokkenvagt",
-  "/intranet":  "intranet",
   "/beskeder":  "beskeder",
 }
 
@@ -90,7 +89,7 @@ export function SectionPageShell({ title, subtitle, children }: ShellProps) {
 
       {/* Main content */}
       <main ref={mainRef} className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="mx-auto w-full max-w-[1400px] px-4 pb-12 pt-8 md:px-10">
+        <div className="mx-auto w-full max-w-[1400px] px-3 pb-10 pt-4 sm:px-4 sm:pt-6 md:px-10 md:pt-8 md:pb-12">
           {children}
         </div>
       </main>

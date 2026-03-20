@@ -34,7 +34,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { token } = await params
-  const { name, password } = await req.json()
+  const { name, password, phoneNumber, image } = await req.json()
 
   if (!name?.trim() || !password || password.length < 10) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 })
@@ -62,7 +62,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   await db
     .update(user)
-    .set({ name: name.trim(), emailVerified: true, updatedAt: now })
+    .set({
+      name: name.trim(),
+      emailVerified: true,
+      phoneNumber: typeof phoneNumber === "string" ? phoneNumber.trim() || null : null,
+      image: typeof image === "string" && image.startsWith("data:image/") ? image : null,
+      updatedAt: now,
+    })
     .where(eq(user.id, inv.userId))
 
   await db.insert(account).values({

@@ -22,13 +22,33 @@ export async function POST(req: NextRequest) {
 
     const ideas   = Array.isArray(body.ideas) ? (body.ideas as string[]).slice(0, 20) : []
 
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      req.headers.get("x-real-ip") ??
+      null
+
     await db.insert(feedback).values({
       id: crypto.randomUUID(),
       rating,
       comment,
       ideas,
+      ip,
       createdAt: new Date(),
     })
+
+    // Log feedback event
+    try {
+      const { log } = await import("@/lib/logger")
+      void log({
+        eventType: "feedback",
+        ip,
+        method: "POST",
+        path: "/api/feedback",
+        statusCode: 200,
+        userAgent: req.headers.get("user-agent"),
+        details: { rating },
+      })
+    } catch {}
 
     return NextResponse.json({ ok: true })
   } catch {

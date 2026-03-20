@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Calendar, Save, ExternalLink, CheckCircle } from "lucide-react"
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 
 export default function CalendarSettingsPage() {
   const [calendarUrl, setCalendarUrl] = useState("")
+  const [initialCalendarUrl, setInitialCalendarUrl] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -15,7 +17,9 @@ export default function CalendarSettingsPage() {
         const res = await fetch("/api/settings?key=outlook_calendar_url")
         if (res.ok) {
           const data = await res.json()
-          if (data?.value) setCalendarUrl(data.value)
+          const value = data?.value ? String(data.value) : ""
+          setCalendarUrl(value)
+          setInitialCalendarUrl(value)
         }
       } catch {}
       setLoading(false)
@@ -36,10 +40,20 @@ export default function CalendarSettingsPage() {
 
     if (res.ok) {
       setSaved(true)
+      setInitialCalendarUrl(calendarUrl)
       setTimeout(() => setSaved(false), 3000)
     }
     setSaving(false)
   }
+
+  const hasUnsavedChanges = !loading && calendarUrl.trim() !== initialCalendarUrl.trim()
+  useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    title: "Kalenderlink er ændret",
+    description: "ICS Calendar URL er ændret, men ikke gemt. Hvis du forlader siden nu, går ændringen tabt.",
+    confirmText: "Forlad uden at gemme",
+    cancelText: "Bliv og gem",
+  })
 
   return (
     <div className="space-y-6">

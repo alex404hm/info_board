@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Kalam } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ConfirmDialogProvider } from "@/components/confirm-dialog-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,7 +38,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${kalam.variable} antialiased`}
       >
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

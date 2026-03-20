@@ -9,7 +9,6 @@ import type {
   Departure,
   WeatherApiResponse,
 } from "@/types"
-import type { PollenApiResponse } from "@/app/api/pollen/route"
 
 export function useWeatherData() {
   const [weather, setWeather] = useState<WeatherApiResponse | null>(null)
@@ -163,27 +162,6 @@ export function useDeparturesData() {
   }, [])
 
   return departures
-}
-
-export function usePollenData() {
-  const [pollen, setPollen] = useState<PollenApiResponse | null>(null)
-
-  useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      try {
-        const res = await fetch("/api/pollen", { cache: "no-store" })
-        if (!res.ok) return
-        const data = (await res.json()) as PollenApiResponse
-        if (mounted) setPollen(data)
-      } catch { /* keep last known */ }
-    }
-    load()
-    const id = setInterval(load, 60 * 60 * 1000)
-    return () => { mounted = false; clearInterval(id) }
-  }, [])
-
-  return pollen
 }
 
 export function useDepartureGroupsData() {

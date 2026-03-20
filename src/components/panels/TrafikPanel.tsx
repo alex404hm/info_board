@@ -156,7 +156,7 @@ export function TrafikPanel() {
   const [lastUpdated, setLastUpdated] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [filter, setFilter] = useState<"all" | "active" | "concluded">("all")
+  const [filter, setFilter] = useState<"all" | "active" | "concluded">("active")
   const mountedRef = useRef(true)
 
   const fetchPosts = useCallback(async () => {
@@ -231,7 +231,7 @@ export function TrafikPanel() {
           <div
             className="flex gap-1 rounded-lg p-1 bg-[color:var(--surface)] border border-[color:var(--surface-border)]"
           >
-            {(["all", "active", "concluded"] as const).map((f) => (
+            {(["active", "concluded"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -240,7 +240,7 @@ export function TrafikPanel() {
                   filter === f ? "bg-white/[0.12] text-foreground-strong" : "text-subtle"
                 )}
               >
-                {f === "all" ? "Alle" : f === "active" ? "Aktive" : "Afsluttede"}
+                {f === "active" ? "Aktive" : "Afsluttede"}
               </button>
             ))}
           </div>

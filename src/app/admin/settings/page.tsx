@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { authClient, useSession } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -137,14 +138,16 @@ function TextInput({
         placeholder={placeholder}
         disabled={disabled}
         className={cn(
-          "admin-input",
+          "admin-input w-full",
           "transition-all focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/40",
           disabled && "cursor-not-allowed opacity-50",
-          right && "pr-11",
+          right && "pr-10",
         )}
       />
       {right && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">{right}</div>
+        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center">
+          {right}
+        </div>
       )}
     </div>
   )
@@ -294,12 +297,29 @@ export default function SettingsPage() {
     setRevoking(null)
   }
 
+  const profileDirty = name.trim() !== (currentUser?.name ?? "").trim()
+  const passwordDirty = Boolean(currentPw || newPw || confirmPw)
+  const hasUnsavedChanges = profileDirty || passwordDirty
+
+  const unsavedSections = [
+    profileDirty ? "profiloplysninger" : null,
+    passwordDirty ? "adgangskodefelter" : null,
+  ].filter(Boolean).join(" og ")
+
+  useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    title: "Du har ikke-gemte ændringer",
+    description: `Du har ikke-gemte ændringer i ${unsavedSections}. Hvis du forlader siden nu, går ændringerne tabt.`,
+    confirmText: "Forlad uden at gemme",
+    cancelText: "Bliv og gem",
+  })
+
   const eyeBtn = (show: boolean, toggle: () => void) => (
     <button
       type="button"
       tabIndex={-1}
       onClick={toggle}
-      className="text-muted hover:text-foreground transition-colors"
+      className="flex h-6 w-6 items-center justify-center text-muted hover:text-foreground transition-colors"
     >
       {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
     </button>
@@ -334,15 +354,11 @@ export default function SettingsPage() {
           </Field>
 
           <Field label="Email address">
-            <div className="relative">
-              <TextInput
-                value={currentUser?.email ?? ""}
-                disabled
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Mail className="h-4 w-4 text-muted" />
-              </div>
-            </div>
+            <TextInput
+              value={currentUser?.email ?? ""}
+              disabled
+              right={<Mail className="h-4 w-4 text-muted" />}
+            />
             <p className="mt-1.5 text-xs text-muted">
               Email changes require account verification — contact your administrator.
             </p>
@@ -374,7 +390,7 @@ export default function SettingsPage() {
           subtitle="Change your login password"
         />
 
-        <div className="space-y-4 max-w-md">
+        <div className="space-y-4 max-w-sm">
           <Field label="Current password">
             <TextInput
               value={currentPw}

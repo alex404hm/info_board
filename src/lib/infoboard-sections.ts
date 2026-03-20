@@ -4,8 +4,8 @@ import { CalendarPanel } from "@/components/panels/CalendarPanel"
 import { CanteenPanel } from "@/components/panels/CanteenPanel"
 import { ContactsPanel } from "@/components/panels/ContactsPanel"
 import { DeparturesPanel } from "@/components/panels/DeparturesPanel"
-import { IntranetPanel } from "@/components/panels/IntranetPanel"
 import { KokkenvagtPanel } from "@/components/panels/KokkenvagtPanel"
+import { LoenPanel } from "@/components/panels/LoenPanel"
 import { NewsPanel } from "@/components/panels/NewsPanel"
 import { TrafikPanel } from "@/components/panels/TrafikPanel"
 import { WeatherPanel } from "@/components/panels/WeatherPanel"
@@ -67,10 +67,10 @@ export const INFOBOARD_SECTIONS: InfoBoardSection[] = [
     Panel: KokkenvagtPanel,
   },
   {
-    slug: "intranet",
-    title: "Intranet",
-    subtitle: "Oversigt over interne systemer og IP-adresser",
-    Panel: IntranetPanel,
+    slug: "loen",
+    title: "Løn",
+    subtitle: "Lønsatser for lærlinge — timeløn og månedsløn",
+    Panel: LoenPanel,
   },
 ]
 
