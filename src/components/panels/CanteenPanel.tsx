@@ -9,21 +9,23 @@ type CanteenResponse = { items: CanteenItem[]; error?: string }
 type SortDir         = "asc" | "desc" | null
 
 const CATEGORIES = [
-  { key: "Drikkevarer",  label: "Drikkevarer",  image: "/logo/drikkevarer.png", color: "#38bdf8", hoverBorder: "rgba(56,189,248,0.6)"  },
-  { key: "Morgenmad",   label: "Morgenmad",    image: "/logo/morgenmad.jpg",    color: "#fbbf24", hoverBorder: "rgba(251,191,36,0.6)"  },
-  { key: "Varme drikke",label: "Varme drikke", image: "/logo/varmedrikke.jpg",  color: "#fb923c", hoverBorder: "rgba(251,146,60,0.6)"  },
-  { key: "Diverse",     label: "Diverse",      image: "/logo/diverse.jpeg",     color: "#c4b5fd", hoverBorder: "rgba(196,181,253,0.6)" },
+  { key: "Drikkevarer",  label: "Drikkevarer",  image: "/logo/drikkevarer.png", color: "#38bdf8" },
+  { key: "Morgenmad",   label: "Morgenmad",    image: "/logo/morgenmad.jpg",    color: "#fbbf24" },
+  { key: "Varme drikke",label: "Varme drikke", image: "/logo/varmedrikke.jpg",  color: "#fb923c" },
+  { key: "Diverse",     label: "Diverse",      image: "/logo/diverse.jpeg",     color: "#c4b5fd" },
 ] as const
+const UNIFORM_HOVER_BORDER = "rgba(59, 130, 246, 0.95)"
 
 type CategoryKey = (typeof CATEGORIES)[number]["key"]
 
-function parsePrice(p: string) { const m = p.match(/(\d+\.?\d*)/); return m ? parseFloat(m[1]) : 0 }
-function formatPrice(price: string) {
-  const m = price.match(/(\d+\.?\d*)\s*DKK/i)
-  if (!m) return price
-  const n = parseFloat(m[1])
-  return `${n % 1 === 0 ? Math.floor(n) : n.toFixed(2)} kr`
+function parsePrice(p: string) {
+  // Handle Danish comma format: "23,50 kr" → 23.5
+  const m = p.match(/(\d+),(\d+)/)
+  if (m) return parseFloat(`${m[1]}.${m[2]}`)
+  const m2 = p.match(/(\d+)/)
+  return m2 ? parseFloat(m2[1]) : 0
 }
+function formatPrice(price: string) { return price }
 
 interface CanteenPanelProps {
   onSelectionChange?: (hasSelection: boolean) => void
@@ -186,12 +188,14 @@ export function CanteenPanel({ onSelectionChange }: CanteenPanelProps) {
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement
                 el.style.background = "var(--surface-soft)"
-                el.style.borderColor = cat.hoverBorder
+                el.style.borderColor = UNIFORM_HOVER_BORDER
+                el.style.boxShadow = `0 0 0 1px ${UNIFORM_HOVER_BORDER}`
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLElement
                 el.style.background = "var(--surface)"
                 el.style.borderColor = "var(--surface-border)"
+                el.style.boxShadow = "none"
               }}
             >
               {/* Photo — taller aspect ratio */}

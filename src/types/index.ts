@@ -6,6 +6,7 @@ export type Departure = {
   sourceStopName: string
   sourceStopSlot: 1 | 2
   time: string
+  minutesUntil: number
   type: "bus" | "train"
   platform: string
   delayMin: number
@@ -85,16 +86,6 @@ export type Instructor = {
   email: string
   phone: string
   room: string
-}
-
-export type Employee = {
-  name: string
-  firstName: string
-  lastName: string
-  title: string
-  email: string
-  phone?: string
-  image?: string
 }
 
 export type DrNewsItem = {

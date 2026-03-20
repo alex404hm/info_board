@@ -36,7 +36,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { title, content, priority, active, expiresAt } = body
+    const { title, content, priority, active, expiresAt, pinned, repeatDays } = body
 
     const updated = await db
       .update(message)
@@ -46,6 +46,8 @@ export async function PATCH(
         ...(priority !== undefined && { priority }),
         ...(active !== undefined && { active }),
         ...(expiresAt !== undefined && { expiresAt: expiresAt ? new Date(expiresAt) : null }),
+        ...(pinned !== undefined && { pinned: Boolean(pinned) }),
+        ...(repeatDays !== undefined && { repeatDays: Array.isArray(repeatDays) ? repeatDays : [] }),
         updatedAt: new Date(),
       })
       .where(eq(message.id, id))

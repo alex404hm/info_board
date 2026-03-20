@@ -36,12 +36,17 @@ export function formatPriceDkk(unitPrice?: number | null, unitSystem?: string): 
     return "Dagspris"
   }
 
-  const dkk = unitPrice / 100
+  // unitPrice is in øre ex. VAT — convert to kr and add 25% Danish VAT
+  const dkk = (unitPrice / 100) * 1.25
+  const rounded = Math.round(dkk * 100) / 100
+
   if (unitSystem === "kilogram") {
-    return `${dkk.toFixed(2).replace(".", ",")} kr/kg`
+    return `${rounded.toFixed(2).replace(".", ",")} kr/kg`
   }
 
-  return `${dkk.toFixed(2).replace(".", ",")} kr`
+  // Show whole numbers without decimals (e.g. 23 kr, not 23,00 kr)
+  const label = rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(2).replace(".", ",")
+  return `${label} kr`
 }
 
 /**

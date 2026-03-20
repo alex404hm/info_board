@@ -28,12 +28,14 @@ export async function GET(request: NextRequest) {
           authorId: message.authorId,
           authorName: user.name,
           expiresAt: message.expiresAt,
+          pinned: message.pinned,
+          repeatDays: message.repeatDays,
           createdAt: message.createdAt,
           updatedAt: message.updatedAt,
         })
         .from(message)
         .leftJoin(user, eq(message.authorId, user.id))
-        .orderBy(desc(message.createdAt))
+        .orderBy(desc(message.pinned), desc(message.createdAt))
 
       const messages = rows.map((msg) => ({
         ...msg,
@@ -54,6 +56,8 @@ export async function GET(request: NextRequest) {
         authorName: user.name,
         createdAt: message.createdAt,
         expiresAt: message.expiresAt,
+        pinned: message.pinned,
+        repeatDays: message.repeatDays,
       })
       .from(message)
       .leftJoin(user, eq(message.authorId, user.id))
@@ -63,10 +67,15 @@ export async function GET(request: NextRequest) {
           or(isNull(message.expiresAt), gte(message.expiresAt, now))
         )
       )
-      .orderBy(desc(message.createdAt))
+      .orderBy(desc(message.pinned), desc(message.createdAt))
       .limit(10)
 
-    return NextResponse.json(messages)
+    const today = new Date().getDay()
+    const filtered = messages.filter(
+      (m) => !m.repeatDays || m.repeatDays.length === 0 || m.repeatDays.includes(today)
+    )
+
+    return NextResponse.json(filtered)
   } catch (error) {
     console.error("GET /api/messages error:", error)
     return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 })
@@ -83,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, content, priority, expiresAt } = body
+    const { title, content, priority, expiresAt, repeatDays } = body
 
     if (!title || !content) {
       return NextResponse.json({ error: "Title and content are required" }, { status: 400 })
@@ -103,6 +112,7 @@ export async function POST(request: NextRequest) {
         active: true,
         authorId: session.user.id,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
+        repeatDays: Array.isArray(repeatDays) ? repeatDays : [],
         createdAt: now,
         updatedAt: now,
       })

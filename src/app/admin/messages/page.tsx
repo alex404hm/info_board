@@ -1,8 +1,21 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Plus, Trash2, X, AlertTriangle, AlertCircle, Info, CheckCircle, Pencil } from "lucide-react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import {
+  Plus, Trash2, X, CheckCircle, AlertCircle, Pencil,
+  Archive, ArchiveRestore, ChevronDown, ChevronUp, Clock, CheckSquare, Square,
+  RefreshCw, Pin, PinOff,
+} from "lucide-react"
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Button } from "@/components/ui/button"
+import { YellowStickyNote } from "@/components/YellowStickyNote"
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
+import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 
+/* ─── Types ──────────────────────────────────────────────────────────────── */
 interface Message {
   id: string
   title: string
@@ -12,30 +25,451 @@ interface Message {
   authorId: string
   authorName: string | null
   expiresAt: string | null
+  pinned: boolean
+  repeatDays: number[] | null
   createdAt: string
   updatedAt: string
   canManage: boolean
 }
 
-const priorityConfig = {
-  urgent: { label: "Vigtig", icon: AlertTriangle, color: "text-red-400", bg: "bg-red-400/10", border: "border-red-500/30" },
-  high: { label: "Høj", icon: AlertCircle, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-500/30" },
-  normal: { label: "Normal", icon: Info, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-500/30" },
-} as const
+/* ─── Constants ──────────────────────────────────────────────────────────── */
+const ROTATIONS = ["-1.8deg", "1.1deg", "-0.8deg", "1.6deg", "-1.2deg", "0.9deg", "-0.4deg", "1.4deg"]
 
+const PRIORITY_BADGE: Record<string, { label: string; color: string }> = {
+  high:   { label: "Høj",     color: "#ea580c" },
+  urgent: { label: "Vigtigt", color: "#dc2626" },
+}
+
+const EXTEND_OPTIONS = [
+  { label: "+1 dag",   days: 1 },
+  { label: "+3 dage",  days: 3 },
+  { label: "+1 uge",   days: 7 },
+  { label: "+1 måned", days: 30 },
+]
+
+const WEEKDAYS = [
+  { day: 1, short: "Man", long: "Mandag" },
+  { day: 2, short: "Tir", long: "Tirsdag" },
+  { day: 3, short: "Ons", long: "Onsdag" },
+  { day: 4, short: "Tor", long: "Torsdag" },
+  { day: 5, short: "Fre", long: "Fredag" },
+  { day: 6, short: "Lør", long: "Lørdag" },
+  { day: 0, short: "Søn", long: "Søndag" },
+]
+
+type MessageFormSnapshot = {
+  title: string
+  content: string
+  priority: string
+  expiresAtValue: string
+  repeatEnabled: boolean
+  repeatDaysKey: string
+}
+
+const EMPTY_FORM_SNAPSHOT: MessageFormSnapshot = {
+  title: "",
+  content: "",
+  priority: "normal",
+  expiresAtValue: "",
+  repeatEnabled: false,
+  repeatDaysKey: "",
+}
+
+function repeatDaysKey(days: number[]) {
+  return [...days].sort((a, b) => a - b).join(",")
+}
+
+function isSameSnapshot(a: MessageFormSnapshot, b: MessageFormSnapshot) {
+  return (
+    a.title === b.title &&
+    a.content === b.content &&
+    a.priority === b.priority &&
+    a.expiresAtValue === b.expiresAtValue &&
+    a.repeatEnabled === b.repeatEnabled &&
+    a.repeatDaysKey === b.repeatDaysKey
+  )
+}
+
+/* ─── Sticky note card ───────────────────────────────────────────────────── */
+function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdit, onArchive, onDelete, onExtendExpiry, onPin }: {
+  msg: Message
+  index: number
+  selectionMode: boolean
+  selected: boolean
+  onToggleSelect: (id: string) => void
+  onEdit: (m: Message) => void
+  onArchive: (id: string, active: boolean) => void
+  onDelete: (id: string) => void
+  onExtendExpiry: (id: string, days: number) => void
+  onPin: (id: string, pinned: boolean) => void
+}) {
+  const expired = msg.expiresAt ? new Date(msg.expiresAt) < new Date() : false
+  const badge = PRIORITY_BADGE[msg.priority]
+  const rotation = selectionMode ? "0deg" : msg.active ? ROTATIONS[index % ROTATIONS.length] : "0deg"
+  const [showExtend, setShowExtend] = useState(false)
+  const extendRef = useRef<HTMLDivElement>(null)
+  const repeatDays = msg.repeatDays ?? []
+
+  useEffect(() => {
+    if (!showExtend) return
+    function handleClick(e: MouseEvent) {
+      if (extendRef.current && !extendRef.current.contains(e.target as Node)) {
+        setShowExtend(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [showExtend])
+
+  const tags = (
+    <div style={{ display: "flex", gap: 5, marginBottom: 6, position: "relative", zIndex: 2, flexWrap: "wrap" }}>
+      {msg.pinned && (
+        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "#7c3aed", color: "#fff", borderRadius: 3, padding: "1px 6px", display: "flex", alignItems: "center", gap: 3 }}>
+          📌 Fastgjort
+        </span>
+      )}
+      {badge && (
+        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: badge.color, color: "#fff", borderRadius: 3, padding: "1px 6px" }}>
+          {badge.label}
+        </span>
+      )}
+      {!msg.active && (
+        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "rgba(80,80,80,0.18)", color: "#444", borderRadius: 3, padding: "1px 6px" }}>
+          Arkiveret
+        </span>
+      )}
+      {expired && msg.active && (
+        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "rgba(220,38,38,0.15)", color: "#dc2626", borderRadius: 3, padding: "1px 6px" }}>
+          Udløbet
+        </span>
+      )}
+      {msg.expiresAt && !expired && (
+        <span style={{ fontSize: 9, fontWeight: 700, background: "rgba(0,0,0,0.08)", color: "#555", borderRadius: 3, padding: "1px 6px" }}>
+          Udløber {format(new Date(msg.expiresAt), "d. MMM")}
+        </span>
+      )}
+      {repeatDays.length > 0 && (
+        <span style={{ fontSize: 9, fontWeight: 700, background: "rgba(37,99,235,0.12)", color: "#2563eb", borderRadius: 3, padding: "1px 6px", display: "flex", alignItems: "center", gap: 2 }}>
+          ↺ {repeatDays.map(d => WEEKDAYS.find(w => w.day === d)?.short).filter(Boolean).join(", ")}
+        </span>
+      )}
+    </div>
+  )
+
+  const actions = msg.canManage ? (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 6,
+        left: 28,
+        right: 14,
+        zIndex: 4,
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        opacity: !msg.active ? 0.6 : 1,
+      }}
+    >
+      <button onClick={() => onPin(msg.id, msg.pinned)} title={msg.pinned ? "Frigør" : "Fastgør besked"} className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: msg.pinned ? "#7c3aed" : "#1a1a5e" }}>
+        {msg.pinned ? <PinOff size={13} /> : <Pin size={13} />}
+      </button>
+      <button onClick={() => onEdit(msg)} title="Rediger" className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: "#1a1a5e" }}>
+        <Pencil size={13} />
+      </button>
+      <button onClick={() => onArchive(msg.id, msg.active)} title={msg.active ? "Arkiver" : "Genaktiver"} className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: "#1a1a5e" }}>
+        {msg.active ? <Archive size={13} /> : <ArchiveRestore size={13} />}
+      </button>
+
+      {/* Extend expiry */}
+      <div ref={extendRef} className="relative">
+        <button
+          onClick={() => setShowExtend((v) => !v)}
+          title="Forlæng udløbsdato"
+          className="rounded-md p-1.5 transition-colors hover:bg-white/60"
+          style={{ color: "#1a1a5e" }}
+        >
+          <Clock size={13} />
+        </button>
+        {showExtend && (
+          <div className="absolute bottom-full left-0 mb-1 z-50 min-w-[110px] rounded-lg border border-border/60 bg-white shadow-xl py-1">
+            {EXTEND_OPTIONS.map((opt) => (
+              <button
+                key={opt.days}
+                onClick={() => { onExtendExpiry(msg.id, opt.days); setShowExtend(false) }}
+                className="w-full px-3 py-1.5 text-left text-xs font-medium text-gray-700 hover:bg-yellow-50 transition-colors"
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <button onClick={() => onDelete(msg.id)} title="Slet" className="ml-auto rounded-md p-1.5 transition-colors hover:bg-red-200/60" style={{ color: "#dc2626" }}>
+        <Trash2 size={13} />
+      </button>
+    </div>
+  ) : null
+
+  return (
+    <div
+      className="relative"
+      style={{ opacity: !msg.active ? 0.6 : expired ? 0.75 : 1 }}
+      onClick={selectionMode ? () => onToggleSelect(msg.id) : undefined}
+    >
+      {selectionMode && (
+        <div className="absolute top-2 left-2 z-10 pointer-events-none">
+          <div
+            className="flex h-5 w-5 items-center justify-center rounded"
+            style={{
+              background: selected ? "#2563eb" : "rgba(255,255,255,0.85)",
+              border: selected ? "2px solid #2563eb" : "2px solid #aaa",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+            }}
+          >
+            {selected && <CheckSquare size={12} color="#fff" />}
+          </div>
+        </div>
+      )}
+      <div
+        style={{
+          outline: selectionMode && selected
+            ? "2px solid #2563eb"
+            : msg.pinned
+            ? "2px solid #7c3aed"
+            : "2px solid transparent",
+          outlineOffset: 2,
+          borderRadius: 12,
+          cursor: selectionMode ? "pointer" : undefined,
+          transition: "outline 0.1s",
+          boxShadow: msg.pinned && !selectionMode ? "0 0 0 4px rgba(124,58,237,0.15)" : undefined,
+        }}
+      >
+        <YellowStickyNote
+          title={msg.title}
+          content={msg.content}
+          authorName={msg.authorName}
+          createdAt={msg.createdAt}
+          rotation={rotation}
+          bodyClassName="sticky-y-body sticky-y-body-full"
+          headerSlot={tags}
+          overlaySlot={selectionMode ? null : actions}
+        />
+      </div>
+    </div>
+  )
+}
+
+/* ─── Priority picker (new UI: mini sticky note previews) ───────────────── */
+const PRIORITY_OPTIONS = [
+  { key: "normal", label: "Normal",  color: "#ca8a04", tapeColor: "#fde047" },
+  { key: "high",   label: "Høj",     color: "#ea580c", tapeColor: "#fb923c" },
+  { key: "urgent", label: "Vigtigt", color: "#dc2626", tapeColor: "#f87171" },
+]
+
+function PriorityPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {PRIORITY_OPTIONS.map(({ key, label, color, tapeColor }) => {
+        const selected = value === key
+        const badge = PRIORITY_BADGE[key]
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onChange(key)}
+            className="relative flex flex-col overflow-visible transition-all"
+            style={{
+              outline: selected ? `2px solid ${color}` : "2px solid transparent",
+              outlineOffset: 3,
+              boxShadow: selected ? `0 0 0 4px ${color}28` : "none",
+              borderRadius: 6,
+            }}
+          >
+            {/* Mini sticky note */}
+            <div
+              style={{
+                background: "linear-gradient(168deg,#fffde7 0%,#fef9c3 38%,#fef08a 100%)",
+                borderRadius: 6,
+                padding: "20px 10px 12px",
+                position: "relative",
+                overflow: "hidden",
+                minHeight: 90,
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                boxShadow: "2px 4px 10px rgba(0,0,0,0.18)",
+              }}
+            >
+              {/* Tape at top */}
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36,
+                height: 10,
+                background: tapeColor,
+                opacity: 0.85,
+                borderRadius: "0 0 3px 3px",
+              }} />
+
+              {/* Red margin line */}
+              <div style={{
+                position: "absolute",
+                top: 0, bottom: 0,
+                left: 14,
+                width: 1,
+                background: "rgba(220,38,38,0.25)",
+              }} />
+
+              {/* Priority badge */}
+              {badge ? (
+                <span style={{
+                  fontSize: 7, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.06em",
+                  background: badge.color, color: "#fff", borderRadius: 2, padding: "1px 4px",
+                  alignSelf: "flex-start", position: "relative", zIndex: 2,
+                }}>
+                  {badge.label}
+                </span>
+              ) : (
+                <div style={{ height: 11 }} />
+              )}
+
+              {/* Fake title line */}
+              <div style={{ height: 5, background: "rgba(15,15,69,0.35)", borderRadius: 3, width: "80%", marginLeft: 4 }} />
+              {/* Fake content lines */}
+              <div style={{ height: 3, background: "rgba(15,15,69,0.18)", borderRadius: 3, width: "95%", marginLeft: 4, marginTop: 2 }} />
+              <div style={{ height: 3, background: "rgba(15,15,69,0.18)", borderRadius: 3, width: "75%", marginLeft: 4 }} />
+              <div style={{ height: 3, background: "rgba(15,15,69,0.18)", borderRadius: 3, width: "85%", marginLeft: 4 }} />
+
+              {/* Selected checkmark */}
+              {selected && (
+                <span
+                  className="absolute right-1.5 bottom-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white"
+                  style={{ background: color, fontSize: 8, zIndex: 3 }}
+                >
+                  ✓
+                </span>
+              )}
+            </div>
+
+            {/* Label below the note */}
+            <span
+              className="mt-1.5 text-center text-xs font-semibold"
+              style={{ color: selected ? color : "var(--muted-foreground)" }}
+            >
+              {label}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ─── Weekday picker ─────────────────────────────────────────────────────── */
+function WeekdayPicker({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
+  function toggle(day: number) {
+    onChange(value.includes(day) ? value.filter((d) => d !== day) : [...value, day])
+  }
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {WEEKDAYS.map(({ day, short }) => {
+        const active = value.includes(day)
+        return (
+          <button
+            key={day}
+            type="button"
+            onClick={() => toggle(day)}
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all border"
+            style={{
+              background: active ? "var(--primary)" : "transparent",
+              color: active ? "var(--primary-foreground)" : "var(--muted-foreground)",
+              borderColor: active ? "var(--primary)" : "var(--border)",
+            }}
+          >
+            {short}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ─── Main page ─────────────────────────────────────────────────────────── */
 export default function MessagesPage() {
-  const MAX_TITLE_CHARS = 80
-  const MAX_MESSAGE_CHARS = 280
+  const MAX_TITLE = 80
+  const MAX_BODY = 280
+
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
-  const [priority, setPriority] = useState("normal")
-  const [expiresAt, setExpiresAt] = useState("")
+  const [priority, setPriority] = useState<string>("normal")
+  const [expiresDate, setExpiresDate] = useState<Date | undefined>(undefined)
+  const [expiresTime, setExpiresTime] = useState("")
+  const [repeatEnabled, setRepeatEnabled] = useState(false)
+  const [repeatDays, setRepeatDays] = useState<number[]>([])
+  const [formBaseline, setFormBaseline] = useState<MessageFormSnapshot>(EMPTY_FORM_SNAPSHOT)
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
+
+  /* ─ Selection state ─ */
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showBulkExtend, setShowBulkExtend] = useState(false)
+  const bulkExtendRef = useRef<HTMLDivElement>(null)
+  const confirmDialog = useConfirmDialog()
+
+  useEffect(() => {
+    if (!showBulkExtend) return
+    function handleClick(e: MouseEvent) {
+      if (bulkExtendRef.current && !bulkExtendRef.current.contains(e.target as Node)) {
+        setShowBulkExtend(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [showBulkExtend])
+
+  const expiresAtValue = expiresDate
+    ? expiresTime
+      ? `${format(expiresDate, "yyyy-MM-dd")}T${expiresTime}`
+      : format(expiresDate, "yyyy-MM-dd")
+    : ""
+
+  const currentFormSnapshot = useMemo<MessageFormSnapshot>(() => ({
+    title,
+    content,
+    priority,
+    expiresAtValue,
+    repeatEnabled,
+    repeatDaysKey: repeatDaysKey(repeatDays),
+  }), [title, content, priority, expiresAtValue, repeatEnabled, repeatDays])
+
+  const hasUnsavedChanges = showForm && !isSameSnapshot(currentFormSnapshot, formBaseline)
+  const dirtyFields = [
+    currentFormSnapshot.title !== formBaseline.title ? "titel" : null,
+    currentFormSnapshot.content !== formBaseline.content ? "indhold" : null,
+    currentFormSnapshot.priority !== formBaseline.priority ? "prioritet" : null,
+    currentFormSnapshot.expiresAtValue !== formBaseline.expiresAtValue ? "udløbsdato" : null,
+    currentFormSnapshot.repeatEnabled !== formBaseline.repeatEnabled ? "gentagelse" : null,
+    currentFormSnapshot.repeatDaysKey !== formBaseline.repeatDaysKey ? "ugedage" : null,
+  ].filter(Boolean).join(", ")
+
+  useUnsavedChangesGuard({
+    enabled: hasUnsavedChanges,
+    title: editingId ? "Du har ikke-gemte ændringer i beskeden" : "Du har en ikke-gemt besked",
+    description: dirtyFields
+      ? `Ikke-gemte felter: ${dirtyFields}. Hvis du forlader siden nu, mister du disse ændringer.`
+      : "Hvis du forlader siden nu, mister du de ændringer, du har lavet i beskedformularen.",
+    confirmText: "Forlad uden at gemme",
+    cancelText: "Bliv og gem",
+  })
 
   function showToast(type: "success" | "error", text: string) {
     setToast({ type, text })
@@ -43,47 +477,45 @@ export default function MessagesPage() {
   }
 
   function resetForm() {
-    setTitle("")
-    setContent("")
-    setPriority("normal")
-    setExpiresAt("")
-    setEditingId(null)
-    setShowForm(false)
+    setTitle(""); setContent(""); setPriority("normal"); setExpiresDate(undefined); setExpiresTime("")
+    setRepeatEnabled(false); setRepeatDays([]); setEditingId(null); setShowForm(false)
+    setFormBaseline(EMPTY_FORM_SNAPSHOT)
+  }
+
+  function exitSelectionMode() {
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function selectAll(pool: Message[]) {
+    setSelectedIds(new Set(pool.map((m) => m.id)))
   }
 
   const fetchMessages = useCallback(async () => {
     try {
       const res = await fetch("/api/messages?admin=true")
-      if (res.ok) {
-        setMessages(await res.json())
-      }
+      if (res.ok) setMessages(await res.json())
     } catch {}
     setLoading(false)
   }, [])
 
-  useEffect(() => {
-    let mounted = true
+  useEffect(() => { void fetchMessages() }, [fetchMessages])
 
-    fetch("/api/messages?admin=true")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (!mounted) return
-        setMessages(Array.isArray(data) ? data : [])
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (mounted) setLoading(false)
-      })
-
-    return () => {
-      mounted = false
-    }
-  }, [fetchMessages])
+  function broadcastUpdate() {
+    try { new BroadcastChannel("messages_updated").postMessage(null) } catch {}
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
-
     try {
       const url = editingId ? `/api/messages/${editingId}` : "/api/messages"
       const method = editingId ? "PATCH" : "POST"
@@ -94,51 +526,58 @@ export default function MessagesPage() {
           title,
           content,
           priority,
-          expiresAt: expiresAt || null,
+          expiresAt: expiresAtValue || null,
+          repeatDays: repeatEnabled ? repeatDays : [],
         }),
       })
-
       if (res.ok) {
         resetForm()
-        showToast("success", editingId ? "Besked blev opdateret" : "Besked blev oprettet")
-        fetchMessages()
+        showToast("success", editingId ? "Besked opdateret" : "Besked oprettet")
+        broadcastUpdate()
+        void fetchMessages()
       } else {
-        const data = await res.json().catch(() => null)
-        showToast("error", data?.error || (editingId ? "Kunne ikke opdatere besked" : "Kunne ikke oprette besked"))
+        const d = await res.json().catch(() => null)
+        showToast("error", d?.error ?? "Kunne ikke gemme besked")
       }
     } catch {
-      showToast("error", "Netværksfejl - prøv igen")
+      showToast("error", "Netværksfejl — prøv igen")
     }
-
     setSubmitting(false)
   }
 
   function handleEdit(msg: Message) {
-    setEditingId(msg.id)
-    setTitle(msg.title)
-    setContent(msg.content)
+    const d = msg.expiresAt ? new Date(msg.expiresAt) : null
+    const initialExpires = d
+      ? `${format(d, "yyyy-MM-dd")}T${d.toTimeString().slice(0, 5)}`
+      : ""
+    const initialRepeatDays = msg.repeatDays ?? []
+
+    setFormBaseline({
+      title: msg.title,
+      content: msg.content,
+      priority: msg.priority,
+      expiresAtValue: initialExpires,
+      repeatEnabled: initialRepeatDays.length > 0,
+      repeatDaysKey: repeatDaysKey(initialRepeatDays),
+    })
+
+    setEditingId(msg.id); setTitle(msg.title); setContent(msg.content)
     setPriority(msg.priority)
-    setExpiresAt(msg.expiresAt ? new Date(msg.expiresAt).toISOString().slice(0, 16) : "")
-    setShowForm(true)
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm("Vil du slette denne besked permanent?")) return
-    try {
-      const res = await fetch(`/api/messages/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        showToast("success", "Besked slettet")
-        fetchMessages()
-      } else {
-        const data = await res.json().catch(() => null)
-        showToast("error", data?.error || "Kunne ikke slette besked")
-      }
-    } catch {
-      showToast("error", "Netværksfejl - prøv igen")
+    if (d) {
+      setExpiresDate(d)
+      setExpiresTime(d.toTimeString().slice(0, 5))
+    } else {
+      setExpiresDate(undefined)
+      setExpiresTime("")
     }
+    const rDays = msg.repeatDays ?? []
+    setRepeatEnabled(rDays.length > 0)
+    setRepeatDays(rDays)
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  async function handleToggle(id: string, active: boolean) {
+  async function handleArchive(id: string, active: boolean) {
     try {
       const res = await fetch(`/api/messages/${id}`, {
         method: "PATCH",
@@ -146,244 +585,519 @@ export default function MessagesPage() {
         body: JSON.stringify({ active: !active }),
       })
       if (res.ok) {
-        showToast("success", active ? "Besked deaktiveret" : "Besked aktiveret")
-        fetchMessages()
-      } else {
-        const data = await res.json().catch(() => null)
-        showToast("error", data?.error || "Kunne ikke ændre besked")
+        showToast("success", active ? "Besked arkiveret" : "Besked genaktiveret")
+        broadcastUpdate()
+        void fetchMessages()
       }
-    } catch {
-      showToast("error", "Netværksfejl - prøv igen")
-    }
+    } catch { showToast("error", "Netværksfejl — prøv igen") }
   }
 
-  const isExpired = (msg: Message) => {
-    if (!msg.expiresAt) return false
-    return new Date(msg.expiresAt) < new Date()
+  async function handleDelete(id: string) {
+    const ok = await confirmDialog({
+      title: "Slet besked?",
+      description: "Denne handling kan ikke fortrydes.",
+      confirmText: "Slet besked",
+      cancelText: "Annuller",
+      tone: "danger",
+    })
+    if (!ok) return
+    try {
+      const res = await fetch(`/api/messages/${id}`, { method: "DELETE" })
+      if (res.ok) {
+        showToast("success", "Besked slettet")
+        broadcastUpdate()
+        void fetchMessages()
+      }
+    } catch { showToast("error", "Netværksfejl — prøv igen") }
   }
+
+  async function handleExtendExpiry(id: string, days: number) {
+    const msg = messages.find((m) => m.id === id)
+    if (!msg) return
+    const base = msg.expiresAt ? new Date(msg.expiresAt) : new Date()
+    base.setDate(base.getDate() + days)
+    try {
+      const res = await fetch(`/api/messages/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresAt: base.toISOString() }),
+      })
+      if (res.ok) {
+        showToast("success", `Udløbsdato sat til ${format(base, "d. MMM yyyy")}`)
+        broadcastUpdate()
+        void fetchMessages()
+      }
+    } catch { showToast("error", "Netværksfejl — prøv igen") }
+  }
+
+  async function handlePin(id: string, currentlyPinned: boolean) {
+    try {
+      const res = await fetch(`/api/messages/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned: !currentlyPinned }),
+      })
+      if (res.ok) {
+        showToast("success", currentlyPinned ? "Besked frigjort" : "Besked fastgjort 📌")
+        broadcastUpdate()
+        void fetchMessages()
+      }
+    } catch { showToast("error", "Netværksfejl — prøv igen") }
+  }
+
+  /* ─ Bulk actions ─ */
+  async function handleBulkDelete() {
+    const count = selectedIds.size
+    const ok = await confirmDialog({
+      title: `Slet ${count} ${count === 1 ? "besked" : "beskeder"}?`,
+      description: "Denne handling kan ikke fortrydes.",
+      confirmText: "Slet",
+      cancelText: "Annuller",
+      tone: "danger",
+    })
+    if (!ok) return
+    await Promise.all([...selectedIds].map((id) => fetch(`/api/messages/${id}`, { method: "DELETE" })))
+    showToast("success", `${count} ${count === 1 ? "besked" : "beskeder"} slettet`)
+    exitSelectionMode()
+    broadcastUpdate()
+    void fetchMessages()
+  }
+
+  async function handleBulkArchive() {
+    const ids = [...selectedIds]
+    await Promise.all(ids.map((id) =>
+      fetch(`/api/messages/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: false }),
+      })
+    ))
+    showToast("success", `${ids.length} ${ids.length === 1 ? "besked" : "beskeder"} arkiveret`)
+    exitSelectionMode()
+    broadcastUpdate()
+    void fetchMessages()
+  }
+
+  async function handleBulkExtendExpiry(days: number) {
+    const ids = [...selectedIds]
+    setShowBulkExtend(false)
+    await Promise.all(ids.map(async (id) => {
+      const msg = messages.find((m) => m.id === id)
+      if (!msg) return
+      const base = msg.expiresAt ? new Date(msg.expiresAt) : new Date()
+      base.setDate(base.getDate() + days)
+      return fetch(`/api/messages/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresAt: base.toISOString() }),
+      })
+    }))
+    const opt = EXTEND_OPTIONS.find((o) => o.days === days)
+    showToast("success", `Udløbsdato forlænget ${opt?.label ?? ""} for ${ids.length} ${ids.length === 1 ? "besked" : "beskeder"}`)
+    exitSelectionMode()
+    broadcastUpdate()
+    void fetchMessages()
+  }
+
+  const active   = messages.filter((m) => m.active)
+  const archived = messages.filter((m) => !m.active)
+  const pinned   = active.filter((m) => m.pinned)
+  const unpinned = active.filter((m) => !m.pinned)
+
+  const activeSelectedCount  = [...selectedIds].filter((id) => active.find((m) => m.id === id)).length
+  const anySelected = selectedIds.size > 0
+
+  // Visible pool for select-all (both active + visible archived)
+  const visiblePool = [...active, ...(showArchived ? archived : [])]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-24">
+      {/* Toast */}
       {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg animate-in slide-in-from-top-2 ${
-            toast.type === "success"
-              ? "bg-emerald-900/90 border-emerald-700/50 text-emerald-200"
-              : "bg-red-900/90 border-red-700/50 text-red-200"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+        <div className={`fixed right-4 top-4 z-50 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium shadow-2xl animate-in slide-in-from-top-2 ${
+          toast.type === "success"
+            ? "border-emerald-700/50 bg-emerald-900/90 text-emerald-200"
+            : "border-red-700/50 bg-red-900/90 text-red-200"
+        }`}>
+          {toast.type === "success" ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
           {toast.text}
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Beskeder</h1>
-          <p className="text-muted text-sm mt-1">
+          <h1 className="text-2xl font-bold tracking-tight">Beskeder</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Opret opslag til infoskærmen
-            {messages.length > 0 && <span className="text-muted"> - {messages.filter((m) => m.active && !isExpired(m)).length} aktive</span>}
+            {active.length > 0 && <span> — {active.length} {active.length === 1 ? "aktiv" : "aktive"}</span>}
           </p>
         </div>
-        <button
-          onClick={() => {
-            if (showForm) {
-              resetForm()
-            } else {
-              setShowForm(true)
-            }
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-accent text-primary-foreground text-sm font-medium rounded-lg transition-colors"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? "Annuller" : "Ny besked"}
-        </button>
+        <div className="flex items-center gap-2">
+          {!showForm && messages.length > 0 && (
+            <button
+              onClick={() => selectionMode ? exitSelectionMode() : setSelectionMode(true)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all active:scale-95 ${
+                selectionMode
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/60 bg-card/40 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CheckSquare className="h-4 w-4" />
+              {selectionMode ? "Annuller valg" : "Vælg flere"}
+            </button>
+          )}
+          {!selectionMode && (
+            <button
+              onClick={() => {
+                if (showForm) {
+                  resetForm()
+                } else {
+                  setFormBaseline(EMPTY_FORM_SNAPSHOT)
+                  setShowForm(true)
+                }
+              }}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95"
+            >
+              {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {showForm ? "Annuller" : "Ny besked"}
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* ── Form ── */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="admin-panel p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Titel</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="f.eks. Kantinen er lukket onsdag"
-              required
-              maxLength={MAX_TITLE_CHARS}
-              className="admin-input focus:ring-2 focus:ring-accent/40 focus:border-accent/60"
-            />
-            <div className="mt-1 flex items-center justify-between text-xs text-muted">
-              <span>Maks {MAX_TITLE_CHARS} tegn</span>
-              <span>{title.length}/{MAX_TITLE_CHARS}</span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Indhold</label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Den fulde besked som vil blive vist på infoskærmen..."
-              required
-              rows={3}
-              maxLength={MAX_MESSAGE_CHARS}
-              className="admin-input resize-none focus:ring-2 focus:ring-accent/40 focus:border-accent/60"
-            />
-            <div className="mt-1 flex items-center justify-between text-xs text-muted">
-              <span>Maks {MAX_MESSAGE_CHARS} tegn</span>
-              <span>{content.length}/{MAX_MESSAGE_CHARS}</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Prioritet</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="admin-input focus:ring-2 focus:ring-accent/40 focus:border-accent/60"
-              >
-                <option value="normal">Normal</option>
-                <option value="high">Høj</option>
-                <option value="urgent">Vigtig</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Udløber automatisk <span className="text-muted font-normal">(valgfrit)</span>
-              </label>
+        <div className="rounded-2xl border border-border/50 bg-card/40 p-6 shadow-xl">
+          <h2 className="mb-5 text-base font-bold">{editingId ? "Rediger besked" : "Ny besked"}</h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between">
+                <label className="text-sm font-medium">Titel</label>
+                <span className="text-xs text-muted-foreground">{title.length}/{MAX_TITLE}</span>
+              </div>
               <input
-                type="datetime-local"
-                value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className="admin-input focus:ring-2 focus:ring-accent/40 focus:border-accent/60 [color-scheme:dark]"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="f.eks. Kantinen er lukket onsdag"
+                required
+                maxLength={MAX_TITLE}
+                autoFocus
+                className="h-11 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
-              <p className="text-muted text-xs mt-1">Lad stå tom for at beholde beskeden indtil du manuelt fjerner den</p>
             </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-4 py-2.5 text-muted text-sm font-medium hover:text-foreground transition-colors"
-            >
-              Annuller
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-6 py-2.5 bg-primary hover:bg-accent disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
-            >
-              {submitting ? (editingId ? "Gemmer..." : "Poster...") : editingId ? "Gem ændringer" : "Send besked"}
-            </button>
-          </div>
-        </form>
+
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between">
+                <label className="text-sm font-medium">Indhold</label>
+                <span className="text-xs text-muted-foreground">{content.length}/{MAX_BODY}</span>
+              </div>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Beskedens indhold vises på infoskærmen…"
+                required
+                rows={4}
+                maxLength={MAX_BODY}
+                className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2.5 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Prioritet</label>
+              <PriorityPicker value={priority} onChange={setPriority} />
+            </div>
+
+            {/* Expiry date picker */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Udløber automatisk <span className="text-xs font-normal text-muted-foreground">(valgfrit)</span>
+              </label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex-1 justify-start text-left font-normal"
+                      style={!expiresDate ? { color: "var(--muted-foreground)" } : {}}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {expiresDate ? format(expiresDate, "d. MMM yyyy") : "Vælg dato"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={expiresDate}
+                      onSelect={(d) => setExpiresDate(d ?? undefined)}
+                      initialFocus
+                    />
+                    {expiresDate && (
+                      <div className="border-t p-3">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-muted-foreground">Tidspunkt</label>
+                          <input
+                            type="time"
+                            value={expiresTime}
+                            onChange={(e) => setExpiresTime(e.target.value)}
+                            className="h-8 rounded border border-input bg-transparent px-2 text-sm outline-none focus:border-primary/60"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+                {expiresDate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { setExpiresDate(undefined); setExpiresTime("") }}
+                    className="px-3"
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Lad stå tom for at beholde beskeden på ubestemt tid</p>
+            </div>
+
+            {/* Repeat / recurrence */}
+            <div className="space-y-3 rounded-xl border border-border/50 bg-card/30 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Gentag besked</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={repeatEnabled}
+                  onClick={() => { setRepeatEnabled((v) => !v); if (repeatEnabled) setRepeatDays([]) }}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    repeatEnabled ? "bg-primary" : "bg-input"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                      repeatEnabled ? "translate-x-[18px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {repeatEnabled && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Besked vises kun på de valgte ugedage
+                  </p>
+                  <WeekdayPicker value={repeatDays} onChange={setRepeatDays} />
+                  {repeatDays.length > 0 && (
+                    <p className="text-xs text-primary">
+                      Vises hver: {repeatDays
+                        .slice()
+                        .sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b))
+                        .map(d => WEEKDAYS.find(w => w.day === d)?.long)
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-border/50 pt-4">
+              <button type="button" onClick={resetForm} className="rounded-xl px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Annuller
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50"
+              >
+                {submitting ? (editingId ? "Gemmer…" : "Sender…") : editingId ? "Gem ændringer" : "Send besked"}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
-      <div className="space-y-3">
-        {loading ? (
-          <div className="text-muted text-center py-12">Henter beskeder...</div>
-        ) : messages.length === 0 ? (
-          <div className="admin-panel p-12 text-center">
-            <EmptyIcon />
-            <p className="text-muted mt-3">Ingen beskeder endnu</p>
-            <p className="text-muted text-sm mt-1">Klik på &quot;Ny besked&quot; for at oprette dit første opslag</p>
+      {/* ── Selection toolbar ── */}
+      {selectionMode && (active.length > 0 || (showArchived && archived.length > 0)) && (
+        <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-2.5 text-sm">
+          <button
+            onClick={() => selectedIds.size === visiblePool.length ? setSelectedIds(new Set()) : selectAll(visiblePool)}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {selectedIds.size === visiblePool.length && visiblePool.length > 0
+              ? <CheckSquare className="h-4 w-4 text-primary" />
+              : <Square className="h-4 w-4" />
+            }
+            {selectedIds.size === visiblePool.length && visiblePool.length > 0 ? "Fravælg alle" : "Vælg alle"}
+          </button>
+          <span className="text-muted-foreground/50">|</span>
+          <span className="text-muted-foreground">{selectedIds.size} valgt</span>
+        </div>
+      )}
+
+      {/* ── Pinned messages ── */}
+      {!loading && pinned.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Pin className="h-4 w-4 text-violet-500" />
+            <span className="text-sm font-semibold text-violet-500">Fastgjorte beskeder</span>
+            <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-xs font-bold text-violet-500">{pinned.length}</span>
           </div>
-        ) : (
-          messages.map((msg) => {
-            const config = priorityConfig[msg.priority as keyof typeof priorityConfig] || priorityConfig.normal
-            const Icon = config.icon
-            const expired = isExpired(msg)
-            const dimmed = !msg.active || expired
+          <div className="yellow-sticky-grid">
+            {pinned.map((msg, i) => (
+              <StickyNote
+                key={msg.id}
+                msg={msg}
+                index={i}
+                selectionMode={selectionMode}
+                selected={selectedIds.has(msg.id)}
+                onToggleSelect={toggleSelect}
+                onEdit={handleEdit}
+                onArchive={handleArchive}
+                onDelete={handleDelete}
+                onExtendExpiry={handleExtendExpiry}
+                onPin={handlePin}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-            return (
-              <div key={msg.id} className={`admin-panel ${config.border} p-5 transition-opacity ${dimmed ? "opacity-50" : ""} overflow-hidden`}>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className={`w-9 h-9 ${config.bg} rounded-lg flex items-center justify-center mt-0.5 shrink-0`}>
-                      <Icon className={`w-4.5 h-4.5 ${config.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap min-w-0">
-                        <h3 className="text-foreground font-medium truncate min-w-0 max-w-[40ch]">{msg.title}</h3>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${config.bg} ${config.color} shrink-0`}>{config.label}</span>
-                        {!msg.active && (
-                          <span className="text-xs px-2 py-0.5 rounded-full admin-panel-soft text-muted shrink-0">Deaktiveret</span>
-                        )}
-                        {expired && msg.active && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 shrink-0">Udløbet</span>
-                        )}
-                        {!msg.canManage && (
-                          <span className="text-xs px-2 py-0.5 rounded-full admin-panel-soft text-muted shrink-0">Kun visning</span>
-                        )}
-                      </div>
-                      <p className="text-muted text-sm mt-1 line-clamp-2 break-all">{msg.content}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-2 text-muted text-xs">
-                        <span>
-                          {new Date(msg.createdAt).toLocaleDateString("da-DK", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                        {msg.authorName && (
-                          <>
-                            <span>-</span>
-                            <span>af {msg.authorName}</span>
-                          </>
-                        )}
-                        {msg.expiresAt && (
-                          <>
-                            <span>-</span>
-                            <span className={expired ? "text-red-400" : ""}>
-                              {expired ? "Udløbet" : "Udløber"} {new Date(msg.expiresAt).toLocaleDateString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 self-start">
-                    {msg.canManage ? (
-                      <>
-                        <button
-                          onClick={() => handleEdit(msg)}
-                          className="p-1.5 text-muted hover:text-foreground hover:bg-[color:var(--surface-alt)] rounded-lg transition-colors"
-                          title="Rediger besked"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleToggle(msg.id, msg.active)}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                            msg.active
-                              ? "admin-panel-soft text-foreground hover:bg-[color:var(--surface-alt)]"
-                              : "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
-                          }`}
-                        >
-                          {msg.active ? "Deaktiver" : "Aktiver"}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(msg.id)}
-                          className="p-1.5 text-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                          title="Slet besked"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
+      {/* ── Active messages ── */}
+      {loading ? (
+        <div className="flex h-32 items-center justify-center gap-3">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-sm text-muted-foreground">Henter beskeder…</span>
+        </div>
+      ) : active.length === 0 && !showForm ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border/50 bg-card/30 py-16 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/50 bg-card/40">
+            <Plus className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="font-medium text-muted-foreground">Ingen aktive beskeder</p>
+          <p className="text-sm text-muted-foreground/70">Klik på &ldquo;Ny besked&rdquo; for at oprette dit første opslag</p>
+        </div>
+      ) : unpinned.length > 0 ? (
+        <div className="space-y-3">
+          {pinned.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">Øvrige beskeder</span>
+            </div>
+          )}
+          <div className="yellow-sticky-grid">
+            {unpinned.map((msg, i) => (
+              <StickyNote
+                key={msg.id}
+                msg={msg}
+                index={i}
+                selectionMode={selectionMode}
+                selected={selectedIds.has(msg.id)}
+                onToggleSelect={toggleSelect}
+                onEdit={handleEdit}
+                onArchive={handleArchive}
+                onDelete={handleDelete}
+                onExtendExpiry={handleExtendExpiry}
+                onPin={handlePin}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Archived ── */}
+      {archived.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {showArchived ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <Archive className="h-4 w-4" />
+            Arkiverede beskeder ({archived.length})
+          </button>
+
+          {showArchived && (
+            <div className="yellow-sticky-grid mt-4">
+              {archived.map((msg, i) => (
+                <StickyNote
+                  key={msg.id}
+                  msg={msg}
+                  index={i}
+                  selectionMode={selectionMode}
+                  selected={selectedIds.has(msg.id)}
+                  onToggleSelect={toggleSelect}
+                  onEdit={handleEdit}
+                  onArchive={handleArchive}
+                  onDelete={handleDelete}
+                  onExtendExpiry={handleExtendExpiry}
+                  onPin={handlePin}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Bulk action bar ── */}
+      {selectionMode && anySelected && (
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-border/60 bg-background/95 px-5 py-3 shadow-2xl backdrop-blur-sm">
+          <span className="text-sm font-medium text-muted-foreground pr-1">
+            {selectedIds.size} valgt
+          </span>
+
+          {/* Bulk extend expiry */}
+          <div ref={bulkExtendRef} className="relative">
+            <button
+              onClick={() => setShowBulkExtend((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-xl bg-card px-4 py-2 text-sm font-semibold border border-border/60 transition-all hover:bg-card/80 active:scale-95"
+            >
+              <Clock className="h-4 w-4" />
+              Forlæng tid
+            </button>
+            {showBulkExtend && (
+              <div className="absolute bottom-full left-0 mb-2 z-50 min-w-[120px] rounded-lg border border-border/60 bg-background shadow-xl py-1">
+                {EXTEND_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.days}
+                    onClick={() => handleBulkExtendExpiry(opt.days)}
+                    className="w-full px-3 py-2 text-left text-sm font-medium hover:bg-card transition-colors"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
-            )
-          })
-        )}
-      </div>
-    </div>
-  )
-}
+            )}
+          </div>
 
-function EmptyIcon() {
-  return (
-    <div className="w-12 h-12 admin-panel-soft rounded-xl flex items-center justify-center mx-auto">
-      <svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
+          {activeSelectedCount > 0 && (
+            <button
+              onClick={handleBulkArchive}
+              className="inline-flex items-center gap-2 rounded-xl bg-card px-4 py-2 text-sm font-semibold border border-border/60 transition-all hover:bg-card/80 active:scale-95"
+            >
+              <Archive className="h-4 w-4" />
+              Arkiver
+            </button>
+          )}
+          <button
+            onClick={handleBulkDelete}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-red-700 active:scale-95"
+          >
+            <Trash2 className="h-4 w-4" />
+            Slet
+          </button>
+          <button
+            onClick={exitSelectionMode}
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

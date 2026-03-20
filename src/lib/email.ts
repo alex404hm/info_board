@@ -8,65 +8,126 @@ const BASE_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
 
 // ── shared HTML wrapper ────────────────────────────────────────────────────────
 
-function emailLayout(body: string) {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <body style="margin:0;padding:0;background:#040b16;font-family:system-ui,-apple-system,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="padding:48px 24px;">
-        <tr><td>
-          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;">
+function emailLayout(opts: {
+  headerText: string
+  bodyText: string
+  linkText: string
+  linkHref: string
+  primaryColor: string
+  infoText: string
+  highlightEmail?: string
+  footerText: string
+}) {
+  const {
+    headerText,
+    bodyText,
+    linkText,
+    linkHref,
+    primaryColor,
+    infoText,
+    highlightEmail,
+    footerText,
+  } = opts
 
-            <!-- Sender avatar row -->
-            <tr><td style="padding-bottom:24px;">
-              <table cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="vertical-align:middle;">
-                    <!-- Avatar circle with logo (table-based for email client compat) -->
-                    <table cellpadding="0" cellspacing="0" style="width:48px;height:48px;">
-                      <tr>
-                        <td align="center" valign="middle" style="width:48px;height:48px;border-radius:50%;background:#0f1f38;border:1.5px solid rgba(255,255,255,0.12);">
-                          <img src="${BASE_URL}/logo.svg" alt="TEC" width="26" height="9" style="display:block;" />
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                  <td style="vertical-align:middle;padding-left:12px;">
-                    <span style="display:block;font-size:14px;font-weight:600;color:#f4f6ff;line-height:1.3;">TEC Info Board</span>
-                    <span style="display:block;font-size:12px;color:#65718a;line-height:1.3;">${FROM_ADDRESS}</span>
-                  </td>
-                </tr>
-              </table>
-            </td></tr>
+  const infoHtml = highlightEmail
+    ? infoText.replace(
+        highlightEmail,
+        `<a href="mailto:${highlightEmail}" style="color:${primaryColor};text-decoration:none;">${highlightEmail}</a>`
+      )
+    : infoText
 
-            <!-- Card -->
-            <tr><td style="background:#101b2f;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;">
-              <!-- Card header strip with logo -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="background:#0a1525;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.07);">
-                    <img src="${BASE_URL}/logo.svg" alt="TEC" height="18" style="display:block;" />
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:36px 32px 32px;">
-                    ${body}
-                  </td>
-                </tr>
-              </table>
-            </td></tr>
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>${headerText}</title>
+</head>
+<body style="margin:0;padding:0;background:#f0f2f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="padding:48px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:500px;">
 
-            <!-- Footer -->
-            <tr><td style="padding-top:24px;text-align:center;font-size:12px;color:#65718a;">
-              TEC Info Board · Frederiksberg · This email was sent automatically.
-            </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
 
+          <!-- Logo header -->
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td align="center" style="background:#0f1c30;padding:28px 32px;">
+                <img src="https://info.alexander-holm.com/logo.svg" alt="TEC" width="72" height="25" style="display:block;" />
+              </td>
+            </tr>
           </table>
+
+          <!-- Content -->
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td style="padding:40px 40px 12px;">
+
+                <!-- Header text -->
+                <h1 style="margin:0 0 12px;font-size:26px;font-weight:700;color:#0d1117;line-height:1.25;text-align:center;">
+                  ${headerText}
+                </h1>
+
+                <!-- Body text -->
+                <p style="margin:0 0 32px;font-size:15px;color:#555e6d;line-height:1.65;text-align:center;">
+                  ${bodyText}
+                </p>
+
+                <!-- CTA button -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td align="center" style="padding-bottom:32px;">
+                      <a href="${linkHref}"
+                         style="display:block;width:100%;box-sizing:border-box;background:${primaryColor};color:#ffffff;padding:15px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:16px;text-align:center;">
+                        ${linkText}
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr><td style="border-top:1px solid #e8eaed;padding-bottom:24px;"></td></tr>
+                </table>
+
+                <!-- Info text -->
+                <p style="margin:0 0 8px;font-size:14px;color:#555e6d;line-height:1.6;text-align:center;">
+                  ${infoHtml}
+                </p>
+
+              </td>
+            </tr>
+          </table>
+
+          <!-- Footer inside card -->
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td align="center" style="background:#f8f9fb;border-top:1px solid #e8eaed;padding:18px 40px;">
+                <p style="margin:0;font-size:12px;color:#9aa3ae;line-height:1.5;">
+                  ${footerText}
+                </p>
+              </td>
+            </tr>
+          </table>
+
         </td></tr>
+
+        <!-- Below-card footer -->
+        <tr>
+          <td align="center" style="padding-top:20px;">
+            <p style="margin:0;font-size:12px;color:#9aa3ae;">
+              TEC &middot; Frederiksberg &middot; Denmark
+            </p>
+          </td>
+        </tr>
+
       </table>
-    </body>
-    </html>
-  `
+    </td></tr>
+  </table>
+</body>
+</html>`
 }
 
 // ── invite email ───────────────────────────────────────────────────────────────
@@ -83,25 +144,22 @@ export async function sendInviteEmail(
     return link
   }
 
+  const roleLabel = role === "admin" ? "Administrator" : "Instruktør"
+
   await resend.emails.send({
     from: FROM,
     to,
     subject: "You've been invited to TEC Info Board",
-    html: emailLayout(`
-        <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;">You're invited</p>
-        <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f4f6ff;line-height:1.25;">Welcome to TEC Info Board</h1>
-        <p style="margin:0 0 24px;font-size:15px;color:#a3b2d4;line-height:1.6;">
-          You've been invited to join as a <strong style="color:#f4f6ff;">${role}</strong>.
-          Click below to set up your name and password.
-        </p>
-        <a href="${link}" style="display:inline-block;background:#10b981;color:#fff;padding:13px 26px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">
-          Accept Invitation →
-        </a>
-        <p style="margin:28px 0 0;font-size:12px;color:#65718a;">
-          This link expires in 7 days. If you weren't expecting this, you can ignore this email.
-        </p>
-      `
-    ),
+    html: emailLayout({
+      headerText: "You've been invited",
+      bodyText: `Click the button below to set up your account as a <strong>${roleLabel}</strong> on TEC Info Board.<br/>This invitation expires in 7 days.`,
+      linkText: "Accept Invitation",
+      linkHref: link,
+      primaryColor: "#10b981",
+      infoText: `Confirming this request will securely create your account using ${to}`,
+      highlightEmail: to,
+      footerText: "If you didn't expect this invitation, you can safely ignore this email.",
+    }),
   })
 
   return link
@@ -119,20 +177,15 @@ export async function sendResetPasswordEmail(to: string, url: string): Promise<v
     from: FROM,
     to,
     subject: "Reset your TEC Info Board password",
-    html: emailLayout(`
-        <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#818cf8;text-transform:uppercase;letter-spacing:0.06em;">Password reset</p>
-        <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f4f6ff;line-height:1.25;">Reset your password</h1>
-        <p style="margin:0 0 24px;font-size:15px;color:#a3b2d4;line-height:1.6;">
-          We received a request to reset the password for your account.
-          Click the button below to choose a new password.
-        </p>
-        <a href="${url}" style="display:inline-block;background:#6366f1;color:#fff;padding:13px 26px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">
-          Reset Password →
-        </a>
-        <p style="margin:28px 0 0;font-size:12px;color:#65718a;">
-          This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.
-        </p>
-      `
-    ),
+    html: emailLayout({
+      headerText: "Reset your password",
+      bodyText: `Click the button below to reset your password.<br/>This link expires in 1 hour.`,
+      linkText: "Reset Password",
+      linkHref: url,
+      primaryColor: "#6366f1",
+      infoText: `This request was made for ${to}`,
+      highlightEmail: to,
+      footerText: "If you didn't request a password reset, you can safely ignore this email.",
+    }),
   })
 }

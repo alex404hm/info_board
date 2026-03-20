@@ -1,158 +1,265 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { Mail, Phone, ShieldCheck } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Mail, Phone } from "lucide-react"
 
-import type { Employee } from "@/types"
-
-type PriorityContact = {
+type Contact = {
+  id: number
   name: string
   email: string
-  phone?: string
-  title: string
+  phone: string | null
+  profilePicture: string
+  role: string
+  prioritized: boolean
 }
 
-const CONTACT_ORDER: PriorityContact[] = [
-  {
-    name: "Kristian Kure",
-    email: "kku@tec.dk",
-    title: "Instruktør",
-  },
-  {
-    name: "Casper Nordkvist Vestergaard",
-    email: "cv@tec.dk",
-    phone: "+45 2545 3757",
-    title: "Instruktør",
-  },
-  {
-    name: "Tuner Budanur",
-    email: "tbu@tec.dk",
-    phone: "+45 2545 3314",
-    title: "Instruktør",
-  },
-  {
-    name: "Mathias Casper Lynge Le-Holding",
-    email: "mcll@tec.dk",
-    title: "Instruktør",
-  },
-]
+const ROLE_LABEL: Record<string, string> = {
+  admin:   "Administrator",
+  Instruktør: "Instruktør",
+}
 
-function splitName(name: string) {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length <= 1) return { firstLine: name, secondLine: "" }
-  return {
-    firstLine: parts.slice(0, -1).join(" "),
-    secondLine: parts[parts.length - 1],
+function getInitials(name: string | null, email: string) {
+  if (name) {
+    const parts = name.trim().split(/\s+/)
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase()
   }
+  return email.slice(0, 2).toUpperCase()
 }
 
-function toDisplayContact(base: PriorityContact, match?: Employee): PriorityContact {
-  if (!match) return base
-  return {
-    name: match.name,
-    email: match.email,
-    phone: match.phone ?? base.phone,
-    title: "Instruktør",
+function Avatar({ contact, className }: { contact: Contact; className?: string }) {
+  if (contact.profilePicture) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={contact.profilePicture}
+        alt={contact.name}
+        className={`rounded-full object-cover ${className}`}
+        style={{ border: "2px solid rgba(255,255,255,0.10)" }}
+      />
+    )
   }
+  return (
+    <div
+      className={`flex items-center justify-center rounded-full font-bold text-foreground select-none ${className}`}
+      style={{
+        background: "var(--surface-alt)",
+        border: "2px solid var(--surface-border)",
+        color: "var(--foreground-muted)",
+      }}
+    >
+      {getInitials(contact.name, contact.email)}
+    </div>
+  )
 }
 
+/* ─── Featured card (top 4) — horizontal layout ─────────────────────────── */
+function FeaturedCard({ contact }: { contact: Contact }) {
+  const role = ROLE_LABEL[contact.role] ?? contact.role
+
+  return (
+    <article
+      className="relative flex flex-col rounded-2xl overflow-hidden transition-all hover:-translate-y-0.5"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--surface-border)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.28)",
+      }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 45%, color-mix(in srgb, var(--accent) 10%, transparent) 100%)",
+          opacity: 0.65,
+        }}
+      />
+
+      <div className="relative flex flex-col gap-5 p-5">
+        {/* Avatar + name row */}
+        <div className="flex items-center gap-4">
+          <Avatar contact={contact} className="h-16 w-16 shrink-0 text-xl" />
+          <div className="min-w-0">
+            <div className="mb-1">
+              <span
+                className="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+                style={{
+                  background: "color-mix(in srgb, var(--accent) 18%, transparent)",
+                  border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
+                  color: "var(--foreground-soft)",
+                }}
+              >
+                Prioriteret
+              </span>
+            </div>
+            <p className="font-bold text-lg leading-snug truncate" style={{ color: "var(--foreground)" }}>
+              {contact.name ?? contact.email}
+            </p>
+            <p className="text-sm mt-0.5" style={{ color: "var(--foreground-subtle)" }}>{role}</p>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px" style={{ background: "var(--surface-border)" }} />
+
+        {/* Contact info */}
+        <div className="flex flex-col gap-2.5">
+          <a
+            href={`mailto:${contact.email}`}
+            className="group flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors"
+            style={{ background: "var(--surface-soft)", color: "var(--foreground-muted)" }}
+          >
+            <Mail className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+            <span className="truncate group-hover:underline">{contact.email}</span>
+          </a>
+          {contact.phone ? (
+            <a
+              href={`tel:${contact.phone}`}
+              className="group flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors"
+              style={{ background: "var(--surface-soft)", color: "var(--foreground-muted)" }}
+            >
+              <Phone className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+              <span className="group-hover:underline">{contact.phone}</span>
+            </a>
+          ) : (
+            <div
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm"
+              style={{ background: "var(--surface-soft)", color: "var(--foreground-soft)", opacity: 0.5 }}
+            >
+              <Phone className="h-4 w-4 shrink-0" />
+              <span>Ingen telefon</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+}
+
+/* ─── Regular card — vertical / compact ─────────────────────────────────── */
+function ContactCard({ contact }: { contact: Contact }) {
+  const role = ROLE_LABEL[contact.role] ?? contact.role
+
+  return (
+    <article
+      className="flex flex-col items-center gap-4 rounded-2xl p-5 text-center transition-all hover:-translate-y-0.5"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--surface-border)",
+        boxShadow: "0 2px 16px rgba(0,0,0,0.22)",
+      }}
+    >
+      <Avatar contact={contact} className="h-14 w-14 text-lg" />
+
+      <div className="min-w-0 w-full">
+        <p className="font-bold text-base leading-snug" style={{ color: "var(--foreground)" }}>
+          {contact.name ?? contact.email}
+        </p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--foreground-subtle)" }}>{role}</p>
+      </div>
+
+      <div className="w-full flex flex-col gap-2 mt-auto">
+        <a
+          href={`mailto:${contact.email}`}
+          className="group flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors"
+          style={{ background: "var(--surface-soft)", color: "var(--foreground-muted)" }}
+        >
+          <Mail className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--accent)" }} />
+          <span className="truncate group-hover:underline">{contact.email}</span>
+        </a>
+        {contact.phone && (
+          <a
+            href={`tel:${contact.phone}`}
+            className="flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors"
+            style={{ background: "var(--surface-soft)", color: "var(--foreground-muted)" }}
+          >
+            <Phone className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--accent)" }} />
+            <span>{contact.phone}</span>
+          </a>
+        )}
+      </div>
+    </article>
+  )
+}
+
+/* ─── Main panel ─────────────────────────────────────────────────────────── */
 export function ContactsPanel() {
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [loading, setLoading] = useState(true)
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    fetch("/api/employees", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { employees: [] }))
-      .then((data) => {
-        setEmployees(Array.isArray(data.employees) ? data.employees : [])
-      })
-      .catch(() => setEmployees([]))
+    fetch("/api/kontakter", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { contacts: [] }))
+      .then((data) => setContacts(Array.isArray(data.contacts) ? data.contacts : []))
+      .catch(() => setContacts([]))
       .finally(() => setLoading(false))
   }, [])
 
-  const contacts = useMemo(() => {
-    const instructorEmployees = employees.filter((employee) => employee.title.trim() === "Instruktør")
+  // Sort: prioritized first, then alphabetically by name
+  const sorted = [...contacts].sort((a, b) => {
+    if (a.prioritized !== b.prioritized) return b.prioritized ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
 
-    return CONTACT_ORDER.map((contact) => {
-      const match = instructorEmployees.find(
-        (employee) =>
-          employee.email.toLowerCase() === contact.email.toLowerCase() ||
-          employee.name.toLowerCase() === contact.name.toLowerCase(),
-      )
-      return toDisplayContact(contact, match)
-    })
-  }, [employees])
+  const featured = sorted.slice(0, 4)
+  const rest     = sorted.slice(4)
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-72 animate-pulse rounded-[28px]" style={{ background: "var(--surface)" }} />
-        ))}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-60 animate-pulse rounded-2xl" style={{ background: "var(--surface)" }} />
+          ))}
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-44 animate-pulse rounded-2xl" style={{ background: "var(--surface)" }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (contacts.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-24 text-center">
+        <p className="font-medium" style={{ color: "var(--foreground-muted)" }}>Ingen kontakter fundet</p>
+        <p className="text-sm" style={{ color: "var(--foreground-subtle)" }}>
+          Inviter instruktører og administratorer til platformen for at de vises her.
+        </p>
       </div>
     )
   }
 
   return (
-    <section className="space-y-6">
-      <div className="contact-hero">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color: "#8ab4ff" }}>
-            Kontakter
-          </p>
-          <h2 className="mt-2 text-2xl font-bold" style={{ color: "#edf4ff" }}>
-            Vigtigste instruktører
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: "#8ea6c8" }}>
-            De vigtigste kontaktpersoner er samlet her, så de er hurtige at finde på skærmen.
-          </p>
-        </div>
-        <div className="contact-hero-badge">
-          <ShieldCheck className="h-4 w-4" />
-          Prioriterede kontakter
+    <section className="space-y-10">
+      {/* ── Featured 4 ── */}
+      <div className="space-y-3">
+        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--foreground-soft)" }}>
+          Vigtigste kontakter
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {featured.map((c) => <FeaturedCard key={c.id} contact={c} />)}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {contacts.map((contact) => {
-          const { firstLine, secondLine } = splitName(contact.name)
-
-          return (
-            <article key={contact.email} className="priority-contact-card">
-              <div className="priority-contact-card-top">
-                <span className="priority-contact-chip">Instruktør</span>
-              </div>
-
-              <div className="space-y-1">
-                <p className="priority-contact-name">{firstLine}</p>
-                {secondLine ? <p className="priority-contact-name">{secondLine}</p> : null}
-              </div>
-
-              <p className="priority-contact-title">{contact.title}</p>
-
-              <div className="priority-contact-details">
-                <div className="priority-contact-row">
-                  <span className="priority-contact-label">Email</span>
-                  <a href={`mailto:${contact.email}`} className="priority-contact-value">
-                    <Mail className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{contact.email}</span>
-                  </a>
-                </div>
-
-                {contact.phone ? (
-                  <div className="priority-contact-row">
-                    <span className="priority-contact-label">Telefon</span>
-                    <a href={`tel:${contact.phone}`} className="priority-contact-value">
-                      <Phone className="h-3.5 w-3.5 shrink-0" />
-                      <span>{contact.phone}</span>
-                    </a>
-                  </div>
-                ) : null}
-              </div>
-            </article>
-          )
-        })}
-      </div>
+      {/* ── Rest ── */}
+      {rest.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1" style={{ background: "var(--surface-border)" }} />
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--foreground-soft)" }}>
+              Alle kontakter · {contacts.length}
+            </p>
+            <div className="h-px flex-1" style={{ background: "var(--surface-border)" }} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {rest.map((c) => <ContactCard key={c.id} contact={c} />)}
+          </div>
+        </div>
+      )}
     </section>
   )
 }

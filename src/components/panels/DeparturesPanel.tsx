@@ -93,17 +93,22 @@ function DeparturesBox({
                   Aflyst
                 </span>
               ) : (
-                <span
-                  className={cn(
-                    "text-lg font-bold tabular-nums",
-                    i === 0 ? "text-accent" : "text-muted"
-                  )}
-                >
-                  {dep.time}
-                  {dep.delayMin > 0 && (
-                    <span className="ml-1 text-xs font-semibold text-rose-400">+{dep.delayMin}</span>
-                  )}
-                </span>
+                <div className="text-right">
+                  <span
+                    className={cn(
+                      "text-lg font-bold tabular-nums",
+                      i === 0 ? "text-accent" : "text-muted"
+                    )}
+                  >
+                    {dep.time}
+                    {dep.delayMin > 0 && (
+                      <span className="ml-1 text-xs font-semibold text-rose-400">+{dep.delayMin} min</span>
+                    )}
+                  </span>
+                  <p className="text-[11px] tabular-nums text-subtle">
+                    om {dep.minutesUntil} min
+                  </p>
+                </div>
               )}
             </div>
           )

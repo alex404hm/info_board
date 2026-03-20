@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { ChevronLeft, ChevronRight, Calendar, MessageSquare } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useDailyDishData } from "@/hooks/use-api-data"
 import { decodeHtmlEntities, lineBadgeStyle } from "@/lib/utils"
-import type { Departure } from "@/types"
+import type { Departure, DrNewsItem, DrNewsApiResponse } from "@/types"
 import type { TrafikPost } from "@/app/api/trafik/route"
 
 const SWIPE_VELOCITY_THRESHOLD = 0.3
@@ -24,10 +24,7 @@ const rowItem = { background: C4, border: `1px solid ${C3}` } as const
 const linkBtn = { background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" } as const
 
 type CalendarEvent = { id: string; title: string; start: string; end: string | null; allDay: boolean }
-type BoardMessage  = { id: string; title: string; content: string; priority: string; authorName: string | null; createdAt: string }
-type DrNewsItem    = { title: string; link: string }
-
-type ModuleId = "canteen" | "calendar" | "messages" | "weather" | "dr-news" | "transport" | "traffic"
+type ModuleId = "canteen" | "calendar" | "transport" | "traffic" | "weather" | "news"
 
 interface ConfigSlide {
   id: string
@@ -37,7 +34,7 @@ interface ConfigSlide {
 
 const STATIC_SLIDES: ConfigSlide[] = [
   { id: "slide-1", hero: null, normals: ["canteen", "calendar"] },
-  { id: "slide-2", hero: null, normals: ["dr-news", "transport"] },
+  { id: "slide-2", hero: null, normals: ["news", "transport", "traffic"] },
 ]
 
 // ── FoodIllustration ──────────────────────────────────────────────────────────
@@ -72,17 +69,16 @@ function FoodIllustration() {
 
 interface WidgetProps {
   calendarEvents: CalendarEvent[]
-  boardMessages: BoardMessage[]
-  drNewsItems: DrNewsItem[]
   departures: Departure[]
   trafikPosts: TrafikPost[]
   dailyDish: ReturnType<typeof useDailyDishData>
   hasDishData: boolean
   isServingToday: boolean
+  drNewsItems: DrNewsItem[]
 }
 
 function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
-  const { calendarEvents, boardMessages, drNewsItems, departures, trafikPosts, dailyDish, hasDishData, isServingToday } = props
+  const { calendarEvents, departures, trafikPosts, dailyDish, hasDishData, isServingToday, drNewsItems } = props
 
   switch (id) {
     case "canteen":
@@ -154,125 +150,6 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
         </div>
       )
 
-    case "messages": {
-      const priorityMeta = (p: string) =>
-        p === "urgent"
-          ? { bg: "#fecaca", fold: "#fca5a5", tape: "#dc2626", textDark: "#450a0a", textMid: "#7f1d1d", textFaint: "#991b1b", label: "AKUT", avatarBg: "#dc2626" }
-          : p === "high"
-          ? { bg: "#fed7aa", fold: "#fdba74", tape: "#ea580c", textDark: "#431407", textMid: "#7c2d12", textFaint: "#9a3412", label: "VIGTIG", avatarBg: "#ea580c" }
-          : { bg: "#fef08a", fold: "#fde047", tape: "#ca8a04", textDark: "#422006", textMid: "#713f12", textFaint: "#92400e", label: null, avatarBg: "#d97706" }
-
-      const msg = boardMessages[0] ?? null
-
-      if (!msg) {
-        return (
-          <div className="relative flex h-full flex-col items-center justify-center gap-2"
-            style={{ background: "#fef08a", transform: "rotate(-0.8deg)", boxShadow: "4px 6px 20px rgba(0,0,0,0.45), 1px 2px 5px rgba(0,0,0,0.2)", borderRadius: "2px" }}>
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 h-6 w-14 rounded-sm opacity-60"
-              style={{ background: "#ca8a04", boxShadow: "0 2px 4px rgba(0,0,0,0.25)" }} />
-            <MessageSquare className="h-6 w-6 opacity-20" style={{ color: "#713f12" }} />
-            <p className="text-xs font-medium opacity-40" style={{ color: "#713f12" }}>Ingen meddelelser</p>
-          </div>
-        )
-      }
-
-      const meta = priorityMeta(msg.priority)
-      const initials = (msg.authorName ?? "??")
-        .split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
-      const dateStr = new Date(msg.createdAt).toLocaleDateString("da-DK", { day: "numeric", month: "long" })
-
-      return (
-        <div
-          key={msg.id}
-          className="relative flex h-full flex-col"
-          style={{
-            background: meta.bg,
-            transform: "rotate(-1deg)",
-            boxShadow: "4px 6px 20px rgba(0,0,0,0.45), 1px 2px 5px rgba(0,0,0,0.2)",
-            borderRadius: "2px",
-          }}
-        >
-          {/* Tape strip at top */}
-          <div
-            className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 h-7 w-16 rounded-sm"
-            style={{ background: meta.tape, opacity: 0.65, boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}
-          />
-
-          {/* Folded bottom-right corner shadow */}
-          <div className="absolute bottom-0 right-0 z-10" style={{
-            width: 0, height: 0, borderStyle: "solid",
-            borderWidth: "0 0 28px 28px",
-            borderColor: `transparent transparent rgba(0,0,0,0.15) transparent`,
-          }} />
-          {/* Folded corner face */}
-          <div className="absolute bottom-0 right-0 z-10" style={{
-            width: 0, height: 0, borderStyle: "solid",
-            borderWidth: "28px 28px 0 0",
-            borderColor: `${meta.fold} transparent transparent transparent`,
-            opacity: 0.6,
-          }} />
-
-          {/* Content */}
-          <div className="flex h-full flex-col px-5 pb-5 pt-8">
-
-            {/* Priority badge */}
-            {meta.label && (
-              <span
-                className="mb-3 self-start rounded-sm px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white"
-                style={{ background: meta.tape, opacity: 0.88 }}
-              >
-                {meta.label}
-              </span>
-            )}
-
-            {/* Title */}
-            <h3
-              className="text-base font-black leading-snug"
-              style={{ color: meta.textDark, fontFamily: "sans-serif", letterSpacing: "-0.01em" }}
-            >
-              {msg.title}
-            </h3>
-
-            {/* Ruled lines decoration */}
-            <div className="my-3 flex flex-col gap-2">
-              {[0,1,2,3].map((i) => (
-                <div key={i} className="h-px w-full" style={{ background: `${meta.textFaint}22` }} />
-              ))}
-            </div>
-
-            {/* Body text */}
-            <p
-              className="flex-1 overflow-hidden text-sm leading-relaxed"
-              style={{ color: meta.textMid, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-            >
-              {msg.content}
-            </p>
-
-            {/* Teacher row */}
-            <div
-              className="mt-4 flex items-center gap-3 border-t pt-3"
-              style={{ borderColor: `${meta.textDark}18` }}
-            >
-              {/* Avatar */}
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-white shadow-sm"
-                style={{ background: meta.avatarBg }}
-              >
-                {initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold truncate" style={{ color: meta.textDark }}>
-                  {msg.authorName ?? "Skolen"}
-                </p>
-                <p className="text-[10px]" style={{ color: meta.textFaint }}>Klasselærer · 7.B</p>
-              </div>
-              <p className="shrink-0 text-[9px]" style={{ color: meta.textFaint, opacity: 0.6 }}>{dateStr}</p>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
     case "weather":
       return (
         <div className="flex h-full flex-col rounded-xl p-4" style={card}>
@@ -290,30 +167,6 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
               </span>
             </div>
             <div className="mr-2 text-4xl opacity-80">🌤️</div>
-          </div>
-        </div>
-      )
-
-    case "dr-news":
-      return (
-        <div className="flex h-full flex-col rounded-xl p-4" style={card}>
-          <div className="mb-2 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/15 shrink-0">
-              <Image src="/logo/dr-news.svg" alt="DR Nyheder" width={20} height={20} className="h-full w-full rounded-[3px] object-fill" />
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-accent">DR Nyheder</p>
-          </div>
-          <div className="flex-1 space-y-1">
-            {drNewsItems.length > 0 ? (
-              drNewsItems.slice(0, 2).map((item, i) => (
-                <div key={`${item.link}-${i}`} className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5" style={rowItem}>
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
-                  <p className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: C1 }}>{decodeHtmlEntities(item.title)}</p>
-                </div>
-              ))
-            ) : (
-              <p className="py-2 text-center text-[10px]" style={{ color: C3 }}>Henter nyheder…</p>
-            )}
           </div>
         </div>
       )
@@ -337,8 +190,11 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                     <span className="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold tabular-nums"
                       style={{ backgroundColor: badge.bg, color: badge.text }}>{dep.line}</span>
                     <p className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: C1 }}>{dep.destination}</p>
-                    <span className="shrink-0 text-[10px] tabular-nums font-semibold"
-                      style={{ color: dep.delayMin > 0 ? "var(--destructive)" : C2 }}>{dep.time}</span>
+                    <div className="shrink-0 text-right">
+                      <span className="block text-[10px] tabular-nums font-semibold"
+                        style={{ color: dep.delayMin > 0 ? "var(--destructive)" : C2 }}>{dep.time}</span>
+                      <span className="block text-[9px] tabular-nums" style={{ color: C3 }}>om {dep.minutesUntil} min</span>
+                    </div>
                   </div>
                 )
               })
@@ -374,6 +230,47 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
         </div>
       )
 
+    case "news": {
+      const newsItems = drNewsItems.slice(0, 4)
+      return (
+        <div className="flex h-full flex-col rounded-xl p-4" style={card}>
+          <div className="mb-3 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/15 shrink-0">
+                <Image src="/logo/dr-news.svg" alt="DR Nyheder" width={20} height={20} className="h-full w-full rounded-[3px] object-fill" />
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Seneste nyheder</p>
+            </div>
+            <Link href="/nyheder" className="text-[10px] font-medium" style={{ color: "var(--accent)" }}>
+              Alle →
+            </Link>
+          </div>
+          <div className="flex-1 space-y-1 overflow-hidden">
+            {newsItems.length > 0 ? (
+              newsItems.map((item, i) => {
+                const ts = item.pubDate ? new Date(item.pubDate).getTime() : 0
+                const diffMins = ts ? Math.floor((Date.now() - ts) / 60000) : null
+                const timeLabel = diffMins === null ? "" : diffMins < 60 ? `${diffMins} min` : `${Math.floor(diffMins / 60)} t`
+                return (
+                  <div key={`${item.link}-${i}`} className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5" style={rowItem}>
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+                    <p className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: C1 }}>
+                      {decodeHtmlEntities(item.title)}
+                    </p>
+                    {timeLabel && (
+                      <span className="shrink-0 text-[9px] font-medium tabular-nums" style={{ color: C3 }}>{timeLabel}</span>
+                    )}
+                  </div>
+                )
+              })
+            ) : (
+              <p className="py-2 text-center text-[10px]" style={{ color: C3 }}>Henter nyheder…</p>
+            )}
+          </div>
+        </div>
+      )
+    }
+
     default:
       return null
   }
@@ -389,13 +286,13 @@ function SlideContent({
   widgetProps: WidgetProps
 }) {
   const heroNode   = slide.hero    ? buildWidgetNode(slide.hero, widgetProps) : null
-  const normalNodes = slide.normals.filter(Boolean).map((id) => ({ id, node: buildWidgetNode(id, widgetProps) }))
+  const normalNodes = slide.normals.filter(Boolean).map((id) => ({ id, node: buildWidgetNode(id, widgetProps) })).filter(({ node }) => node !== null)
 
   if (heroNode) {
     return (
-      <div className="grid gap-4 pb-4 md:grid-cols-[360px_1fr] items-stretch">
+      <div className="grid gap-3 pb-3 sm:gap-4 sm:pb-4 md:grid-cols-[360px_1fr] items-stretch">
         <div className="flex flex-col">{heroNode}</div>
-        <div className="flex h-full flex-col gap-4">
+        <div className="flex h-full flex-col gap-3 sm:gap-4">
           {normalNodes.map(({ id, node }) => (
             <div key={id} className="flex flex-1 flex-col overflow-hidden min-h-0">{node}</div>
           ))}
@@ -406,9 +303,10 @@ function SlideContent({
 
   const gridCols =
     normalNodes.length === 1 ? "grid-cols-1" :
-    normalNodes.length === 2 ? "grid-cols-2" : "grid-cols-3"
+    normalNodes.length === 2 ? "grid-cols-1 min-[480px]:grid-cols-2" :
+    "grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3"
   return (
-    <div className={`grid gap-4 pb-4 ${gridCols} items-stretch`}>
+    <div className={`grid gap-3 pb-3 sm:gap-4 sm:pb-4 ${gridCols} items-stretch`}>
       {normalNodes.map(({ id, node }) => (
         <div key={id} className="flex flex-col">{node}</div>
       ))}
@@ -455,19 +353,9 @@ export function TopCarousel() {
 
   // Live data for widgets
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
-  const [boardMessages,  setBoardMessages]  = useState<BoardMessage[]>([
-    {
-      id: "demo-1",
-      title: "Skolefest fredag d. 28. marts",
-      content: "Kære elever og forældre — vi afholder vores årlige skolefest på fredag kl. 18.00 i gymnastiksalen. Der vil være musik, mad og masser af hygge. Alle er velkomne, og vi håber at se jer der!",
-      priority: "normal",
-      authorName: "Mette Andersen",
-      createdAt: new Date().toISOString(),
-    },
-  ])
-  const [drNewsItems,    setDrNewsItems]    = useState<DrNewsItem[]>([])
   const [departures,     setDepartures]     = useState<Departure[]>([])
   const [trafikPosts,    setTrafikPosts]    = useState<TrafikPost[]>([])
+  const [drNewsItems,    setDrNewsItems]    = useState<DrNewsItem[]>([])
 
   const dailyDish      = useDailyDishData()
   const hasDishData    = Boolean(dailyDish)
@@ -482,14 +370,6 @@ export function TopCarousel() {
         if (!res.ok) return
         const data = (await res.json()) as { events?: CalendarEvent[] }
         if (mounted && Array.isArray(data.events)) setCalendarEvents(data.events)
-      } catch { /* keep snapshot */ }
-    }
-    const loadDrNews = async () => {
-      try {
-        const res = await fetch("/api/dr-news", { cache: "no-store" })
-        if (!res.ok) return
-        const data = (await res.json()) as { items?: DrNewsItem[] }
-        if (mounted && Array.isArray(data.items)) setDrNewsItems(data.items.slice(0, 3))
       } catch { /* keep snapshot */ }
     }
     const loadDepartures = async () => {
@@ -512,21 +392,31 @@ export function TopCarousel() {
       } catch { /* keep snapshot */ }
     }
 
-    void loadCalendar(); void loadDrNews(); void loadDepartures(); void loadTrafik()
-    const calId  = setInterval(loadCalendar,  10 * 60 * 1000)
-    const newsId = setInterval(loadDrNews,     5 * 60 * 1000)
-    const depId  = setInterval(loadDepartures,     30 * 1000)
-    const trafId = setInterval(loadTrafik,     2 * 60 * 1000)
+    const loadDrNews = async () => {
+      try {
+        const res = await fetch("/api/dr-news", { cache: "no-store" })
+        if (!res.ok) return
+        const data = (await res.json()) as DrNewsApiResponse
+        if (mounted && Array.isArray(data.items)) setDrNewsItems(data.items)
+      } catch { /* keep snapshot */ }
+    }
+
+    void loadCalendar(); void loadDepartures(); void loadTrafik(); void loadDrNews()
+    const calId   = setInterval(loadCalendar,  10 * 60 * 1000)
+    const depId   = setInterval(loadDepartures,     30 * 1000)
+    const trafId  = setInterval(loadTrafik,     2 * 60 * 1000)
+    const newsId  = setInterval(loadDrNews,    10 * 60 * 1000)
     return () => {
       mounted = false
-      clearInterval(calId); clearInterval(newsId); clearInterval(depId); clearInterval(trafId)
+      clearInterval(calId); clearInterval(depId); clearInterval(trafId); clearInterval(newsId)
     }
   }, [])
 
   const widgetProps = useMemo<WidgetProps>(() => ({
-    calendarEvents, boardMessages, drNewsItems, departures, trafikPosts,
+    calendarEvents, departures, trafikPosts,
     dailyDish, hasDishData, isServingToday,
-  }), [calendarEvents, boardMessages, drNewsItems, departures, trafikPosts, dailyDish, hasDishData, isServingToday])
+    drNewsItems,
+  }), [calendarEvents, departures, trafikPosts, dailyDish, hasDishData, isServingToday, drNewsItems])
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const goToPrevious = useCallback(() => {
@@ -621,18 +511,18 @@ export function TopCarousel() {
   const ctrlTransition = "opacity 800ms ease"
 
   return (
-    <div className="relative px-16">
+    <div className="relative px-1 sm:px-16">
       <div className="mx-auto w-full max-w-[1400px]">
         <div className="relative flex items-center">
 
           {/* Prev */}
           <button
             onClick={goToPrevious}
-            className="absolute -left-20 top-1/2 z-10 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90"
+            className="absolute -left-14 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90 sm:-left-20"
             style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)", opacity: ctrlOpacity, transition: ctrlTransition }}
             aria-label="Previous slide"
           >
-            <ChevronLeft className="h-6 w-6" style={{ color: C2 }} />
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: C2 }} />
           </button>
 
           {/* Viewport */}
@@ -666,11 +556,11 @@ export function TopCarousel() {
           {/* Next */}
           <button
             onClick={goToNext}
-            className="absolute -right-20 top-1/2 z-10 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90"
+            className="absolute -right-14 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90 sm:-right-20"
             style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)", opacity: ctrlOpacity, transition: ctrlTransition }}
             aria-label="Next slide"
           >
-            <ChevronRight className="h-6 w-6" style={{ color: C2 }} />
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: C2 }} />
           </button>
         </div>
 

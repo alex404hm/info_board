@@ -48,7 +48,7 @@ export function NavTiles() {
       {/* subtle gradient separator */}
       <div className="nav-tiles-separator" />
 
-      <div className="flex w-full items-stretch gap-2 px-3 py-3 sm:gap-3 sm:px-4 sm:py-3.5">
+      <div className="flex w-full items-stretch gap-2 overflow-x-auto px-3 py-3 no-scrollbar sm:gap-3 sm:px-4 sm:py-3.5">
         {visible.map(({ cfg, def }) => {
           const Icon = def.icon
           return (
@@ -56,8 +56,9 @@ export function NavTiles() {
               key={def.id}
               href={def.href}
               className={cn(
-                "group relative flex flex-1 flex-col items-center justify-center gap-2",
-                "rounded-xl px-2 py-3 sm:rounded-2xl sm:py-4",
+                "group relative flex flex-1 flex-col items-center justify-center gap-1.5 sm:gap-2",
+                "min-w-[56px] sm:min-w-0",
+                "rounded-xl px-2 py-2.5 sm:rounded-2xl sm:py-4",
                 "transition-colors duration-200 ease-out",
                 "nav-tile-card",
                 def.iconBg,

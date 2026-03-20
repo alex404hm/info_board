@@ -1,25 +1,41 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react"
+import React, { useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Lock } from "lucide-react"
 
 import { signIn, authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-const inputStyle = {
-  background: "var(--surface)",
-  borderColor: "var(--surface-border)",
-  color: "var(--foreground)",
-  height: "2.625rem",
-} as const
+/* ─── Shared page shell ──────────────────────────────────────────────────── */
+function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="flex min-h-svh flex-col p-8 md:p-12"
+      style={{ "--input": "rgba(255,255,255,0.13)", "--ring": "rgba(95,157,255,0.45)" } as React.CSSProperties}
+    >
+      <div>
+        <Image
+          src="/logo.svg"
+          alt="TEC"
+          width={72}
+          height={26}
+          className="h-6 w-auto"
+          style={{ width: "auto" }}
+          priority
+        />
+      </div>
+      <div className="flex flex-1 items-center justify-center">
+        <div className="w-full max-w-sm">{children}</div>
+      </div>
+    </div>
+  )
+}
 
-const inputClass =
-  "w-full text-sm placeholder:text-[color:var(--foreground-subtle)] focus-visible:border-[color:var(--accent)] focus-visible:ring-[color:var(--accent)]/20"
-
+/* ─── Main component ─────────────────────────────────────────────────────── */
 export default function AdminLogin() {
   const router = useRouter()
   const [mode, setMode] = useState<"login" | "forgot" | "forgot-sent">("login")
@@ -39,10 +55,8 @@ export default function AdminLogin() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (tooManyAttempts) return
-
     setError("")
     setLoading(true)
-
     try {
       await signIn.email(
         { email: email.trim().toLowerCase(), password },
@@ -70,103 +84,63 @@ export default function AdminLogin() {
     e.preventDefault()
     setForgotError("")
     setForgotLoading(true)
-
     const { error } = await authClient.requestPasswordReset({
       email: forgotEmail.trim().toLowerCase(),
       redirectTo: "/reset-password",
     })
-
     if (error) {
       setForgotError("Could not send reset email. Please try again.")
     } else {
       setMode("forgot-sent")
     }
-
     setForgotLoading(false)
   }
 
-  const Branding = () => (
-    <div
-      className="relative hidden lg:flex flex-col justify-between p-10"
-      style={{ background: "var(--surface)", borderRight: "1px solid var(--surface-border)" }}
-    >
-      <Image src="/logo.svg" alt="TEC" width={72} height={26} className="h-7 w-auto" style={{ width: "auto" }} />
-      <blockquote className="space-y-2">
-        <p className="text-lg font-medium leading-relaxed" style={{ color: "var(--foreground)" }}>
-          &ldquo;Keeping students and staff informed, every day, every screen.&rdquo;
-        </p>
-        <footer className="text-sm" style={{ color: "var(--foreground-muted)" }}>
-          TEC - Frederiksberg
-        </footer>
-      </blockquote>
-    </div>
-  )
-
-  const MobileLogo = () => (
-    <div className="lg:hidden mb-2">
-      <Image src="/logo.svg" alt="TEC" width={56} height={20} className="h-5 w-auto" style={{ width: "auto" }} />
-    </div>
-  )
-
+  /* ── forgot-sent ── */
   if (mode === "forgot-sent") {
     return (
-      <div className="admin-theme grid min-h-svh lg:grid-cols-2">
-        <Branding />
-        <div className="flex items-center justify-center p-8" style={{ background: "var(--background)" }}>
-          <div className="w-full max-w-sm space-y-5">
-            <MobileLogo />
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-full"
-              style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)" }}
-            >
-              <CheckCircle className="h-6 w-6 text-indigo-400" />
-            </div>
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
-                Check your inbox
-              </h1>
-              <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>
-                If <strong style={{ color: "var(--foreground)" }}>{forgotEmail}</strong> has an account, we&apos;ve sent a
-                password reset link. It expires in 1 hour.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setMode("login")
-                setForgotEmail("")
-              }}
-              className="flex items-center gap-1.5 text-sm transition-colors"
-              style={{ color: "var(--foreground-muted)" }}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
-            </button>
+      <Layout>
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10">
+            <CheckCircle className="h-7 w-7 text-emerald-500" />
           </div>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-bold tracking-tight">Check your inbox</h1>
+            <p className="text-sm text-muted-foreground">
+              If <span className="font-medium text-foreground">{forgotEmail}</span> has an account,
+              we&apos;ve sent a reset link. It expires in 1 hour.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            className="gap-2 text-muted-foreground"
+            onClick={() => { setMode("login"); setForgotEmail("") }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to sign in
+          </Button>
         </div>
-      </div>
+      </Layout>
     )
   }
 
+  /* ── forgot password ── */
   if (mode === "forgot") {
     return (
-      <div className="admin-theme grid min-h-svh lg:grid-cols-2">
-        <Branding />
-        <div className="flex items-center justify-center p-8" style={{ background: "var(--background)" }}>
-          <div className="w-full max-w-sm space-y-6">
-            <MobileLogo />
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
-                Forgot password?
-              </h1>
-              <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>
-                Enter your email and we&apos;ll send you a reset link.
-              </p>
-            </div>
+      <Layout>
+        <div className="flex flex-col gap-8">
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-bold tracking-tight">Forgot password?</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your email and we&apos;ll send you a reset link.
+            </p>
+          </div>
 
-            <form onSubmit={handleForgot} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="forgot-email" style={{ color: "var(--foreground)" }}>
-                  Email
-                </Label>
+          <form onSubmit={handleForgot} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="forgot-email">Email</Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="forgot-email"
                   type="email"
@@ -176,143 +150,122 @@ export default function AdminLogin() {
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   disabled={forgotLoading}
-                  style={inputStyle}
-                  className={inputClass}
+                  className="h-11 pl-9"
                 />
               </div>
+            </div>
 
-              {forgotError && (
-                <div
-                  className="rounded-lg px-3.5 py-2.5 text-sm"
-                  style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", color: "#f87171" }}
-                >
-                  {forgotError}
-                </div>
-              )}
+            {forgotError && (
+              <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                {forgotError}
+              </p>
+            )}
 
-              <Button
-                type="submit"
-                disabled={forgotLoading}
-                className="w-full"
-                style={{ background: "#6366f1", color: "#fff", height: "2.625rem", fontSize: "0.875rem", fontWeight: 600 }}
-              >
-                {forgotLoading ? "Sending..." : "Send reset link"}
-              </Button>
-            </form>
+            <Button type="submit" size="lg" disabled={forgotLoading} className="w-full">
+              {forgotLoading ? "Sending…" : "Send reset link"}
+            </Button>
 
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full gap-2 text-muted-foreground"
               onClick={() => setMode("login")}
-              className="flex items-center gap-1.5 text-sm transition-colors"
-              style={{ color: "var(--foreground-muted)" }}
             >
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
-            </button>
-          </div>
+              <ArrowLeft className="h-4 w-4" />
+              Back to sign in
+            </Button>
+          </form>
         </div>
-      </div>
+      </Layout>
     )
   }
 
+  /* ── sign in ── */
   return (
-    <div className="admin-theme grid min-h-svh lg:grid-cols-2">
-      <Branding />
-      <div className="flex items-center justify-center p-8" style={{ background: "var(--background)" }}>
-        <div className="w-full max-w-sm space-y-6">
-          <MobileLogo />
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
-              Sign in
-            </h1>
-            <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>
-              Enter your credentials to access the admin panel.
-            </p>
-          </div>
+    <Layout>
+      <div className="flex flex-col gap-8">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your credentials to access the admin panel.
+          </p>
+        </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" style={{ color: "var(--foreground)" }}>
-                Email
-              </Label>
+        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+          {/* Email */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="email">Email</Label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
-                placeholder="teacher@tec.dk"
+                placeholder="instruktor@tec.dk"
                 required
                 autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading || tooManyAttempts}
-                style={inputStyle}
-                className={inputClass}
+                className="h-11 pl-9"
               />
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" style={{ color: "var(--foreground)" }}>
-                  Password
-                </Label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("forgot")
-                    setForgotEmail(email)
-                  }}
-                  className="text-xs transition-colors hover:underline"
-                  style={{ color: "var(--foreground-muted)" }}
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="........"
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading || tooManyAttempts}
-                  style={{ ...inputStyle, paddingRight: "2.75rem" }}
-                  className={inputClass}
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                  style={{ color: "var(--foreground-subtle)" }}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {(error || tooManyAttempts) && (
-              <div
-                className="rounded-lg px-3.5 py-2.5 text-sm"
-                style={{
-                  background: tooManyAttempts ? "rgba(245,158,11,0.1)" : "rgba(248,113,113,0.1)",
-                  border: `1px solid ${tooManyAttempts ? "rgba(245,158,11,0.25)" : "rgba(248,113,113,0.25)"}`,
-                  color: tooManyAttempts ? "#fbbf24" : "#f87171",
-                }}
+          {/* Password */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                onClick={() => { setMode("forgot"); setForgotEmail(email) }}
               >
-                {tooManyAttempts ? "Too many failed attempts. Refresh the page to try again." : error}
-              </div>
-            )}
+                Forgot password?
+              </button>
+            </div>
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading || tooManyAttempts}
+                className="h-11 pl-9 pr-11"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
 
-            <Button
-              type="submit"
-              disabled={loading || tooManyAttempts}
-              className="w-full"
-              style={{ background: "var(--accent)", color: "#fff", height: "2.625rem", fontSize: "0.875rem", fontWeight: 600 }}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </div>
+          {/* Error */}
+          {(error || tooManyAttempts) && (
+            <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {tooManyAttempts
+                ? "Too many failed attempts. Refresh the page to try again."
+                : error}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            size="lg"
+            disabled={loading || tooManyAttempts}
+            className="w-full"
+          >
+            {loading ? "Signing in…" : "Sign in"}
+          </Button>
+        </form>
       </div>
-    </div>
+    </Layout>
   )
 }

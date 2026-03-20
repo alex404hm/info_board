@@ -23,6 +23,7 @@ export async function GET() {
       name: user.name,
       email: user.email,
       role: user.role,
+      image: user.image,
       createdAt: user.createdAt,
     })
     .from(user)
