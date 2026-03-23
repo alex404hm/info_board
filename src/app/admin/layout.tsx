@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
@@ -13,10 +14,25 @@ export const metadata = {
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const headersList = await headers()
+  const pathname = headersList.get("x-pathname") ?? ""
 
+  const session = await auth.api.getSession({ headers: headersList })
   const role = getUserRole(session)
-  if (!session || !["teacher", "admin"].includes(role ?? "")) {
+  const isAuthenticated = !!session && ["teacher", "admin"].includes(role ?? "")
+
+  // ── 2FA verification route ────────────────────────────────────────────────
+  // The proxy already ensures only requests with a pending two_factor cookie
+  // reach here, so we only need to handle the "already authenticated" edge case.
+  if (pathname === "/admin/2fa") {
+    if (isAuthenticated) {
+      redirect("/admin")
+    }
+    return <>{children}</>
+  }
+
+  // ── All other admin routes require a full session ─────────────────────────
+  if (!isAuthenticated) {
     return <AdminLogin />
   }
 
