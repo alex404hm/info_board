@@ -19,15 +19,17 @@ const PATH_TO_TILE: Record<string, TileId> = {
   "/trafik":    "trafik",
   "/kokkenvagt": "kokkenvagt",
   "/beskeder":  "beskeder",
+  "/intranet":  "intranet",
 }
 
 type ShellProps = {
   title: string
   subtitle?: string
   children: React.ReactNode
+  noHeader?: boolean
 }
 
-export function SectionPageShell({ title, subtitle, children }: ShellProps) {
+export function SectionPageShell({ title, subtitle, children, noHeader }: ShellProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const mainRef  = useRef<HTMLElement>(null)
@@ -67,25 +69,27 @@ export function SectionPageShell({ title, subtitle, children }: ShellProps) {
       <StatusBar />
 
       {/* Header */}
-      <div className="shrink-0 px-4 py-3 md:px-6"
-        style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}>
-        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
-            style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Tilbage
-          </Link>
-          <div className="min-w-0 flex-1 text-right">
-            <h1 className="truncate text-base font-bold md:text-lg" style={{ color: "var(--foreground)" }}>{title}</h1>
-            {subtitle && (
-              <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>{subtitle}</p>
-            )}
+      {!noHeader && (
+        <div className="shrink-0 px-4 py-3 md:px-6"
+          style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}>
+          <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
+              style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Tilbage
+            </Link>
+            <div className="min-w-0 flex-1 text-right">
+              <h1 className="truncate text-base font-bold md:text-lg" style={{ color: "var(--foreground)" }}>{title}</h1>
+              {subtitle && (
+                <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>{subtitle}</p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main content */}
       <main ref={mainRef} className="flex-1 overflow-y-auto custom-scrollbar">

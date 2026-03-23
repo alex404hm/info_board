@@ -3,20 +3,12 @@
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
-  RadialBarChart, RadialBar, PolarAngleAxis,
 } from "recharts"
-import { Star } from "lucide-react"
 
 interface DayData {
   day: string
   views: number
   logins: number
-}
-
-interface Props {
-  activityData: DayData[]
-  avgRating: number
-  totalFeedback: number
 }
 
 export function ActivityChart({ activityData }: { activityData: DayData[] }) {
@@ -64,47 +56,4 @@ export function ActivityChart({ activityData }: { activityData: DayData[] }) {
       </AreaChart>
     </ResponsiveContainer>
   )
-}
-
-export function FeedbackGauge({ avgRating, totalFeedback }: { avgRating: number; totalFeedback: number }) {
-  const radialData = [{
-    value: (avgRating / 5) * 100,
-    fill: avgRating >= 4 ? "#34d399" : avgRating >= 3 ? "#60a5fa" : "#f87171",
-  }]
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-1">
-      <div className="relative">
-        <ResponsiveContainer width={120} height={120}>
-          <RadialBarChart innerRadius="72%" outerRadius="100%" data={radialData} startAngle={225} endAngle={-45}>
-            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-            <RadialBar dataKey="value" cornerRadius={6} background={{ fill: "rgba(255,255,255,0.05)" }} />
-          </RadialBarChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-foreground">
-            {totalFeedback === 0 ? "—" : avgRating.toFixed(1)}
-          </span>
-          <span className="text-[10px] text-muted-foreground">/ 5</span>
-        </div>
-      </div>
-      <div className="flex gap-0.5">
-        {[1,2,3,4,5].map((s) => (
-          <Star
-            key={s}
-            className="h-3 w-3"
-            style={{
-              fill: s <= Math.round(avgRating) && totalFeedback > 0 ? "#f59e0b" : "transparent",
-              color: s <= Math.round(avgRating) && totalFeedback > 0 ? "#f59e0b" : "rgba(255,255,255,0.12)",
-            }}
-          />
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground">{totalFeedback} svar</p>
-    </div>
-  )
-}
-
-export default function DashboardCharts({ activityData, avgRating, totalFeedback }: Props) {
-  return { activityData, avgRating, totalFeedback }
 }

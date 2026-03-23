@@ -54,7 +54,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Separator orientation="vertical" className="mr-2 h-4 bg-border/60" />
             <AdminHeader user={user} />
           </header>
-          <main className="flex-1 overflow-auto px-4 py-6 sm:px-6 lg:px-10 scroll-smooth">{children}</main>
+          <main className="flex-1 overflow-auto px-4 py-8 sm:px-8 lg:px-12 scroll-smooth">
+            <div className="mx-auto w-full max-w-5xl">{children}</div>
+          </main>
         </SidebarInset>
       </div>
     </SidebarProvider>

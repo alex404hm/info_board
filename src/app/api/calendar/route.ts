@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server"
+import { db } from "@/db"
+import { setting } from "@/db/schema"
+import { eq } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 
@@ -239,35 +242,25 @@ function buildDanishHolidays(): CalendarEvent[] {
   return events
 }
 
-function buildDemoEvents(): CalendarEvent[] {
-  const now = new Date()
-  const dow = now.getDay() || 7
-  const monday = new Date(now)
-  monday.setDate(now.getDate() - dow + 1)
-  monday.setHours(0, 0, 0, 0)
-  const mkISO = (dayOffset: number, h: number, mi: number) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + dayOffset)
-    d.setHours(h, mi, 0, 0)
-    return d.toISOString()
-  }
-  return [
-    { id: "d1", title: "Morgensamling", start: mkISO(0, 8, 15), end: mkISO(0, 8, 35), allDay: false, location: "Aula", description: "Ugens opstart med vigtig info.", category: "Skole" },
-    { id: "d2", title: "Sikkerhedsgennemgang", start: mkISO(1, 10, 0), end: mkISO(1, 10, 45), allDay: false, location: "Lokale B-114", description: "Gennemgang af sikkerhed og rutiner.", category: "Workshop" },
-    { id: "d3", title: "Fagligt oplæg: El & Energi", start: mkISO(2, 13, 0), end: mkISO(2, 14, 0), allDay: false, location: "Auditorium 2", description: "Oplæg om nye teknologier.", category: "Fagligt" },
-    { id: "d4", title: "Virksomhedsbesøg briefing", start: mkISO(3, 11, 30), end: mkISO(3, 12, 0), allDay: false, location: "Lokale C-016", description: "Info om ugens virksomhedsbesøg.", category: "Praktik" },
-    { id: "d5", title: "Elevcafe og Q&A", start: mkISO(4, 14, 0), end: mkISO(4, 15, 0), allDay: false, location: "Studiezone", description: "Åben session med instruktører.", category: "Socialt" },
-  ]
-}
-
 // ─── Route ────────────────────────────────────────────────────────────────────
 
+async function getIcsUrl(): Promise<string | null> {
+  try {
+    const rows = await db.select().from(setting).where(eq(setting.key, "outlook_calendar_url")).limit(1)
+    const dbUrl = rows[0]?.value?.trim()
+    if (dbUrl) return dbUrl
+  } catch {
+    // fall through to env var
+  }
+  return process.env.OUTLOOK_CALENDAR_ICS_URL ?? null
+}
+
 export async function GET() {
-  const icsUrl = process.env.OUTLOOK_CALENDAR_ICS_URL
+  const icsUrl = await getIcsUrl()
   const holidays = buildDanishHolidays()
 
   if (!icsUrl) {
-    const events = [...buildDemoEvents(), ...holidays].sort((a, b) => a.start.localeCompare(b.start))
+    const events = holidays.sort((a, b) => a.start.localeCompare(b.start))
     return NextResponse.json({ configured: false, events })
   }
 
@@ -281,7 +274,7 @@ export async function GET() {
 
     return NextResponse.json({ configured: true, events })
   } catch {
-    const events = [...buildDemoEvents(), ...holidays].sort((a, b) => a.start.localeCompare(b.start))
+    const events = holidays.sort((a, b) => a.start.localeCompare(b.start))
     return NextResponse.json({ configured: true, events, error: "Kunne ikke hente fra Outlook" })
   }
 }
