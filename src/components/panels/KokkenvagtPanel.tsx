@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Coffee, ListChecks, Info, Clock, User } from "lucide-react"
+import { ListChecks, Info, Clock } from "lucide-react"
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -18,6 +18,9 @@ type ScheduleEntry = {
   year: number
   person1: string
   person2: string
+  startTime?: string | null
+  endTime?: string | null
+  authorName?: string | null
 }
 
 function getISOWeek(date: Date): number {
@@ -27,23 +30,33 @@ function getISOWeek(date: Date): number {
   return Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
 }
 
-function Initials({ name }: { name: string }) {
-  const parts = name.trim().split(" ")
-  const ini = parts.length >= 2
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : name.slice(0, 2).toUpperCase()
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 border border-primary/25 text-[11px] font-black text-primary">
-      {ini}
-    </div>
-  )
+const MONTHS_SHORT = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
+
+function getWeekDates(week: number, year: number): { start: Date; end: Date } {
+  const jan4 = new Date(Date.UTC(year, 0, 4))
+  const jan4Day = jan4.getUTCDay() || 7
+  const week1Mon = new Date(jan4.getTime() - (jan4Day - 1) * 86400000)
+  const start = new Date(week1Mon.getTime() + (week - 1) * 7 * 86400000)
+  const end = new Date(start.getTime() + 4 * 86400000)
+  return { start, end }
 }
 
-function PersonCell({ name }: { name: string }) {
+function fmtDate(d: Date): string {
+  return `${d.getUTCDate()}. ${MONTHS_SHORT[d.getUTCMonth()]}`
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(" ")
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : name.slice(0, 2).toUpperCase()
+}
+
+function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
+  const sz = size === "sm" ? "h-6 w-6 text-[9px]" : "h-8 w-8 text-[11px]"
   return (
-    <div className="flex items-center gap-2.5">
-      <Initials name={name} />
-      <span className="text-sm font-semibold text-foreground">{name}</span>
+    <div className={`flex shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 font-black text-primary ${sz}`}>
+      {initials(name)}
     </div>
   )
 }
@@ -74,79 +87,123 @@ export function KokkenvagtPanel() {
 
     void fetchSchedule()
 
-    // Listen for updates from admin page
     try {
       const channel = new BroadcastChannel("kokkenvagt_updated")
-      channel.addEventListener("message", () => {
-        void fetchSchedule()
-      })
+      channel.addEventListener("message", () => { void fetchSchedule() })
       return () => channel.close()
     } catch {
-      // BroadcastChannel not available, no-op
+      // BroadcastChannel not available
     }
   }, [])
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      {/* Schedule */}
+
+      {/* ── Schedule table ── */}
       <div className="lg:col-span-2">
-        <div className="overflow-hidden rounded-3xl border border-border/50 bg-card/40 shadow-2xl backdrop-blur-md">
-          <div className="border-b border-border/50 bg-card/40 px-6 py-5">
-            <h2 className="flex items-center gap-3 text-lg font-black uppercase tracking-widest text-foreground">
-              <Clock className="h-5 w-5 text-primary" />
-              Vagtplan — Køkken
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              To personer per uge har ansvar for køkkenet.
-            </p>
+        <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm">
+
+          {/* Header */}
+          <div className="border-b border-border/40 px-6 py-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Clock className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-foreground">Vagtplan — Køkken</h2>
+                <p className="text-xs text-muted-foreground">To personer per uge har ansvar for køkkenet</p>
+              </div>
+            </div>
           </div>
 
+          {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border/30 bg-muted/20 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-                  <th className="px-3 py-3 sm:px-6 sm:py-4">Uge</th>
-                  <th className="px-3 py-3 sm:px-6 sm:py-4">Person 1</th>
-                  <th className="px-3 py-3 sm:px-6 sm:py-4">Person 2</th>
+                <tr className="border-b border-border/40">
+                  <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Uge</th>
+                  <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Person 1</th>
+                  <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Person 2</th>
+                  <th className="hidden sm:table-cell px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Instruktor</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/20">
+              <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-muted-foreground text-sm">
+                    <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
                       Indlæser...
                     </td>
                   </tr>
                 )}
                 {!loading && schedule.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-muted-foreground text-sm">
+                    <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
                       Ingen planlagte vagter
                     </td>
                   </tr>
                 )}
-                {!loading && schedule.map((row) => {
+                {!loading && schedule.map((row, i) => {
                   const isCurrent = row.week === currentWeek && row.year === currentYear
+                  const { start, end } = getWeekDates(row.week, row.year)
                   return (
                     <tr
                       key={`${row.year}-${row.week}`}
-                      className={`transition-colors ${isCurrent ? "bg-primary/8" : "hover:bg-primary/5"}`}
+                      className={[
+                        "border-b border-border/20 last:border-0 transition-colors",
+                        isCurrent ? "bg-primary/5" : i % 2 === 0 ? "" : "bg-white/[0.015]",
+                      ].join(" ")}
                     >
-                      <td className="whitespace-nowrap px-3 py-3 sm:px-6 sm:py-5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-black tabular-nums text-primary text-sm sm:text-base">UGE {row.week}</span>
-                          {isCurrent && (
-                            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-primary border border-primary/25">
-                              Nu
+                      {/* Week */}
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold tabular-nums text-foreground">
+                              Uge {row.week}
+                            </span>
+                            {isCurrent && (
+                              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary">
+                                Nu
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">
+                            {fmtDate(start)} – {fmtDate(end)}
+                          </span>
+                          {row.startTime && row.endTime && (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {row.startTime} – {row.endTime}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-3 sm:px-6 sm:py-5">
-                        <PersonCell name={row.person1} />
+
+                      {/* Person 1 */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={row.person1} />
+                          <span className="font-medium text-foreground">{row.person1}</span>
+                        </div>
                       </td>
-                      <td className="px-3 py-3 sm:px-6 sm:py-5">
-                        <PersonCell name={row.person2} />
+
+                      {/* Person 2 */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={row.person2} />
+                          <span className="font-medium text-foreground">{row.person2}</span>
+                        </div>
+                      </td>
+
+                      {/* Instruktor */}
+                      <td className="hidden sm:table-cell px-5 py-4">
+                        {row.authorName ? (
+                          <div className="flex items-center gap-2">
+                            <Avatar name={row.authorName} size="sm" />
+                            <span className="text-xs text-muted-foreground">{row.authorName}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/30">—</span>
+                        )}
                       </td>
                     </tr>
                   )
@@ -157,42 +214,42 @@ export function KokkenvagtPanel() {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="space-y-6">
-        <div className="rounded-3xl border border-border/50 bg-card/40 p-6 shadow-2xl backdrop-blur-md">
-          <h2 className="mb-6 flex items-center gap-3 text-lg font-black uppercase tracking-widest text-foreground">
-            <ListChecks className="h-5 w-5 text-primary" />
+      {/* ── Instructions ── */}
+      <div>
+        <div className="rounded-2xl border border-border/40 bg-card/30 p-6 backdrop-blur-sm">
+          <h2 className="mb-5 flex items-center gap-2.5 text-sm font-bold uppercase tracking-widest text-foreground">
+            <ListChecks className="h-4 w-4 text-primary" />
             Sådan gør du
           </h2>
-          <div className="space-y-3">
+
+          <div className="space-y-2.5">
             {INSTRUCTIONS.map((text, i) => (
               <div
                 key={i}
-                className="flex items-start gap-3.5 rounded-xl border border-border/30 bg-card/20 p-4 transition-colors hover:bg-white/[0.04]"
+                className="flex items-start gap-3 rounded-xl border border-border/30 p-3.5"
               >
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-[10px] font-black text-primary shadow-sm shadow-primary/5">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-[10px] font-bold text-primary">
                   {i + 1}
                 </div>
-                <p className="text-sm font-medium leading-relaxed text-foreground/90">{text}</p>
+                <p className="text-sm leading-relaxed text-foreground/80">{text}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/10 p-5 shadow-inner">
-            <div className="flex gap-3.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
-                <Info className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">Husk!</p>
-                <p className="mt-1.5 text-sm font-medium leading-relaxed text-foreground/80">
-                  Et rent køkken giver gladere kolleger. Tak for din indsats!
-                </p>
-              </div>
+          <div className="mt-5 flex gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <Info className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Husk!</p>
+              <p className="mt-1 text-sm leading-relaxed text-foreground/70">
+                Et rent køkken giver gladere kolleger. Tak for din indsats!
+              </p>
             </div>
           </div>
         </div>
       </div>
+
     </div>
   )
 }
