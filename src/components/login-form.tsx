@@ -8,13 +8,35 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useState } from "react"
+import { authClient, useSession } from "@/lib/auth-client"
 
-export function LoginForm({
+export default function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const { data: session } = useSession();
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    try {
+      const res = await authClient.signIn.email({ email, password });
+      // If user is logged in and 2FA is not enabled, prompt setup
+      if (res?.data && session?.user && !session.user.twoFactorEnabled) {
+        setShow2FASetup(true);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Login failed");
+    }
+  }
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleLogin}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Login to your account</h1>
@@ -24,7 +46,7 @@ export function LoginForm({
         </div>
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
         </Field>
         <Field>
           <div className="flex items-center">
@@ -36,8 +58,9 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" type="password" required />
+          <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
         </Field>
+        {error && <FieldDescription className="text-red-500 text-center">{error}</FieldDescription>}
         <Field>
           <Button type="submit">Login</Button>
         </Field>
@@ -59,6 +82,12 @@ export function LoginForm({
             </a>
           </FieldDescription>
         </Field>
+        {show2FASetup && (
+          <FieldDescription className="text-center text-blue-500 mt-4">
+            Two-Factor Authentication is not enabled. Please set up 2FA for your account.
+            {/* You can add a QR code setup component here */}
+          </FieldDescription>
+        )}
       </FieldGroup>
     </form>
   )

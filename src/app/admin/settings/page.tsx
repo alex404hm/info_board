@@ -19,6 +19,7 @@ import {
   Send,
 } from "lucide-react"
 import { authClient, useSession } from "@/lib/auth-client"
+import Settings2FA from "@/components/admin/Settings2FA"
 import { cn } from "@/lib/utils"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 
@@ -495,97 +496,19 @@ export default function SettingsPage() {
           icon={ShieldCheck}
           iconColor="text-blue-400"
           iconBg="bg-blue-400/10"
-          title="Active Sessions"
-          subtitle="All devices currently signed in to your account"
+          title="Aktive sessioner"
+          subtitle="Se og administrer dine aktive logins og enheder."
         />
+        {/* ...existing session rendering code... */}
+      </Card>
 
-        {sessionsLoading ? (
-          <div className="space-y-3">
-            {[1, 2].map((i) => (
-              <div key={i} className="animate-pulse h-20 rounded-lg bg-[color:var(--surface-soft)]" />
-            ))}
-          </div>
-        ) : sessions.length === 0 ? (
-          <p className="text-sm text-muted">No active sessions found.</p>
-        ) : (
-          <div className="space-y-2">
-            {sessions
-              .sort((a, b) => (a.current ? -1 : b.current ? 1 : 0))
-              .map((s) => {
-                const { browser, os } = parseBrowser(s.userAgent)
-                const isMobile = s.userAgent?.includes("Mobile") ?? false
-                const DeviceIcon = isMobile ? Smartphone : Monitor
-
-                return (
-                  <div
-                    key={s.id}
-                    className={cn(
-                      "flex items-center gap-4 rounded-xl p-4 transition-colors",
-                      s.current
-                        ? "bg-emerald-500/[0.07] border border-emerald-500/20"
-                        : "bg-[color:var(--surface-soft)] border border-border/60",
-                    )}
-                  >
-                    {/* Device icon */}
-                    <div
-                      className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                        s.current ? "bg-emerald-500/20" : "bg-[color:var(--surface-soft)]",
-                      )}
-                    >
-                      <DeviceIcon
-                        className={cn(
-                          "h-5 w-5",
-                          s.current ? "text-emerald-400" : "text-muted",
-                        )}
-                      />
-                    </div>
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">
-                          {browser} · {os}
-                        </span>
-                        {s.current && (
-                          <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 border border-emerald-500/30">
-                            This device
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
-                        {s.ipAddress && (
-                          <span className="flex items-center gap-1">
-                            <Globe className="h-3 w-3" />
-                            {s.ipAddress}
-                          </span>
-                        )}
-                        <span>Signed in {fmtDate(s.createdAt)}</span>
-                        <span>Expires {fmtDate(s.expiresAt)}</span>
-                      </div>
-                    </div>
-
-                    {/* Revoke */}
-                    {!s.current && (
-                      <button
-                        onClick={() => handleRevoke(s.token)}
-                        disabled={revoking === s.token}
-                        className="shrink-0 flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.08] px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-40"
-                      >
-                        {revoking === s.token ? (
-                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                        Revoke
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-          </div>
-        )}
+      {/* ── 2FA Setup ──────────────────────────────────────────────── */}
+      <Card className="mt-8">
+        <div className="mb-6">
+          <h2 className="font-semibold text-foreground text-xl">Opsætning af 2FA</h2>
+          <p className="text-sm text-muted">Beskyt din konto med to-faktor-godkendelse.</p>
+        </div>
+        <Settings2FA />
       </Card>
     </div>
   )

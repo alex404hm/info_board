@@ -40,6 +40,7 @@ const adminSections = [
     label: "Konto",
     items: [
       { title: "Min konto", url: "/admin/settings", icon: Settings },
+      // Removed 2FA page, now in settings
     ],
   },
 ]
@@ -62,6 +63,7 @@ function buildInstructorSections() {
       label: "Konto",
       items: [
         { title: "Min konto", url: "/admin/settings", icon: Settings },
+
       ],
     },
   ]
