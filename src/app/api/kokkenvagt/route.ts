@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
-import { kokkenvagtEntry } from "@/db/schema"
+import { kokkenvagtEntry, user } from "@/db/schema"
 import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import { eq, gte, or, isNull, and, desc } from "drizzle-orm"
+
+const entryWithAuthor = {
+  id: kokkenvagtEntry.id,
+  week: kokkenvagtEntry.week,
+  year: kokkenvagtEntry.year,
+  person1: kokkenvagtEntry.person1,
+  person2: kokkenvagtEntry.person2,
+  note: kokkenvagtEntry.note,
+  startTime: kokkenvagtEntry.startTime,
+  endTime: kokkenvagtEntry.endTime,
+  authorId: kokkenvagtEntry.authorId,
+  authorName: user.name,
+  createdAt: kokkenvagtEntry.createdAt,
+  updatedAt: kokkenvagtEntry.updatedAt,
+}
 
 function getISOWeek(date: Date): number {
   const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
@@ -25,8 +40,9 @@ export async function GET(request: NextRequest) {
 
     // Return all entries sorted by year DESC, then week DESC
     const entries = await db
-      .select()
+      .select(entryWithAuthor)
       .from(kokkenvagtEntry)
+      .leftJoin(user, eq(kokkenvagtEntry.authorId, user.id))
       .orderBy(desc(kokkenvagtEntry.year), desc(kokkenvagtEntry.week))
 
     return NextResponse.json(entries)
@@ -38,8 +54,9 @@ export async function GET(request: NextRequest) {
   const currentWeek = getISOWeek(now)
 
   const entries = await db
-    .select()
+    .select(entryWithAuthor)
     .from(kokkenvagtEntry)
+    .leftJoin(user, eq(kokkenvagtEntry.authorId, user.id))
     .where(
       or(
         gte(kokkenvagtEntry.year, currentYear),

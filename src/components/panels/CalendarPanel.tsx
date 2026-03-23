@@ -257,14 +257,6 @@ export function CalendarPanel() {
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 border border-white/5">
-              <Image src="/logo/outlook.svg" alt="Outlook" width={22} height={22} className="h-full w-full rounded-[4px] object-fill" />
-            </div>
-            <button onClick={goToday} className="rounded-full px-3 py-1 text-[11px] font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20 active:scale-95 bg-emerald-500/10 border border-emerald-500/30 sm:px-4 sm:py-1.5 sm:text-[12px]">
-              I dag
-            </button>
-          </div>
         </div>
 
         <div className="grid grid-cols-7 border-b border-light">
