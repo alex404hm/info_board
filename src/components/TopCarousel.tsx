@@ -87,91 +87,114 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
       const todayRegular = hasDishData ? (dailyDish?.regular ?? null) : null
       const todayVegan   = hasDishData ? (dailyDish?.vegetarian ?? null) : null
       return (
-        <div className="ib-panel flex h-full flex-col p-5"
-          style={{ background: "#2a272a", border: "1px solid rgba(251,191,36,0.25)", boxShadow: "none" }}>
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl" style={{ background: "var(--surface-alt)", border: `1px solid ${C3}`, minHeight: 290 }}>
+
           {/* Header */}
-          <div className="mb-3 flex flex-col items-center text-center shrink-0 gap-2">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/30">
-              <Image src="/logo/kanpla.png" alt="Kanpla" width={32} height={32} className="h-full w-full rounded-[4px] object-fill" />
+          <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden"
+              style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
+              <Image src="/logo/kanpla.png" alt="Kanpla" width={36} height={36} className="h-full w-full object-fill" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-300/70">Kantine</p>
-              <p className="text-sm font-semibold" style={{ color: "#d6ecea" }}>Dagens ret</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] leading-none" style={{ color: C2 }}>Kantine</p>
+              <p className="text-[16px] font-bold leading-tight mt-0.5" style={{ color: C1 }}>Dagens ret</p>
             </div>
           </div>
 
-          {/* Today's dishes */}
-          {!hasDishData ? (
-            <p className="text-sm text-center" style={{ color: "rgba(214,236,234,0.5)" }}>Henter dagens ret…</p>
-          ) : (
-            <div className="flex flex-col gap-2 shrink-0">
-              {/* Regular dish */}
-              {todayRegular && (
-                <div className="rounded-xl px-4 py-3" style={{ background: "rgba(251,191,36,0.16)", border: "2px solid rgba(251,191,36,0.55)" }}>
-                  <p className="text-[9px] font-extrabold uppercase tracking-widest mb-1" style={{ color: "rgba(251,191,36,0.85)" }}>🍽 Dagens ret</p>
-                  <p className="text-lg font-extrabold leading-snug" style={{ color: "#ffffff" }}>
-                    {decodeHtmlEntities(todayRegular.dishName || "Ingen ret i dag")}
-                  </p>
-                </div>
-              )}
-              {/* Vegan dish */}
-              {todayVegan && (
-                <div className="rounded-xl px-4 py-3" style={{ background: "rgba(74,222,128,0.14)", border: "2px solid rgba(74,222,128,0.50)" }}>
-                  <p className="text-[9px] font-extrabold uppercase tracking-widest mb-1" style={{ color: "rgba(74,222,128,0.95)" }}>🌿 Dagens Grønne ret</p>
-                  <p className="text-lg font-extrabold leading-snug" style={{ color: "#ffffff" }}>
-                    {decodeHtmlEntities(todayVegan.dishName || "Ingen grøn ret i dag")}
-                  </p>
-                </div>
-              )}
-              {/* Fallback if both null */}
-              {!todayRegular && !todayVegan && (
-                <p className="text-xl font-bold tracking-tight leading-snug text-center" style={{ color: "#d6ecea" }}>
-                  {decodeHtmlEntities(dailyDish?.name ?? "Ingen ret i dag")}
-                </p>
-              )}
-            </div>
-          )}
+          {/* Body */}
+          <div className="flex flex-1 min-h-0 flex-col px-3 pb-3 pt-3 gap-2">
 
-          {/* Weekly menu */}
-          {weekMenu.length > 0 && (
-            <>
-              <div className="my-3 shrink-0" style={{ borderTop: "1px solid rgba(251,191,36,0.15)" }} />
-              <p className="mb-1.5 shrink-0 text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(251,191,36,0.5)" }}>
-                Ugens menu
-              </p>
-              <div className="min-h-0 flex-1 space-y-1 overflow-hidden">
-                {weekMenu.map((item) => {
-                  const isToday = item.dateKey === todayKey
-                  return (
-                    <div key={item.dateKey}
-                      className="rounded-lg px-2 py-1"
-                      style={{
-                        background: isToday ? "rgba(251,191,36,0.10)" : "rgba(255,255,255,0.03)",
-                        border: isToday ? "1px solid rgba(251,191,36,0.25)" : "1px solid transparent",
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 shrink-0 text-[9px] font-bold uppercase" style={{ color: isToday ? "#fbbf24" : "rgba(214,236,234,0.4)" }}>
-                          {item.dayLabel}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-[11px] font-medium" style={{ color: isToday ? "#d6ecea" : "rgba(214,236,234,0.55)" }}>
-                          {decodeHtmlEntities(item.regular?.dishName ?? item.dishName)}
-                        </span>
-                      </div>
-                      {item.vegetarian?.dishName && (
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="w-7 shrink-0 text-[8px]" style={{ color: "rgba(74,222,128,0.5)" }}>🌿</span>
-                          <span className="min-w-0 flex-1 truncate text-[10px]" style={{ color: isToday ? "rgba(74,222,128,0.85)" : "rgba(74,222,128,0.45)" }}>
-                            {decodeHtmlEntities(item.vegetarian.dishName)}
-                          </span>
-                        </div>
-                      )}
+            {/* Today's dishes */}
+            {!hasDishData ? (
+              <p className="text-sm px-1" style={{ color: C2 }}>Henter dagens ret…</p>
+            ) : (
+              <div className="flex flex-col gap-2 shrink-0">
+                {/* Regular dish */}
+                {todayRegular && (
+                  <div className="flex items-stretch rounded-xl overflow-hidden shrink-0"
+                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)" }}>
+                    <span className="shrink-0 w-1" style={{ background: "#f09458" }} />
+                    <div className="flex-1 min-w-0 py-3 px-4">
+                      <p className="text-[11px] font-semibold leading-none mb-2" style={{ color: "#f09458" }}>
+                        🍽 Dagens ret
+                      </p>
+                      <p className="text-[18px] font-bold leading-tight" style={{ color: "#ffffff" }}>
+                        {decodeHtmlEntities(todayRegular.dishName || "Ingen ret i dag")}
+                      </p>
                     </div>
-                  )
-                })}
+                  </div>
+                )}
+                {/* Vegan dish */}
+                {todayVegan && (
+                  <div className="flex items-stretch rounded-xl overflow-hidden shrink-0"
+                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)" }}>
+                    <span className="shrink-0 w-1" style={{ background: "#52c484" }} />
+                    <div className="flex-1 min-w-0 py-3 px-4">
+                      <p className="text-[11px] font-semibold leading-none mb-2" style={{ color: "#52c484" }}>
+                        🌿 Grøn ret
+                      </p>
+                      <p className="text-[18px] font-bold leading-tight" style={{ color: "#ffffff" }}>
+                        {decodeHtmlEntities(todayVegan.dishName || "Ingen grøn ret i dag")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {/* Fallback */}
+                {!todayRegular && !todayVegan && (
+                  <div className="flex items-stretch rounded-xl overflow-hidden shrink-0"
+                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)" }}>
+                    <span className="shrink-0 w-1" style={{ background: "#f09458" }} />
+                    <div className="flex-1 min-w-0 py-3 px-4">
+                      <p className="text-[18px] font-bold leading-tight" style={{ color: "#ffffff" }}>
+                        {decodeHtmlEntities(dailyDish?.name ?? "Ingen ret i dag")}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            )}
+
+            {/* Weekly menu */}
+            {weekMenu.length > 0 && (
+              <>
+                <div className="shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.10)" }} />
+                <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  Ugens menu
+                </p>
+                <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
+                  {weekMenu.map((item) => {
+                    const isToday = item.dateKey === todayKey
+                    return (
+                      <div key={item.dateKey}
+                        className="flex items-stretch rounded-lg overflow-hidden"
+                        style={{
+                          background: isToday ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)",
+                          border: `1px solid ${isToday ? "rgba(255,255,255,0.16)" : "transparent"}`,
+                        }}
+                      >
+                        {isToday && <span className="shrink-0 w-1" style={{ background: "#f09458" }} />}
+                        <div className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2">
+                          <span className="w-7 shrink-0 text-[11px] font-bold" style={{ color: isToday ? "#ffffff" : "rgba(255,255,255,0.50)" }}>
+                            {item.dayLabel}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[12px] font-medium leading-snug" style={{ color: isToday ? "#ffffff" : "rgba(255,255,255,0.65)" }}>
+                              {decodeHtmlEntities(item.regular?.dishName ?? item.dishName)}
+                            </p>
+                            {item.vegetarian?.dishName && (
+                              <p className="truncate text-[11px] leading-snug" style={{ color: isToday ? "rgba(82,196,132,0.90)" : "rgba(82,196,132,0.55)" }}>
+                                🌿 {decodeHtmlEntities(item.vegetarian.dishName)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )
     }
