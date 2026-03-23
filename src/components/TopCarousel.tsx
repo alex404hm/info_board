@@ -19,7 +19,7 @@ const C3 = "var(--surface-border)"
 const C4 = "var(--surface-soft)"
 const C5 = "var(--surface)"
 
-const card    = { background: C5, backdropFilter: "blur(12px)", border: `1px solid ${C3}` } as const
+const card    = { background: C5, border: `1px solid ${C3}`, boxShadow: "none" } as const
 const rowItem = { background: C4, border: `1px solid ${C3}` } as const
 const linkBtn = { background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" } as const
 
@@ -87,8 +87,8 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
       const todayRegular = hasDishData ? (dailyDish?.regular ?? null) : null
       const todayVegan   = hasDishData ? (dailyDish?.vegetarian ?? null) : null
       return (
-        <div className="ib-panel flex h-full flex-col p-5 shadow-xl shadow-black/30"
-          style={{ background: "#2a272a", border: "1px solid rgba(251,191,36,0.25)" }}>
+        <div className="ib-panel flex h-full flex-col p-5"
+          style={{ background: "#2a272a", border: "1px solid rgba(251,191,36,0.25)", boxShadow: "none" }}>
           {/* Header */}
           <div className="mb-3 flex flex-col items-center text-center shrink-0 gap-2">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/30">
@@ -107,18 +107,18 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
             <div className="flex flex-col gap-2 shrink-0">
               {/* Regular dish */}
               {todayRegular && (
-                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.22)" }}>
-                  <p className="text-[8px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "rgba(251,191,36,0.6)" }}>Dagens ret</p>
-                  <p className="text-base font-bold leading-snug" style={{ color: "#d6ecea" }}>
+                <div className="rounded-xl px-4 py-3" style={{ background: "rgba(251,191,36,0.16)", border: "2px solid rgba(251,191,36,0.55)" }}>
+                  <p className="text-[9px] font-extrabold uppercase tracking-widest mb-1" style={{ color: "rgba(251,191,36,0.85)" }}>🍽 Dagens ret</p>
+                  <p className="text-lg font-extrabold leading-snug" style={{ color: "#ffffff" }}>
                     {decodeHtmlEntities(todayRegular.dishName || "Ingen ret i dag")}
                   </p>
                 </div>
               )}
               {/* Vegan dish */}
               {todayVegan && (
-                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.22)" }}>
-                  <p className="text-[8px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "rgba(74,222,128,0.7)" }}>Dagens Grønne ret 🌿</p>
-                  <p className="text-base font-bold leading-snug" style={{ color: "#d6ecea" }}>
+                <div className="rounded-xl px-4 py-3" style={{ background: "rgba(74,222,128,0.14)", border: "2px solid rgba(74,222,128,0.50)" }}>
+                  <p className="text-[9px] font-extrabold uppercase tracking-widest mb-1" style={{ color: "rgba(74,222,128,0.95)" }}>🌿 Dagens Grønne ret</p>
+                  <p className="text-lg font-extrabold leading-snug" style={{ color: "#ffffff" }}>
                     {decodeHtmlEntities(todayVegan.dishName || "Ingen grøn ret i dag")}
                   </p>
                 </div>
@@ -241,7 +241,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
           {/* ── Header ── */}
           <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0" style={{ borderBottom: `1px solid ${C3}` }}>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-              style={{ background: "var(--accent-soft)", boxShadow: "0 0 0 1px var(--accent-border)" }}>
+              style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
               <Calendar className="h-4 w-4" style={{ color: "var(--accent)" }} />
             </div>
             <div>
@@ -279,7 +279,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                         style={{
                           width: 24, height: 24,
                           background: isToday ? "var(--accent)" : "transparent",
-                          boxShadow: isToday ? "0 0 10px var(--accent-soft)" : "none",
+                          boxShadow: "none",
                           color: isToday ? "#fff" : isPast ? "rgba(255,255,255,0.2)" : C1,
                           fontWeight: isToday ? 700 : isPast ? 400 : 500,
                         }}
@@ -314,7 +314,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                       style={{
                         background: C4,
                         border: `1px solid ${isToday ? color + "44" : C3}`,
-                        boxShadow: isToday ? `0 0 0 1px ${color}22` : "none",
+                        boxShadow: "none",
                       }}
                     >
                       {/* Colour bar */}
@@ -720,7 +720,7 @@ export function TopCarousel() {
           {/* Viewport */}
           <div
             className="w-full select-none"
-            style={{ overflowX: "clip", cursor: dragDelta !== 0 ? "grabbing" : "grab", touchAction: "pan-y" }}
+            style={{ overflow: "hidden", cursor: dragDelta !== 0 ? "grabbing" : "grab", touchAction: "pan-y" }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -738,7 +738,7 @@ export function TopCarousel() {
               onTransitionEnd={handleTransitionEnd}
             >
               {extSlides.map((slide, i) => (
-                <div key={`${slide.id}-${i}`} className="w-full shrink-0">
+                <div key={`${slide.id}-${i}`} className="w-full shrink-0 overflow-hidden">
                   <SlideContent slide={slide} widgetProps={widgetProps} />
                 </div>
               ))}
