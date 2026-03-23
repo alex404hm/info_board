@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { AlertTriangle, Car, CheckCircle2, ChevronDown, ChevronUp, Clock, RefreshCw, Train } from "lucide-react"
+import { AlertTriangle, ArrowUp, Car, CheckCircle2, ChevronDown, ChevronUp, Clock, RefreshCw, Train } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { TrafikPost } from "@/app/api/trafik/route"
 
@@ -157,6 +157,7 @@ export function TrafikPanel() {
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [filter, setFilter] = useState<"all" | "active" | "concluded">("active")
+  const [showJumpTop, setShowJumpTop] = useState(false)
   const mountedRef = useRef(true)
 
   const fetchPosts = useCallback(async () => {
@@ -184,6 +185,21 @@ export function TrafikPanel() {
     }
   }, [fetchPosts])
 
+  useEffect(() => {
+    const scrollEl = document.querySelector("main.custom-scrollbar") as HTMLElement | null
+    const onScroll = () => {
+      const y = scrollEl ? scrollEl.scrollTop : window.scrollY
+      setShowJumpTop(y > 220)
+    }
+    onScroll()
+    if (scrollEl) {
+      scrollEl.addEventListener("scroll", onScroll, { passive: true })
+      return () => scrollEl.removeEventListener("scroll", onScroll)
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
   const handleRefresh = async () => {
     setIsRefreshing(true)
     await fetchPosts()
@@ -208,6 +224,7 @@ export function TrafikPanel() {
   }
 
   return (
+    <>
     <div className="mx-auto w-full max-w-3xl space-y-4 px-2 pb-6 md:px-0">
       {/* Header row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -275,5 +292,32 @@ export function TrafikPanel() {
         </div>
       )}
     </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          const scrollEl = document.querySelector("main.custom-scrollbar") as HTMLElement | null
+          if (scrollEl) {
+            scrollEl.scrollTo({ top: 0, behavior: "smooth" })
+            return
+          }
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        }}
+        aria-label="Til toppen"
+        className={`fixed bottom-6 right-6 z-[80] inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${
+          showJumpTop
+            ? "translate-y-0 opacity-100 pointer-events-auto"
+            : "translate-y-2 opacity-0 pointer-events-none"
+        }`}
+        style={{
+          background: "var(--surface)",
+          borderColor: "var(--surface-border)",
+          color: "var(--foreground-muted)",
+          boxShadow: "0 8px 22px rgba(0,0,0,0.30)",
+        }}
+      >
+        <ArrowUp className="h-4 w-4" />
+      </button>
+    </>
   )
 }

@@ -3,7 +3,7 @@ import { db } from "@/db"
 import { message, user } from "@/db/schema"
 import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
-import { eq, desc, and, or, isNull, gte } from "drizzle-orm"
+import { eq, desc, and, or, isNull, gte, lte } from "drizzle-orm"
 import { headers } from "next/headers"
 
 // GET /api/messages — public (active only) or admin (all)
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
           active: message.active,
           authorId: message.authorId,
           authorName: user.name,
+          activeFrom: message.activeFrom,
           expiresAt: message.expiresAt,
           pinned: message.pinned,
           repeatDays: message.repeatDays,
@@ -55,6 +56,7 @@ export async function GET(request: NextRequest) {
         priority: message.priority,
         authorName: user.name,
         createdAt: message.createdAt,
+        activeFrom: message.activeFrom,
         expiresAt: message.expiresAt,
         pinned: message.pinned,
         repeatDays: message.repeatDays,
@@ -64,7 +66,8 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(message.active, true),
-          or(isNull(message.expiresAt), gte(message.expiresAt, now))
+          or(isNull(message.expiresAt), gte(message.expiresAt, now)),
+          or(isNull(message.activeFrom), lte(message.activeFrom, now))
         )
       )
       .orderBy(desc(message.pinned), desc(message.createdAt))
@@ -92,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, content, priority, expiresAt, repeatDays } = body
+    const { title, content, priority, activeFrom, expiresAt, repeatDays } = body
 
     if (!title || !content) {
       return NextResponse.json({ error: "Title and content are required" }, { status: 400 })
@@ -111,6 +114,7 @@ export async function POST(request: NextRequest) {
         priority: priority || "normal",
         active: true,
         authorId: session.user.id,
+        activeFrom: activeFrom ? new Date(activeFrom) : null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         repeatDays: Array.isArray(repeatDays) ? repeatDays : [],
         createdAt: now,

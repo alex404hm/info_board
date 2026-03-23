@@ -323,6 +323,33 @@
     from { width: 0% }
     to   { width: 100% }
   }
+  /* ── Admin-only sticky grid: left-aligned, fills left-to-right ── */
+  .admin-theme .admin-sticky-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+    justify-items: start;
+    align-items: start;
+    gap: 1.5rem;
+  }
+  .admin-theme .admin-sticky-grid > * {
+    width: 100%;
+    max-width: 280px;
+  }
+  @media (max-width: 640px) {
+    .admin-theme .admin-sticky-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .admin-theme .admin-sticky-grid > * {
+      max-width: 100%;
+    }
+  }
+  @media (max-width: 400px) {
+    .admin-theme .admin-sticky-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .admin-theme {
     --background: #0b1220;
     --foreground: #e2e8f0;

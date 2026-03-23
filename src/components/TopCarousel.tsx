@@ -23,7 +23,7 @@ const card    = { background: C5, backdropFilter: "blur(12px)", border: `1px sol
 const rowItem = { background: C4, border: `1px solid ${C3}` } as const
 const linkBtn = { background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" } as const
 
-type CalendarEvent = { id: string; title: string; start: string; end: string | null; allDay: boolean }
+type CalendarEvent = { id: string; title: string; start: string; end: string | null; allDay: boolean; category?: string | null; location?: string | null }
 type ModuleId = "canteen" | "calendar" | "transport" | "traffic" | "weather" | "news"
 
 interface ConfigSlide {
@@ -81,74 +81,266 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
   const { calendarEvents, departures, trafikPosts, dailyDish, hasDishData, isServingToday, drNewsItems } = props
 
   switch (id) {
-    case "canteen":
+    case "canteen": {
+      const weekMenu = dailyDish?.weekMenu ?? []
+      const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Copenhagen" }).format(new Date())
+      const todayRegular = hasDishData ? (dailyDish?.regular ?? null) : null
+      const todayVegan   = hasDishData ? (dailyDish?.vegetarian ?? null) : null
       return (
-        <div className="ib-panel flex h-full flex-col items-center justify-center p-6 text-center shadow-xl shadow-black/30"
+        <div className="ib-panel flex h-full flex-col p-5 shadow-xl shadow-black/30"
           style={{ background: "#2a272a", border: "1px solid rgba(251,191,36,0.25)" }}>
-          <div className="mb-5 flex flex-col items-center gap-3">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/30">
+          {/* Header */}
+          <div className="mb-3 flex flex-col items-center text-center shrink-0 gap-2">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/30">
               <Image src="/logo/kanpla.png" alt="Kanpla" width={32} height={32} className="h-full w-full rounded-[4px] object-fill" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/70">Kantine</p>
-              <h3 className="text-xl font-bold" style={{ color: "#d6ecea" }}>Dagens ret</h3>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-300/70">Kantine</p>
+              <p className="text-sm font-semibold" style={{ color: "#d6ecea" }}>Dagens ret</p>
             </div>
           </div>
 
-          <p className="text-2xl font-bold tracking-tight leading-snug" style={{ color: "#d6ecea" }}>
-            {hasDishData ? decodeHtmlEntities(dailyDish?.name ?? "Ingen ret i dag") : "Henter dagens ret…"}
-          </p>
-
-          {!isServingToday && dailyDish?.nextDishName ? (
-            <p className="mt-4 text-xs text-amber-300/60">
-              Næste: <span className="font-medium text-amber-300/90">{decodeHtmlEntities(dailyDish.nextDishName)}</span>
-              {dailyDish.nextDishDateLabel ? ` · ${dailyDish.nextDishDateLabel}` : ""}
-            </p>
-          ) : null}
-        </div>
-      )
-
-    case "calendar":
-      return (
-        <div className="flex h-full flex-col overflow-hidden rounded-xl p-4" style={card}>
-          <div className="mb-3 flex items-center gap-2.5 shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 shrink-0">
-              <Calendar className="h-4 w-4 text-accent" />
+          {/* Today's dishes */}
+          {!hasDishData ? (
+            <p className="text-sm text-center" style={{ color: "rgba(214,236,234,0.5)" }}>Henter dagens ret…</p>
+          ) : (
+            <div className="flex flex-col gap-2 shrink-0">
+              {/* Regular dish */}
+              {todayRegular && (
+                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.22)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "rgba(251,191,36,0.6)" }}>Dagens ret</p>
+                  <p className="text-base font-bold leading-snug" style={{ color: "#d6ecea" }}>
+                    {decodeHtmlEntities(todayRegular.dishName || "Ingen ret i dag")}
+                  </p>
+                </div>
+              )}
+              {/* Vegan dish */}
+              {todayVegan && (
+                <div className="rounded-xl px-3 py-2.5" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.22)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "rgba(74,222,128,0.7)" }}>Dagens Grønne ret 🌿</p>
+                  <p className="text-base font-bold leading-snug" style={{ color: "#d6ecea" }}>
+                    {decodeHtmlEntities(todayVegan.dishName || "Ingen grøn ret i dag")}
+                  </p>
+                </div>
+              )}
+              {/* Fallback if both null */}
+              {!todayRegular && !todayVegan && (
+                <p className="text-xl font-bold tracking-tight leading-snug text-center" style={{ color: "#d6ecea" }}>
+                  {decodeHtmlEntities(dailyDish?.name ?? "Ingen ret i dag")}
+                </p>
+              )}
             </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Kalender</p>
-              <p className="text-sm font-semibold" style={{ color: C1 }}>Kommende begivenheder</p>
-            </div>
-          </div>
-          <div className="flex-1 space-y-1">
-            {calendarEvents.length > 0 ? (
-              calendarEvents.slice(0, 2).map((ev) => {
-                const d = new Date(ev.start)
-                return (
-                  <div key={ev.id} className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5" style={rowItem}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    <p className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: C1 }}>
-                      {decodeHtmlEntities(ev.title)}
-                    </p>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[11px] tabular-nums" style={{ color: C2 }}>
-                        {d.toLocaleDateString("da-DK", { day: "numeric", month: "short" })}
-                      </p>
-                      {!ev.allDay && (
-                        <p className="text-[9px] tabular-nums" style={{ color: C3 }}>
-                          {d.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
-                        </p>
+          )}
+
+          {/* Weekly menu */}
+          {weekMenu.length > 0 && (
+            <>
+              <div className="my-3 shrink-0" style={{ borderTop: "1px solid rgba(251,191,36,0.15)" }} />
+              <p className="mb-1.5 shrink-0 text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(251,191,36,0.5)" }}>
+                Ugens menu
+              </p>
+              <div className="min-h-0 flex-1 space-y-1 overflow-hidden">
+                {weekMenu.map((item) => {
+                  const isToday = item.dateKey === todayKey
+                  return (
+                    <div key={item.dateKey}
+                      className="rounded-lg px-2 py-1"
+                      style={{
+                        background: isToday ? "rgba(251,191,36,0.10)" : "rgba(255,255,255,0.03)",
+                        border: isToday ? "1px solid rgba(251,191,36,0.25)" : "1px solid transparent",
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 shrink-0 text-[9px] font-bold uppercase" style={{ color: isToday ? "#fbbf24" : "rgba(214,236,234,0.4)" }}>
+                          {item.dayLabel}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[11px] font-medium" style={{ color: isToday ? "#d6ecea" : "rgba(214,236,234,0.55)" }}>
+                          {decodeHtmlEntities(item.regular?.dishName ?? item.dishName)}
+                        </span>
+                      </div>
+                      {item.vegetarian?.dishName && (
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="w-7 shrink-0 text-[8px]" style={{ color: "rgba(74,222,128,0.5)" }}>🌿</span>
+                          <span className="min-w-0 flex-1 truncate text-[10px]" style={{ color: isToday ? "rgba(74,222,128,0.85)" : "rgba(74,222,128,0.45)" }}>
+                            {decodeHtmlEntities(item.vegetarian.dishName)}
+                          </span>
+                        </div>
                       )}
                     </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    case "calendar": {
+      const now       = new Date()
+      const todayD    = now.getDate()
+      const thisMonth = now.getMonth()
+      const thisYear  = now.getFullYear()
+
+      const monthNames  = ["Januar","Februar","Marts","April","Maj","Juni","Juli","August","September","Oktober","November","December"]
+      const dayInitials = ["M","T","O","T","F","L","S"]
+
+      const firstDayDow = (new Date(thisYear, thisMonth, 1).getDay() + 6) % 7
+      const daysInMonth = new Date(thisYear, thisMonth + 1, 0).getDate()
+
+      const catColor = (cat?: string | null): string => {
+        switch ((cat ?? "").toLowerCase()) {
+          case "skole":     return "#3b82f6"
+          case "workshop":  return "#8b5cf6"
+          case "fagligt":   return "#10b981"
+          case "praktik":   return "#f59e0b"
+          case "socialt":   return "#ec4899"
+          case "studie":    return "#14b8a6"
+          case "helligdag": return "#f43f5e"
+          case "ferie":     return "#fb923c"
+          default:          return "#60a5fa"
+        }
+      }
+
+      // Map each calendar day → its event colors (for dots)
+      const dayColors = new Map<number, string>()
+      calendarEvents.forEach(ev => {
+        const d = new Date(ev.start)
+        if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
+          if (!dayColors.has(d.getDate())) dayColors.set(d.getDate(), catColor(ev.category))
+        }
+      })
+
+      const cells: (number | null)[] = [
+        ...Array(firstDayDow).fill(null),
+        ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+      ]
+
+      // Relative date label
+      const relLabel = (d: Date): string => {
+        const dd = d.getDate(), mm = d.getMonth(), yy = d.getFullYear()
+        if (dd === todayD && mm === thisMonth && yy === thisYear) return "I dag"
+        const tom = new Date(now); tom.setDate(todayD + 1)
+        if (dd === tom.getDate() && mm === tom.getMonth() && yy === tom.getFullYear()) return "I morgen"
+        return d.toLocaleDateString("da-DK", { weekday: "short", day: "numeric", month: "short" })
+      }
+
+      const todayMidnight = new Date()
+      todayMidnight.setHours(0, 0, 0, 0)
+      const upcoming = calendarEvents
+        .filter(ev => {
+          const d = new Date(ev.start)
+          return !isNaN(d.getTime()) && d >= todayMidnight
+        })
+        .sort((a, b) => a.start.localeCompare(b.start))
+        .slice(0, 5)
+
+      return (
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl" style={{ ...card, minHeight: 290 }}>
+
+          {/* ── Header ── */}
+          <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0" style={{ borderBottom: `1px solid ${C3}` }}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+              style={{ background: "var(--accent-soft)", boxShadow: "0 0 0 1px var(--accent-border)" }}>
+              <Calendar className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] leading-none" style={{ color: "var(--foreground-muted)" }}>Kalender</p>
+              <p className="text-[15px] font-bold leading-tight mt-0.5" style={{ color: C1 }}>
+                {monthNames[thisMonth]} {thisYear}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Body ── */}
+          <div className="flex flex-1 min-h-0 gap-0 px-3 pb-3 pt-3">
+
+            {/* Left: mini calendar */}
+            <div className="flex flex-col shrink-0" style={{ width: 210 }}>
+              {/* DOW row */}
+              <div className="grid grid-cols-7 mb-1">
+                {dayInitials.map((ltr, i) => (
+                  <div key={i} className="flex items-center justify-center h-6">
+                    <span className="text-[9px] font-bold uppercase" style={{ color: "var(--accent)", opacity: 0.55 }}>{ltr}</span>
                   </div>
-                )
-              })
-            ) : (
-              <p className="py-2 text-center text-[10px]" style={{ color: C3 }}>Ingen kommende begivenheder</p>
-            )}
+                ))}
+              </div>
+              {/* Day grid */}
+              <div className="grid grid-cols-7 gap-y-0.5">
+                {cells.map((day, i) => {
+                  if (day === null) return <div key={i} className="h-8" />
+                  const isToday  = day === todayD
+                  const isPast   = day < todayD
+                  const dotColor = dayColors.get(day)
+                  return (
+                    <div key={i} className="flex flex-col items-center justify-center h-8">
+                      <span
+                        className="flex items-center justify-center rounded-full text-[11px] leading-none"
+                        style={{
+                          width: 24, height: 24,
+                          background: isToday ? "var(--accent)" : "transparent",
+                          boxShadow: isToday ? "0 0 10px var(--accent-soft)" : "none",
+                          color: isToday ? "#fff" : isPast ? "rgba(255,255,255,0.2)" : C1,
+                          fontWeight: isToday ? 700 : isPast ? 400 : 500,
+                        }}
+                      >
+                        {day}
+                      </span>
+                      {dotColor && !isToday && (
+                        <span className="rounded-full mt-px" style={{ width: 3, height: 3, background: dotColor, opacity: 0.85 }} />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="mx-3 w-px self-stretch shrink-0 rounded-full" style={{ background: C3 }} />
+
+            {/* Right: event list */}
+            <div className="flex flex-1 flex-col min-w-0 gap-1.5 overflow-hidden justify-start">
+              {upcoming.length > 0 ? (
+                upcoming.map(ev => {
+                  const d          = new Date(ev.start)
+                  const color      = catColor(ev.category)
+                  const label      = relLabel(d)
+                  const isToday    = label === "I dag"
+                  const isTomorrow = label === "I morgen"
+                  return (
+                    <div
+                      key={ev.id}
+                      className="flex items-stretch gap-2.5 rounded-xl overflow-hidden shrink-0"
+                      style={{
+                        background: C4,
+                        border: `1px solid ${isToday ? color + "44" : C3}`,
+                        boxShadow: isToday ? `0 0 0 1px ${color}22` : "none",
+                      }}
+                    >
+                      {/* Colour bar */}
+                      <span className="shrink-0 w-[3px]" style={{ background: color, opacity: isToday ? 1 : 0.65 }} />
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 py-2 pr-2.5">
+                        <p className="truncate text-[11px] font-semibold leading-tight" style={{ color: C1 }}>
+                          {decodeHtmlEntities(ev.title)}
+                        </p>
+                        <p className="text-[9px] mt-0.5 leading-none tabular-nums" style={{ color: isToday ? color : isTomorrow ? C2 : "var(--foreground-soft)" }}>
+                          {label}{!ev.allDay && ` · ${d.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}`}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="flex flex-1 items-center justify-center">
+                  <p className="text-[10px]" style={{ color: C3 }}>Ingen kommende begivenheder</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )
+    }
 
     case "weather":
       return (

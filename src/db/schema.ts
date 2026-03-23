@@ -86,6 +86,7 @@ export const message = pgTable("message", {
   authorId: text("authorId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  activeFrom: timestamp("activeFrom"),
   expiresAt: timestamp("expiresAt"),
   pinned: boolean("pinned").notNull().default(false),
   repeatDays: json("repeat_days").$type<number[]>().default([]),

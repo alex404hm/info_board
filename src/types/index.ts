@@ -57,7 +57,9 @@ export type DailyDishApiResponse = {
   found: boolean
   servingToday?: boolean
   name: string
+  dishName?: string
   type?: string
+  typeName?: string
   description?: string
   priceLabel: string
   unitPrice: number | null
@@ -68,6 +70,24 @@ export type DailyDishApiResponse = {
   nextDishName?: string | null
   nextDishType?: string | null
   nextDishDateLabel?: string | null
+  currency?: string
+  regular?: {
+    dishName: string
+    description: string
+    priceLabel: string
+  } | null
+  vegetarian?: {
+    dishName: string
+    description: string
+    priceLabel: string
+  } | null
+  weekMenu?: Array<{
+    dateKey: string
+    dayLabel: string
+    dishName: string
+    regular: { dishName: string; description: string; priceLabel: string } | null
+    vegetarian: { dishName: string; description: string; priceLabel: string } | null
+  }>
 }
 
 export type ImportantContact = {
