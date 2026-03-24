@@ -33,8 +33,7 @@ function Layout({ children }: { children: React.ReactNode }) {
           alt="TEC"
           width={72}
           height={26}
-          className="h-6 w-auto"
-          style={{ width: "auto" }}
+          className="h-auto w-auto"
           priority
         />
       </div>

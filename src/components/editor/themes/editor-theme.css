@@ -1,5 +1,5 @@
 .EditorTheme__code {
-  background-color: transparent;
+  background-color: hsl(var(--color-muted) / 0.3);
   font-family: Menlo, Consolas, Monaco, monospace;
   display: block;
   padding: 8px 8px 8px 52px;
@@ -9,7 +9,7 @@
   margin-top: 8px;
   margin-bottom: 8px;
   overflow-x: auto;
-  border: 1px solid #ccc;
+  border: 1px solid hsl(var(--color-border) / 0.5);
   position: relative;
   border-radius: 8px;
   tab-size: 2;
@@ -18,11 +18,11 @@
   content: attr(data-gutter);
   position: absolute;
   background-color: transparent;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid hsl(var(--color-border) / 0.5);
   left: 0;
   top: 0;
   padding: 8px;
-  color: #777;
+  color: hsl(var(--color-muted-foreground) / 0.6);
   white-space: pre-wrap;
   text-align: right;
   min-width: 25px;
@@ -63,8 +63,8 @@
 }
 
 .Collapsible__container {
-  background-color: var(--background);
-  border: 1px solid #ccc;
+  background-color: transparent;
+  border: 1px solid hsl(var(--color-border) / 0.3);
   border-radius: 0.5rem;
   margin-bottom: 0.5rem;
 }

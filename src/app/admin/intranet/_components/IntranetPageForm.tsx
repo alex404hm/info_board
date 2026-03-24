@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation"
 import { Save, ArrowLeft, Loader2, Info, Layout, Palette, Type } from "lucide-react"
 import Link from "next/link"
 import * as LucideIcons from "lucide-react"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import rehypeRaw from "rehype-raw"
-import { IntranetEditorClient } from "./IntranetEditorClient"
+import { Editor } from "@/components/blocks/editor-md/editor"
 
 
 function IconRenderer({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) {
@@ -90,7 +87,7 @@ export default function IntranetPageForm({ initialData }: IntranetPageFormProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto p-6 bg-background/80 rounded-2xl shadow-xl border border-border/40">
+    <form onSubmit={handleSubmit} className="space-y-8 w-full max-w-none p-6 bg-background/80 rounded-2xl shadow-xl border border-border/40">
       <div className="flex items-center justify-between sticky top-0 z-10 bg-background/90 backdrop-blur-md py-6 -mt-6 border-b border-border/40 rounded-t-2xl">
         <div className="flex items-center gap-4">
           <Link
@@ -187,23 +184,36 @@ export default function IntranetPageForm({ initialData }: IntranetPageFormProps)
               <span className="text-[10px] text-muted-foreground">Markdown understøttes (overskrifter, lister, tabeller)</span>
             </div>
             {/* Shadcn Editor-X integration */}
-            <div className="w-full min-h-[420px] rounded-2xl border border-border/60 bg-surface-soft shadow-lg p-2">
-              <IntranetEditorClient
-                content={formData.content}
-                onSerializedChange={undefined}
-              />
-            </div>
+            <Editor
+              editorSerializedState={(() => {
+                if (!formData.content) return undefined;
+                try {
+                  return JSON.parse(formData.content)
+                } catch {
+                  return undefined;
+                }
+              })()}
+              onSerializedChange={(state) =>
+                setFormData((prev) => ({ ...prev, content: JSON.stringify(state) }))
+              }
+            />
           </div>
         </div>
       )}
 
       {activeTab === "preview" && (
-        <div className="rounded-2xl border border-border/60 bg-surface-soft p-10 max-w-3xl mx-auto prose prose-invert prose-base shadow-lg overflow-auto max-h-[70vh]">
-          <div className="mb-8">
-            <h1 className="text-4xl font-extrabold mb-2">{formData.title || "Titel"}</h1>
-            <p className="text-lg text-muted-foreground">{formData.subtitle || "Undertitel"}</p>
+        <div className="space-y-4">
+          <div className="px-2">
+            <h1 className="text-3xl font-extrabold mb-1">{formData.title || "Titel"}</h1>
+            <p className="text-base text-muted-foreground">{formData.subtitle || "Undertitel"}</p>
           </div>
-          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{formData.content || "*Ingen tekst endnu*"}</ReactMarkdown>
+          <Editor
+            readOnly
+            editorSerializedState={(() => {
+              if (!formData.content) return undefined;
+              try { return JSON.parse(formData.content) } catch { return undefined }
+            })()}
+          />
         </div>
       )}
 

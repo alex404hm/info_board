@@ -27,20 +27,17 @@ export function Editor({
   editorSerializedState,
   onChange,
   onSerializedChange,
-  readOnly = false,
 }: {
   editorState?: EditorState
   editorSerializedState?: SerializedEditorState
   onChange?: (editorState: EditorState) => void
   onSerializedChange?: (editorSerializedState: SerializedEditorState) => void
-  readOnly?: boolean
 }) {
   return (
-    <div className="bg-surface-soft overflow-hidden rounded-2xl border border-border/60 shadow-lg">
+    <div className="bg-background overflow-hidden rounded-lg border shadow">
       <LexicalComposer
         initialConfig={{
           ...editorConfig,
-          editable: !readOnly,
           ...(editorState ? { editorState } : {}),
           ...(editorSerializedState
             ? { editorState: JSON.stringify(editorSerializedState) }
@@ -48,17 +45,15 @@ export function Editor({
         }}
       >
         <TooltipProvider>
-          <Plugins readOnly={readOnly} />
+          <Plugins />
 
-          {!readOnly && (
-            <OnChangePlugin
-              ignoreSelectionChange={true}
-              onChange={(editorState) => {
-                onChange?.(editorState)
-                onSerializedChange?.(editorState.toJSON())
-              }}
-            />
-          )}
+          <OnChangePlugin
+            ignoreSelectionChange={true}
+            onChange={(editorState) => {
+              onChange?.(editorState)
+              onSerializedChange?.(editorState.toJSON())
+            }}
+          />
         </TooltipProvider>
       </LexicalComposer>
     </div>
