@@ -172,6 +172,24 @@ export const kokkenvagtEntry = pgTable("kokkenvagt_entry", {
   updatedAt: timestamp("updatedAt").notNull(),
 })
 
+export const intranetPage = pgTable("intranet_page", {
+  id: text("id").primaryKey(),
+  key: text("key").unique().notNull(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  icon: text("icon").notNull().default("Info"),
+  iconColor: text("icon_color").notNull().default("#60a5fa"),
+  iconBg: text("icon_bg").notNull().default("rgba(96,165,250,0.22)"),
+  bgFrom: text("bg_from").notNull().default("rgba(30,58,138,0.95)"),
+  bgTo: text("bg_to").notNull().default("rgba(15,23,42,0.99)"),
+  glowA: text("glow_a").notNull().default("rgba(96,165,250,0.22)"),
+  glowB: text("glow_b").notNull().default("rgba(59,130,246,0.12)"),
+  accentColor: text("accent_color").notNull().default("#60a5fa"),
+  content: text("content").notNull().default(""),
+  order: integer("order").notNull().default(0),
+  updatedAt: timestamp("updatedAt").notNull(),
+})
+
 export const messageRelations = relations(message, ({ one }) => ({
   author: one(user, { fields: [message.authorId], references: [user.id] }),
 }))

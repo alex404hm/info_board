@@ -30,7 +30,7 @@ export function NavTiles() {
   }, [])
 
   if (config === null) {
-    return <div className="shrink-0 nav-tiles" style={{ minHeight: "88px" }} />
+    return <div className="shrink-0 nav-tiles pb-4 sm:pb-2" style={{ minHeight: "88px" }} />
   }
 
   const visible = config
@@ -44,11 +44,11 @@ export function NavTiles() {
   if (visible.length === 0) return null
 
   return (
-    <div className="shrink-0 nav-tiles">
+    <div className="shrink-0 nav-tiles pb-4 sm:pb-2">
       {/* subtle gradient separator */}
       <div className="nav-tiles-separator" />
 
-      <div className="flex w-full items-stretch gap-2 overflow-x-auto px-3 py-3 no-scrollbar sm:gap-3 sm:px-4 sm:py-3.5">
+      <div className="flex w-full items-stretch gap-1.5 overflow-x-auto px-2 pt-2 pb-1 no-scrollbar sm:gap-3 sm:px-4 sm:py-3">
         {visible.map(({ cfg, def }) => {
           const Icon = def.icon
           return (
@@ -87,8 +87,8 @@ export function NavTiles() {
               {/* label */}
               <span
                 className={cn(
-                  "w-full truncate text-center font-semibold tracking-wide",
-                  "text-[9px] leading-tight sm:text-[11px]",
+                  "block w-full truncate text-center font-semibold tracking-wide leading-tight",
+                  "text-[9px] sm:text-[11px]",
                   "nav-tile-label",
                 )}
               >

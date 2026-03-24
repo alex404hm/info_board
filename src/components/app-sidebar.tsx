@@ -11,6 +11,7 @@ import {
   ScrollText,
   Coffee,
   Wallet,
+  BookOpen,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -55,6 +56,7 @@ function buildInstructorSections() {
         { title: "Display & Layout", url: "/admin/display",    icon: LayoutGrid },
         { title: "Køkkenvagt",       url: "/admin/kokkenvagt", icon: Coffee },
         { title: "Lønsatser",        url: "/admin/loen",       icon: Wallet },
+        { title: "Intranet",         url: "/admin/intranet",   icon: BookOpen },
       ],
     },
     {
@@ -82,6 +84,7 @@ function SidebarLogo({ role }: { role: string }) {
         width={56}
         height={20}
         className="h-5 w-auto shrink-0"
+        style={{ width: "auto" }}
       />
       {!collapsed && (
         <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">

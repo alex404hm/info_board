@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ArrowUp } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
@@ -33,6 +33,7 @@ export function SectionPageShell({ title, subtitle, children, noHeader }: ShellP
   const pathname = usePathname()
   const router   = useRouter()
   const mainRef  = useRef<HTMLElement>(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
 
   // ── Tile visibility guard ────────────────────────────────────────────────
   const [allowed, setAllowed] = useState<boolean | null>(null)
@@ -57,6 +58,19 @@ export function SectionPageShell({ title, subtitle, children, noHeader }: ShellP
       .catch(() => { if (mounted) setAllowed(true) })
     return () => { mounted = false }
   }, [pathname, router])
+
+  // ── Scroll-to-top visibility ─────────────────────────────────────────────
+  useEffect(() => {
+    const el = mainRef.current
+    if (!el) return
+    const onScroll = () => setShowScrollTop(el.scrollTop > 300)
+    el.addEventListener("scroll", onScroll, { passive: true })
+    return () => el.removeEventListener("scroll", onScroll)
+  }, [allowed])
+
+  function scrollToTop() {
+    mainRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   // While checking visibility, show blank screen to prevent flash
   if (allowed === null) {
@@ -92,10 +106,26 @@ export function SectionPageShell({ title, subtitle, children, noHeader }: ShellP
       )}
 
       {/* Main content */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto custom-scrollbar">
+      <main ref={mainRef} className="flex-1 overflow-y-auto custom-scrollbar relative">
         <div className="mx-auto w-full max-w-[1400px] px-3 pb-10 pt-4 sm:px-4 sm:pt-6 md:px-10 md:pt-8 md:pb-12">
           {children}
         </div>
+
+        {/* Scroll-to-top button */}
+        {showScrollTop && (
+          <button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-95 hover:opacity-90"
+            style={{
+              background: "var(--accent)",
+              boxShadow: "0 4px 16px rgba(95,157,255,0.35)",
+              color: "#fff",
+            }}
+            aria-label="Rul til toppen"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
+        )}
       </main>
 
     </div>

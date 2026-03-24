@@ -12,7 +12,7 @@ export default function InfoBoardHome() {
 
       <div className="relative flex flex-1 min-h-0 flex-col px-3 sm:px-6 lg:px-10">
 
-        <div className="flex-1 min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar py-4 sm:py-5">
+        <div className="flex-1 min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar py-2 sm:py-4">
           <div className="w-full">
             <TopCarousel />
           </div>
@@ -26,7 +26,8 @@ export default function InfoBoardHome() {
             position: "absolute",
             right: "1.5rem",
             left: "unset",
-            top: 115,
+            bottom: 720,
+            top: "unset",
             zIndex: 10,
           }}
         >

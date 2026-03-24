@@ -311,7 +311,7 @@ export function CalendarPanel() {
 
                     {/* Desktop: top-left number + event pills */}
                     <div className="hidden sm:block">
-                      <div className="mb-1.5">
+                      <div className="mb-1.5 pl-1 sm:pl-1.5">
                         <span
                           className={cn(
                             "inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums md:h-7 md:w-7 md:text-[13px]",
