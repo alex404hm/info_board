@@ -37,8 +37,7 @@ export function StatusBar() {
             width={100}
             height={36}
             priority
-            className="h-6 w-auto brightness-0 invert sm:h-9"
-            style={{ width: "auto" }}
+            className="h-auto w-auto brightness-0 invert"
           />
         </Link>
         <div className="hidden h-6 w-px sm:block status-bar-divider" />

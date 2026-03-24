@@ -22,6 +22,11 @@ export function HistoryToolbarPlugin() {
   const [isEditable, setIsEditable] = useState(editor.isEditable())
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+  const [isApple, setIsApple] = useState(false)
+
+  useEffect(() => {
+    setIsApple(IS_APPLE)
+  }, [])
 
   useEffect(() => {
     return mergeRegister(
@@ -59,7 +64,7 @@ export function HistoryToolbarPlugin() {
         onClick={() => {
           activeEditor.dispatchCommand(UNDO_COMMAND, undefined)
         }}
-        title={IS_APPLE ? "Undo (⌘Z)" : "Undo (Ctrl+Z)"}
+        title={isApple ? "Undo (⌘Z)" : "Undo (Ctrl+Z)"}
         type="button"
         aria-label="Undo"
         size="icon"
@@ -73,7 +78,7 @@ export function HistoryToolbarPlugin() {
         onClick={() => {
           activeEditor.dispatchCommand(REDO_COMMAND, undefined)
         }}
-        title={IS_APPLE ? "Redo (⇧⌘Z)" : "Redo (Ctrl+Y)"}
+        title={isApple ? "Redo (⇧⌘Z)" : "Redo (Ctrl+Y)"}
         type="button"
         aria-label="Redo"
         variant={"outline"}

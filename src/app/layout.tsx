@@ -5,7 +5,7 @@ import { ConfirmDialogProvider } from "@/components/confirm-dialog-provider";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({subsets:['latin'],variable:'--font-inter'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,12 +34,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="da" data-scroll-behavior="smooth" className={cn("font-sans", inter.variable)}>
+    <html lang="da" data-scroll-behavior="smooth" className={cn("font-sans", inter.variable, geistSans.variable, geistMono.variable, kalam.variable)}>
       <head>
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${kalam.variable} antialiased`}
+        className="antialiased"
       >
         <TooltipProvider>
           <ConfirmDialogProvider>{children}</ConfirmDialogProvider>

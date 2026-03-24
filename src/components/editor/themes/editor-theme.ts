@@ -13,11 +13,9 @@ export const editorTheme: EditorThemeClasses = {
     h5: "scroll-m-20 text-lg font-semibold tracking-tight",
     h6: "scroll-m-20 text-base font-semibold tracking-tight",
   },
-  paragraph: "leading-7 [&:not(:first-child)]:mt-6" +
-    "" +
-    " [style]", // allow inline style attribute for font-size, etc.
+  paragraph: "leading-7 [&:not(:first-child)]:mt-6",
   quote: "mt-6 border-l-2 pl-6 italic",
-  link: "text-blue-600 hover:underline hover:cursor-pointer",
+  link: "text-primary hover:underline hover:cursor-pointer",
   list: {
     checklist: "relative",
     listitem: "mx-8",
@@ -45,10 +43,10 @@ export const editorTheme: EditorThemeClasses = {
       "list-outside !list-disc",
     ],
   },
-  hashtag: "text-blue-600 bg-blue-100 rounded-md px-1",
+  hashtag: "text-primary bg-primary/10 rounded-md px-1",
   text: {
     bold: "font-bold",
-    code: "bg-gray-100 p-1 rounded-md",
+    code: "bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono",
     italic: "italic",
     strikethrough: "line-through",
     subscript: "sub",

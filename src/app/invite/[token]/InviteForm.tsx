@@ -117,8 +117,7 @@ export default function InviteForm({ token, email, role }: Props) {
           alt="TEC"
           width={72}
           height={26}
-          className="h-6 w-auto"
-          style={{ width: "auto" }}
+          className="h-auto w-auto"
           priority
         />
       </div>

@@ -36,8 +36,6 @@ type NavSection = {
 
 export function NavMain({ sections }: { sections: NavSection[] }) {
   const pathname = usePathname()
-  const lastSegment = (path: string) =>
-    path.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ?? ""
 
   return (
     <>
@@ -46,7 +44,7 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
           <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
           <SidebarMenu>
             {section.items.map((item) => {
-              const isActive = lastSegment(pathname) === lastSegment(item.url)
+              const isActive = pathname === item.url || (pathname.startsWith(item.url + "/") && item.url !== "/admin")
               return (
                 <Collapsible key={item.title} asChild defaultOpen={isActive || item.isActive}>
                   <SidebarMenuItem>

@@ -81,10 +81,10 @@ function SidebarLogo({ role }: { role: string }) {
       <Image
         src="/logo.svg"
         alt="TEC"
-        width={56}
-        height={20}
-        className="h-5 w-auto shrink-0"
-        style={{ width: "auto" }}
+        width={40}
+        height={14}
+        className="h-4 w-auto shrink-0"
+        priority
       />
       {!collapsed && (
         <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">

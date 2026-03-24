@@ -106,9 +106,9 @@ import { TWEET } from "@/components/editor/transformers/markdown-tweet-transform
 import { Separator } from "@/components/ui/separator"
 
 const placeholder = "Press / for commands..."
-const maxLength = 500
+const maxLength = 100000
 
-export function Plugins({}) {
+export function Plugins({ readOnly = false }: { readOnly?: boolean }) {
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null)
   const [isLinkEditMode, setIsLinkEditMode] = useState<boolean>(false)
@@ -121,60 +121,62 @@ export function Plugins({}) {
 
   return (
     <div className="relative">
-      <ToolbarPlugin>
-        {({ blockType }) => (
-          <div className="vertical-align-middle sticky top-0 z-20 flex items-center gap-2 overflow-x-auto overflow-y-hidden border-b p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 rounded-t-xl min-h-[56px] max-w-full">
-            <HistoryToolbarPlugin />
-            <Separator orientation="vertical" className="!h-7" />
-            <BlockFormatDropDown>
-              <FormatParagraph />
-              <FormatHeading levels={["h1", "h2", "h3"]} />
-              <FormatNumberedList />
-              <FormatBulletedList />
-              <FormatCheckList />
-              <FormatCodeBlock />
-              <FormatQuote />
-            </BlockFormatDropDown>
-            {blockType === "code" ? (
-              <CodeLanguageToolbarPlugin />
-            ) : (
-              <>
-                <FontFamilyToolbarPlugin />
-                <FontSizeToolbarPlugin />
-                <Separator orientation="vertical" className="!h-7" />
-                <FontFormatToolbarPlugin />
-                <Separator orientation="vertical" className="!h-7" />
-                <SubSuperToolbarPlugin />
-                <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
-                <Separator orientation="vertical" className="!h-7" />
-                <ClearFormattingToolbarPlugin />
-                <Separator orientation="vertical" className="!h-7" />
-                <FontColorToolbarPlugin />
-                <FontBackgroundToolbarPlugin />
-                <Separator orientation="vertical" className="!h-7" />
-                <ElementFormatToolbarPlugin />
-                <Separator orientation="vertical" className="!h-7" />
-                <BlockInsertPlugin>
-                  <InsertHorizontalRule />
-                  <InsertImage />
-                  <InsertTable />
-                  <InsertColumnsLayout />
-                  <InsertEmbeds />
-                </BlockInsertPlugin>
-              </>
-            )}
-          </div>
-        )}
-      </ToolbarPlugin>
+      {!readOnly && (
+        <ToolbarPlugin>
+          {({ blockType }) => (
+            <div className="sticky top-0 z-20 flex items-center gap-1.5 overflow-x-auto border-b p-1.5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 rounded-t-xl min-h-[48px] w-full [&::-webkit-scrollbar]:h-1">
+              <HistoryToolbarPlugin />
+              <Separator orientation="vertical" className="!h-7 shrink-0" />
+              <BlockFormatDropDown>
+                <FormatParagraph />
+                <FormatHeading levels={["h1", "h2", "h3"]} />
+                <FormatNumberedList />
+                <FormatBulletedList />
+                <FormatCheckList />
+                <FormatCodeBlock />
+                <FormatQuote />
+              </BlockFormatDropDown>
+              {blockType === "code" ? (
+                <CodeLanguageToolbarPlugin />
+              ) : (
+                <>
+                  <FontFamilyToolbarPlugin />
+                  <FontSizeToolbarPlugin />
+                  <Separator orientation="vertical" className="!h-7 shrink-0" />
+                  <FontFormatToolbarPlugin />
+                  <Separator orientation="vertical" className="!h-7 shrink-0" />
+                  <SubSuperToolbarPlugin />
+                  <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
+                  <Separator orientation="vertical" className="!h-7 shrink-0" />
+                  <ClearFormattingToolbarPlugin />
+                  <Separator orientation="vertical" className="!h-7 shrink-0" />
+                  <FontColorToolbarPlugin />
+                  <FontBackgroundToolbarPlugin />
+                  <Separator orientation="vertical" className="!h-7 shrink-0" />
+                  <ElementFormatToolbarPlugin />
+                  <Separator orientation="vertical" className="!h-7 shrink-0" />
+                  <BlockInsertPlugin>
+                    <InsertHorizontalRule />
+                    <InsertImage />
+                    <InsertTable />
+                    <InsertColumnsLayout />
+                    <InsertEmbeds />
+                  </BlockInsertPlugin>
+                </>
+              )}
+            </div>
+          )}
+        </ToolbarPlugin>
+      )}
       <div className="relative">
-        <AutoFocusPlugin />
+        {!readOnly && <AutoFocusPlugin />}
         <RichTextPlugin
           contentEditable={
             <div className="">
               <div className="" ref={onRef}>
                 <ContentEditable
                   placeholder={placeholder}
-                  className="ContentEditable__root relative block min-h-[420px] max-h-[70vh] overflow-auto px-8 py-4 focus:outline-none rounded-xl"
+                  className="ContentEditable__root relative block min-h-[520px] max-h-[80vh] overflow-auto px-8 py-6 focus:outline-none"
                 />
               </div>
             </div>
@@ -267,43 +269,45 @@ export function Plugins({}) {
 
         <ListMaxIndentLevelPlugin />
       </div>
-      <ActionsPlugin>
-        <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t p-1">
-          <div className="flex flex-1 justify-start">
-            <MaxLengthPlugin maxLength={maxLength} />
-            <CharacterLimitPlugin maxLength={maxLength} charset="UTF-16" />
+      {!readOnly && (
+        <ActionsPlugin>
+          <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t p-1">
+            <div className="flex flex-1 justify-start">
+              <MaxLengthPlugin maxLength={maxLength} />
+              <CharacterLimitPlugin maxLength={maxLength} charset="UTF-16" />
+            </div>
+            <div>
+              <CounterCharacterPlugin charset="UTF-16" />
+            </div>
+            <div className="flex flex-1 justify-end">
+              <SpeechToTextPlugin />
+              <ShareContentPlugin />
+              <ImportExportPlugin />
+              <MarkdownTogglePlugin
+                shouldPreserveNewLinesInMarkdown={true}
+                transformers={[
+                  TABLE,
+                  HR,
+                  IMAGE,
+                  EMOJI,
+                  TWEET,
+                  CHECK_LIST,
+                  ...ELEMENT_TRANSFORMERS,
+                  ...MULTILINE_ELEMENT_TRANSFORMERS,
+                  ...TEXT_FORMAT_TRANSFORMERS,
+                  ...TEXT_MATCH_TRANSFORMERS,
+                ]}
+              />
+              <EditModeTogglePlugin />
+              <>
+                <ClearEditorActionPlugin />
+                <ClearEditorPlugin />
+              </>
+              <TreeViewPlugin />
+            </div>
           </div>
-          <div>
-            <CounterCharacterPlugin charset="UTF-16" />
-          </div>
-          <div className="flex flex-1 justify-end">
-            <SpeechToTextPlugin />
-            <ShareContentPlugin />
-            <ImportExportPlugin />
-            <MarkdownTogglePlugin
-              shouldPreserveNewLinesInMarkdown={true}
-              transformers={[
-                TABLE,
-                HR,
-                IMAGE,
-                EMOJI,
-                TWEET,
-                CHECK_LIST,
-                ...ELEMENT_TRANSFORMERS,
-                ...MULTILINE_ELEMENT_TRANSFORMERS,
-                ...TEXT_FORMAT_TRANSFORMERS,
-                ...TEXT_MATCH_TRANSFORMERS,
-              ]}
-            />
-            <EditModeTogglePlugin />
-            <>
-              <ClearEditorActionPlugin />
-              <ClearEditorPlugin />
-            </>
-            <TreeViewPlugin />
-          </div>
-        </div>
-      </ActionsPlugin>
+        </ActionsPlugin>
+      )}
     </div>
   )
 }

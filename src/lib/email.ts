@@ -6,7 +6,6 @@ const FROM_ADDRESS = process.env.RESEND_FROM ?? "onboarding@antify.alexander-hol
 const FROM = `TEC Info Board <${FROM_ADDRESS}>`
 const BASE_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
 
-// ── shared HTML wrapper ────────────────────────────────────────────────────────
 
 function emailLayout(opts: {
   headerText: string

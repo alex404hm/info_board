@@ -36,7 +36,7 @@ export function Editor({
   readOnly?: boolean
 }) {
   return (
-    <div className="bg-surface-soft overflow-hidden rounded-2xl border border-border/60 shadow-lg">
+    <div className="bg-background overflow-hidden rounded-lg">
       <LexicalComposer
         initialConfig={{
           ...editorConfig,

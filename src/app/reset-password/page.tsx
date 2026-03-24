@@ -56,7 +56,7 @@ function ResetPasswordForm() {
     <div style={{ minHeight: "100svh", background: "var(--background, #040b16)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", fontFamily: "var(--font-geist-sans, system-ui, sans-serif)" }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={{ marginBottom: 48 }}>
-          <Image src="/logo.svg" alt="TEC" width={72} height={26} style={{ height: 26, width: "auto" }} />
+          <Image src="/logo.svg" alt="TEC" width={72} height={26} style={{ height: "auto", width: "auto" }} />
         </div>
 
         <div style={{ position: "relative", overflow: "hidden", minHeight: 320 }}>
