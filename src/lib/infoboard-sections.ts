@@ -5,7 +5,7 @@ import { CanteenPanel } from "@/components/panels/CanteenPanel"
 import { ContactsPanel } from "@/components/panels/ContactsPanel"
 import { DeparturesPanel } from "@/components/panels/DeparturesPanel"
 import { KokkenvagtPanel } from "@/components/panels/KokkenvagtPanel"
-import { LoenPanel } from "@/components/panels/LoenPanel"
+
 import { NewsPanel } from "@/components/panels/NewsPanel"
 import { TrafikPanel } from "@/components/panels/TrafikPanel"
 import { WeatherPanel } from "@/components/panels/WeatherPanel"
@@ -66,12 +66,7 @@ export const INFOBOARD_SECTIONS: InfoBoardSection[] = [
     subtitle: "Vagtplan og instruktioner for køkkenet",
     Panel: KokkenvagtPanel,
   },
-  {
-    slug: "loen",
-    title: "Løn",
-    subtitle: "Lønsatser for lærlinge — timeløn og månedsløn",
-    Panel: LoenPanel,
-  },
+
 ]
 
 export const INFOBOARD_SECTION_MAP = Object.fromEntries(

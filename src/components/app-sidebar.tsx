@@ -55,7 +55,7 @@ function buildInstructorSections() {
         { title: "Kalender",         url: "/admin/calendar",   icon: CalendarDays },
         { title: "Display & Layout", url: "/admin/display",    icon: LayoutGrid },
         { title: "Køkkenvagt",       url: "/admin/kokkenvagt", icon: Coffee },
-        { title: "Lønsatser",        url: "/admin/loen",       icon: Wallet },
+
         { title: "Intranet",         url: "/admin/intranet",   icon: BookOpen },
       ],
     },
