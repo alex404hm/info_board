@@ -11,9 +11,4 @@ const nextConfig: NextConfig = {
     ],
   },
 };
-
-module.exports = {
-  allowedDevOrigins: ['setup-const-technologies-bridges.trycloudflare.com'],
-}
-
 export default nextConfig;
