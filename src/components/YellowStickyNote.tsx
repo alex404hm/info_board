@@ -15,6 +15,9 @@ type YellowStickyNoteProps = {
   headerSlot?: ReactNode
   footerSlot?: ReactNode
   overlaySlot?: ReactNode
+  /** Outline applied directly to the sticky note shape (rotates with the note) */
+  outlineColor?: string
+  outlineGlow?: string
 }
 
 const LINE_COUNT = 6
@@ -38,13 +41,22 @@ export function YellowStickyNote({
   headerSlot,
   footerSlot,
   overlaySlot,
+  outlineColor,
+  outlineGlow,
 }: YellowStickyNoteProps) {
   const dateStr = formatDate(createdAt)
   const showMeta = authorName || dateStr
 
   return (
     <div style={{ ...(rotation ? { rotate: rotation } : undefined), position: "relative" }}>
-      <div className="yellow-sticky">
+      <div
+        className="yellow-sticky"
+        style={outlineColor ? {
+          outline: `2.5px solid ${outlineColor}`,
+          outlineOffset: 3,
+          boxShadow: outlineGlow ?? undefined,
+        } : undefined}
+      >
         {/* Red margin line */}
         <div
           aria-hidden

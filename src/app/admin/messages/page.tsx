@@ -168,14 +168,14 @@ function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdi
   const actions = msg.canManage ? (
     <div
       style={{
-        position: "absolute",
-        bottom: 6,
-        left: 28,
-        right: 14,
+        position: "relative",
         zIndex: 4,
         display: "flex",
         alignItems: "center",
         gap: 2,
+        marginTop: 10,
+        paddingTop: 6,
+        borderTop: "1px solid rgba(26,26,110,0.12)",
         opacity: !msg.active ? 0.6 : 1,
       }}
     >
@@ -240,20 +240,7 @@ function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdi
           </div>
         </div>
       )}
-      <div
-        style={{
-          outline: selectionMode && selected
-            ? "2px solid #2563eb"
-            : msg.pinned
-            ? "2px solid #7c3aed"
-            : "2px solid transparent",
-          outlineOffset: 2,
-          borderRadius: 12,
-          cursor: selectionMode ? "pointer" : undefined,
-          transition: "outline 0.1s",
-          boxShadow: msg.pinned && !selectionMode ? "0 0 0 4px rgba(124,58,237,0.15)" : undefined,
-        }}
-      >
+      <div style={{ cursor: selectionMode ? "pointer" : undefined }}>
         <YellowStickyNote
           title={msg.title}
           content={msg.content}
@@ -262,7 +249,19 @@ function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdi
           rotation={rotation}
           bodyClassName="sticky-y-body sticky-y-body-full"
           headerSlot={tags}
-          overlaySlot={selectionMode ? null : actions}
+          footerSlot={selectionMode ? null : actions}
+          outlineColor={
+            selectionMode && selected
+              ? "#2563eb"
+              : msg.pinned
+              ? "#7c3aed"
+              : undefined
+          }
+          outlineGlow={
+            msg.pinned && !selectionMode
+              ? "0 0 0 4px rgba(124,58,237,0.15), 6px 12px 36px rgba(0,0,0,0.32), 2px 4px 10px rgba(0,0,0,0.18)"
+              : undefined
+          }
         />
       </div>
     </div>
