@@ -305,9 +305,14 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                       >
                         {day}
                       </span>
-                      {dotColor && !isToday && (
-                        <span className="rounded-full mt-px" style={{ width: 3, height: 3, background: dotColor, opacity: 0.8 }} />
-                      )}
+                      <span
+                        className="rounded-full mt-px"
+                        style={{
+                          width: 3, height: 3,
+                          background: dotColor && !isToday ? dotColor : "transparent",
+                          opacity: dotColor && !isToday ? 0.8 : 0,
+                        }}
+                      />
                     </div>
                   )
                 })}
@@ -315,14 +320,13 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
             </div>
 
             {/* Right: event table */}
-            <div className="flex flex-1 flex-col min-w-0 overflow-hidden justify-start">
+            <div className="flex flex-1 flex-col min-w-0 overflow-hidden justify-start ml-1">
               {upcoming.length > 0 ? (
                 <div className="flex flex-col gap-0 overflow-hidden">
                   {upcoming.map((ev, idx) => {
                     const d        = new Date(ev.start)
                     const color    = catColor(ev.category)
                     const label    = relLabel(d)
-                    const isToday  = label === "I dag"
                     const timeFrom = fmtTime(ev.start)
                     const timeTo   = ev.end ? fmtTime(ev.end) : null
                     const timeStr  = ev.allDay ? "Hele dagen" : timeTo ? `${timeFrom}–${timeTo}` : timeFrom
@@ -333,16 +337,16 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                         )}
                         <div className="flex items-center gap-2.5 py-2 px-1">
                           {/* Color dot */}
-                          <span className="shrink-0 rounded-full" style={{ width: 6, height: 6, background: color, opacity: isToday ? 1 : 0.7, flexShrink: 0 }} />
+                          <span className="shrink-0 rounded-full" style={{ width: 6, height: 6, background: color, opacity: 0.7, flexShrink: 0 }} />
                           {/* Title */}
-                          <p className="flex-1 min-w-0 truncate text-[11px] font-medium leading-none" style={{ color: isToday ? "#ffffff" : C2 }}>
+                          <p className="flex-1 min-w-0 truncate text-[11px] font-medium leading-none" style={{ color: "var(--foreground-muted)" }}>
                             {decodeHtmlEntities(ev.title)}
                           </p>
                         </div>
                         {/* Date + time row */}
                         <div className="flex items-center gap-2.5 pb-1.5 px-1" style={{ marginTop: -4 }}>
                           <span style={{ width: 6, flexShrink: 0 }} />
-                          <p className="text-[9px] tabular-nums leading-none" style={{ color: isToday ? color : "rgba(255,255,255,0.32)" }}>
+                          <p className="text-[9px] tabular-nums leading-none" style={{ color: "rgba(255,255,255,0.32)" }}>
                             {label} · {timeStr}
                           </p>
                         </div>
@@ -519,7 +523,7 @@ function SlideContent({
   return (
     <div className={`grid gap-3 pb-3 sm:gap-4 sm:pb-4 ${gridCols} items-stretch`}>
       {normalNodes.map(({ id, node }) => (
-        <div key={id} className="flex flex-col">{node}</div>
+        <div key={id} className="flex flex-col sm:min-h-[380px]">{node}</div>
       ))}
     </div>
   )

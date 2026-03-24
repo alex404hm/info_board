@@ -10,6 +10,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/calendar": { title: "Calendar",          subtitle: "Outlook ICS integration" },
   "/admin/display":  { title: "Display & Layout",  subtitle: "Configure navigation tiles" },
   "/admin/settings": { title: "My Account",        subtitle: "Profile, password & sessions" },
+  "/admin/intranet": { title: "Intranet",          subtitle: "Administrer intranet-sider og indhold" },
 }
 
 interface AdminHeaderProps {
@@ -23,7 +24,13 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ user: _user }: AdminHeaderProps) {
   const pathname = usePathname()
-  const page = PAGE_TITLES[pathname] ?? { title: "Admin", subtitle: "" }
+  
+  // Find the best match by checking if the pathname starts with the key
+  const matchedKey = Object.keys(PAGE_TITLES)
+    .sort((a, b) => b.length - a.length) // Longest match first
+    .find(key => pathname === key || (key !== "/admin" && pathname.startsWith(key + "/")))
+
+  const page = matchedKey ? PAGE_TITLES[matchedKey] : { title: "Admin", subtitle: "" }
 
   return (
     <div className="flex flex-1 items-center justify-between">

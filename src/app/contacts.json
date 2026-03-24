@@ -44,7 +44,7 @@
   {
     "name": "Kristian Kure",
     "email": "kku@tec.dk",
-    "phone": null,
+    "phone": "+45 2545 3810",
     "profilePicture": "https://tec.dk/img/placeholders/3.svg",
     "role": "Instruktør"
   },
@@ -143,6 +143,13 @@
     "name": "Torben Werner Hansen",
     "email": "twh@tec.dk",
     "phone": "+45 2545 3643",
+    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
+    "role": "Instruktør"
+  },
+  {
+    "name": "Mathias Casper Lynge Le-Holding",
+    "email": "mcll@tec.dk",
+    "phone": "+45 2545 3624",
     "profilePicture": "https://tec.dk/img/placeholders/3.svg",
     "role": "Instruktør"
   }
