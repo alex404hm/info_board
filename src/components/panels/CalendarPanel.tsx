@@ -288,10 +288,11 @@ export function CalendarPanel() {
               >
                 {day && (
                   <>
-                    <div className="mb-1.5">
+                    {/* Mobile: centered number + centered dots */}
+                    <div className="flex flex-col items-center sm:hidden">
                       <span
                         className={cn(
-                          "inline-flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-semibold tabular-nums sm:h-6 sm:w-6 sm:text-[11px] md:h-7 md:w-7 md:text-[13px]",
+                          "inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums",
                           isT && "bg-emerald-500 font-bold text-white shadow-sm shadow-emerald-500/30",
                           !isT && isWeekend && "text-slate-600",
                           !isT && !isWeekend && "text-slate-300",
@@ -299,27 +300,43 @@ export function CalendarPanel() {
                       >
                         {day}
                       </span>
-                    </div>
-                    {de.length > 0 && (
-                      <div className="flex flex-wrap gap-0.5 sm:hidden">
-                        {de.slice(0, 3).map((ev) => (
-                          <span key={ev.id} className={cn("h-1.5 w-1.5 rounded-full", catColor(ev.category).dot)} />
-                        ))}
-                      </div>
-                    )}
-                    <div className="hidden space-y-0.5 overflow-hidden sm:block">
-                      {de.slice(0, 2).map((ev) => {
-                        const col = catColor(ev.category)
-                        return (
-                          <div key={ev.id} className={cn("flex min-w-0 items-center gap-1 rounded-[4px] px-1.5 py-[3px] text-[10px] font-medium leading-tight overflow-hidden", col.pill)}>
-                            <span className={cn("h-1 w-1 shrink-0 rounded-full", col.dot)} />
-                            <span className="min-w-0 truncate">{ev.title}</span>
-                          </div>
-                        )
-                      })}
-                      {de.length > 2 && (
-                        <p className="px-1.5 text-[10px] font-medium text-subtle">+{de.length - 2} mere</p>
+                      {de.length > 0 && (
+                        <div className="mt-1 flex flex-wrap justify-center gap-0.5">
+                          {de.slice(0, 3).map((ev) => (
+                            <span key={ev.id} className={cn("h-1.5 w-1.5 rounded-full", catColor(ev.category).dot)} />
+                          ))}
+                        </div>
                       )}
+                    </div>
+
+                    {/* Desktop: top-left number + event pills */}
+                    <div className="hidden sm:block">
+                      <div className="mb-1.5">
+                        <span
+                          className={cn(
+                            "inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums md:h-7 md:w-7 md:text-[13px]",
+                            isT && "bg-emerald-500 font-bold text-white shadow-sm shadow-emerald-500/30",
+                            !isT && isWeekend && "text-slate-600",
+                            !isT && !isWeekend && "text-slate-300",
+                          )}
+                        >
+                          {day}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5 overflow-hidden">
+                        {de.slice(0, 2).map((ev) => {
+                          const col = catColor(ev.category)
+                          return (
+                            <div key={ev.id} className={cn("flex min-w-0 items-center gap-1 rounded-[4px] px-1.5 py-[3px] text-[10px] font-medium leading-tight overflow-hidden", col.pill)}>
+                              <span className={cn("h-1 w-1 shrink-0 rounded-full", col.dot)} />
+                              <span className="min-w-0 truncate">{ev.title}</span>
+                            </div>
+                          )
+                        })}
+                        {de.length > 2 && (
+                          <p className="px-1.5 text-[10px] font-medium text-subtle">+{de.length - 2} mere</p>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}

@@ -27,7 +27,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
     "maplibre-gl": "^5.19.0",
-    "next": "16.1.6",
+    "next": "16.2.1",
     "next-turnstile": "^1.0.7",
     "pg": "^8.20.0",
     "postgres": "^3.4.8",
@@ -52,7 +52,7 @@
     "autoprefixer": "^10.4.27",
     "drizzle-kit": "^0.31.9",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.2.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4",
     "typescript": "^5"

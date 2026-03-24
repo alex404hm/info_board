@@ -87,17 +87,16 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
       const todayRegular = hasDishData ? (dailyDish?.regular ?? null) : null
       const todayVegan   = hasDishData ? (dailyDish?.vegetarian ?? null) : null
       return (
-        <div className="flex h-full flex-col overflow-hidden rounded-2xl" style={{ background: "var(--surface-alt)", border: `1px solid ${C3}`, minHeight: 290 }}>
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl" style={{ background: "var(--surface-alt)", border: `1px solid ${C3}` }}>
 
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden"
-              style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
-              <Image src="/logo/kanpla.png" alt="Kanpla" width={36} height={36} className="h-full w-full object-fill" />
+          <div className="flex items-center gap-3 px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/15 shrink-0">
+              <Image src="/logo/kanpla.png" alt="Kanpla" width={20} height={20} className="h-full w-full rounded-[3px] object-fill" />
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] leading-none" style={{ color: C2 }}>Kantine</p>
-              <p className="text-[16px] font-bold leading-tight mt-0.5" style={{ color: C1 }}>Dagens ret</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] leading-none" style={{ color: C2 }}>Kantine</p>
+              <p className="text-[15px] font-bold leading-tight mt-0.5" style={{ color: C1 }}>Dagens ret</p>
             </div>
           </div>
 
@@ -109,43 +108,45 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
               <p className="text-sm px-1" style={{ color: C2 }}>Henter dagens ret…</p>
             ) : (
               <div className="flex flex-col gap-2 shrink-0">
-                {/* Regular dish */}
-                {todayRegular && (
-                  <div className="flex items-stretch rounded-xl overflow-hidden shrink-0"
-                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)" }}>
-                    <span className="shrink-0 w-1" style={{ background: "#f09458" }} />
-                    <div className="flex-1 min-w-0 py-3 px-4">
-                      <p className="text-[11px] font-semibold leading-none mb-2" style={{ color: "#f09458" }}>
-                        🍽 Dagens ret
-                      </p>
-                      <p className="text-[18px] font-bold leading-tight" style={{ color: "#ffffff" }}>
-                        {decodeHtmlEntities(todayRegular.dishName || "Ingen ret i dag")}
-                      </p>
-                    </div>
+                {(todayRegular || todayVegan) ? (
+                  /* One box, vertical line in the middle */
+                  <div className="flex items-stretch rounded-lg overflow-hidden shrink-0"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    {/* Left – regular */}
+                    {todayRegular && (
+                      <div className="flex-1 min-w-0 flex flex-col justify-center px-4 py-4 overflow-hidden">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.16em] leading-none mb-2 truncate"
+                          style={{ color: "#f09458" }}>
+                          Dagens ret
+                        </p>
+                        <p className="text-[15px] font-bold leading-snug truncate" style={{ color: "#ffffff" }}>
+                          {decodeHtmlEntities(todayRegular.dishName || "Ingen ret i dag")}
+                        </p>
+                      </div>
+                    )}
+                    {/* Vertical divider — inset top/bottom via margin */}
+                    {todayRegular && todayVegan && (
+                      <div className="self-stretch shrink-0 w-px my-3 rounded-full" style={{ background: "rgba(255,255,255,0.13)" }} />
+                    )}
+                    {/* Right – vegan */}
+                    {todayVegan && (
+                      <div className="flex-1 min-w-0 flex flex-col justify-center px-4 py-4 overflow-hidden">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.16em] leading-none mb-2 truncate"
+                          style={{ color: "#52c484" }}>
+                          Grøn ret
+                        </p>
+                        <p className="text-[15px] font-bold leading-snug truncate" style={{ color: "#ffffff" }}>
+                          {decodeHtmlEntities(todayVegan.dishName || "Ingen grøn ret i dag")}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-                {/* Vegan dish */}
-                {todayVegan && (
-                  <div className="flex items-stretch rounded-xl overflow-hidden shrink-0"
-                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)" }}>
-                    <span className="shrink-0 w-1" style={{ background: "#52c484" }} />
-                    <div className="flex-1 min-w-0 py-3 px-4">
-                      <p className="text-[11px] font-semibold leading-none mb-2" style={{ color: "#52c484" }}>
-                        🌿 Grøn ret
-                      </p>
-                      <p className="text-[18px] font-bold leading-tight" style={{ color: "#ffffff" }}>
-                        {decodeHtmlEntities(todayVegan.dishName || "Ingen grøn ret i dag")}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {/* Fallback */}
-                {!todayRegular && !todayVegan && (
-                  <div className="flex items-stretch rounded-xl overflow-hidden shrink-0"
-                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)" }}>
-                    <span className="shrink-0 w-1" style={{ background: "#f09458" }} />
-                    <div className="flex-1 min-w-0 py-3 px-4">
-                      <p className="text-[18px] font-bold leading-tight" style={{ color: "#ffffff" }}>
+                ) : (
+                  /* Fallback */
+                  <div className="flex items-stretch rounded-lg overflow-hidden shrink-0"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div className="flex-1 min-w-0 px-4 py-4 overflow-hidden">
+                      <p className="text-[15px] font-bold leading-snug truncate" style={{ color: "#ffffff" }}>
                         {decodeHtmlEntities(dailyDish?.name ?? "Ingen ret i dag")}
                       </p>
                     </div>
@@ -154,45 +155,41 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
               </div>
             )}
 
-            {/* Weekly menu */}
+            {/* Weekly menu — desktop only */}
             {weekMenu.length > 0 && (
-              <>
+              <div className="hidden sm:contents">
                 <div className="shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.10)" }} />
                 <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.45)" }}>
                   Ugens menu
                 </p>
                 <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
-                  {weekMenu.map((item) => {
-                    const isToday = item.dateKey === todayKey
-                    return (
-                      <div key={item.dateKey}
-                        className="flex items-stretch rounded-lg overflow-hidden"
-                        style={{
-                          background: isToday ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)",
-                          border: `1px solid ${isToday ? "rgba(255,255,255,0.16)" : "transparent"}`,
-                        }}
-                      >
-                        {isToday && <span className="shrink-0 w-1" style={{ background: "#f09458" }} />}
-                        <div className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2">
-                          <span className="w-7 shrink-0 text-[11px] font-bold" style={{ color: isToday ? "#ffffff" : "rgba(255,255,255,0.50)" }}>
-                            {item.dayLabel}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[12px] font-medium leading-snug" style={{ color: isToday ? "#ffffff" : "rgba(255,255,255,0.65)" }}>
-                              {decodeHtmlEntities(item.regular?.dishName ?? item.dishName)}
+                  {weekMenu.filter(item => item.dateKey > todayKey).map((item) => (
+                    <div key={item.dateKey}
+                      className="flex items-stretch rounded-lg overflow-hidden"
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid transparent",
+                      }}
+                    >
+                      <div className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2">
+                        <span className="w-7 shrink-0 text-[11px] font-bold" style={{ color: "rgba(255,255,255,0.50)" }}>
+                          {item.dayLabel}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[12px] font-medium leading-snug" style={{ color: "rgba(255,255,255,0.65)" }}>
+                            {decodeHtmlEntities(item.regular?.dishName ?? item.dishName)}
+                          </p>
+                          {item.vegetarian?.dishName && (
+                            <p className="truncate text-[11px] leading-snug" style={{ color: "rgba(82,196,132,0.55)" }}>
+                              {decodeHtmlEntities(item.vegetarian.dishName)}
                             </p>
-                            {item.vegetarian?.dishName && (
-                              <p className="truncate text-[11px] leading-snug" style={{ color: isToday ? "rgba(82,196,132,0.90)" : "rgba(82,196,132,0.55)" }}>
-                                🌿 {decodeHtmlEntities(item.vegetarian.dishName)}
-                              </p>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                    )
-                  })}
+                    </div>
+                  ))}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -250,22 +247,22 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
 
       const todayMidnight = new Date()
       todayMidnight.setHours(0, 0, 0, 0)
+
       const upcoming = calendarEvents
-        .filter(ev => {
-          const d = new Date(ev.start)
-          return !isNaN(d.getTime()) && d >= todayMidnight
-        })
+        .filter(ev => { const d = new Date(ev.start); return !isNaN(d.getTime()) && d >= todayMidnight })
         .sort((a, b) => a.start.localeCompare(b.start))
         .slice(0, 5)
 
+      const fmtTime = (iso: string) =>
+        new Date(iso).toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })
+
       return (
-        <div className="flex h-full flex-col overflow-hidden rounded-2xl" style={{ ...card, minHeight: 290 }}>
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl" style={card}>
 
           {/* ── Header ── */}
           <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0" style={{ borderBottom: `1px solid ${C3}` }}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-              style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
-              <Calendar className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 shrink-0">
+              <Calendar className="h-[18px] w-[18px]" style={{ color: "#a78bfa" }} />
             </div>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] leading-none" style={{ color: "var(--foreground-muted)" }}>Kalender</p>
@@ -276,15 +273,15 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
           </div>
 
           {/* ── Body ── */}
-          <div className="flex flex-1 min-h-0 gap-0 px-3 pb-3 pt-3">
+          <div className="flex flex-1 min-h-0 px-3 sm:px-4 pb-3 sm:pb-4 pt-3 gap-4 sm:gap-5">
 
-            {/* Left: mini calendar */}
-            <div className="flex flex-col shrink-0" style={{ width: 210 }}>
+            {/* Left: mini calendar — hidden on mobile */}
+            <div className="hidden sm:flex flex-col shrink-0" style={{ width: 248 }}>
               {/* DOW row */}
               <div className="grid grid-cols-7 mb-1">
                 {dayInitials.map((ltr, i) => (
                   <div key={i} className="flex items-center justify-center h-6">
-                    <span className="text-[9px] font-bold uppercase" style={{ color: "var(--accent)", opacity: 0.55 }}>{ltr}</span>
+                    <span className="text-[9px] font-bold uppercase" style={{ color: "var(--accent)", opacity: 0.5 }}>{ltr}</span>
                   </div>
                 ))}
               </div>
@@ -300,9 +297,8 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                       <span
                         className="flex items-center justify-center rounded-full text-[11px] leading-none"
                         style={{
-                          width: 24, height: 24,
+                          width: 26, height: 26,
                           background: isToday ? "var(--accent)" : "transparent",
-                          boxShadow: "none",
                           color: isToday ? "#fff" : isPast ? "rgba(255,255,255,0.2)" : C1,
                           fontWeight: isToday ? 700 : isPast ? 400 : 500,
                         }}
@@ -310,7 +306,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                         {day}
                       </span>
                       {dotColor && !isToday && (
-                        <span className="rounded-full mt-px" style={{ width: 3, height: 3, background: dotColor, opacity: 0.85 }} />
+                        <span className="rounded-full mt-px" style={{ width: 3, height: 3, background: dotColor, opacity: 0.8 }} />
                       )}
                     </div>
                   )
@@ -318,42 +314,42 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
               </div>
             </div>
 
-            {/* Separator */}
-            <div className="mx-3 w-px self-stretch shrink-0 rounded-full" style={{ background: C3 }} />
-
-            {/* Right: event list */}
-            <div className="flex flex-1 flex-col min-w-0 gap-1.5 overflow-hidden justify-start">
+            {/* Right: event table */}
+            <div className="flex flex-1 flex-col min-w-0 overflow-hidden justify-start">
               {upcoming.length > 0 ? (
-                upcoming.map(ev => {
-                  const d          = new Date(ev.start)
-                  const color      = catColor(ev.category)
-                  const label      = relLabel(d)
-                  const isToday    = label === "I dag"
-                  const isTomorrow = label === "I morgen"
-                  return (
-                    <div
-                      key={ev.id}
-                      className="flex items-stretch gap-2.5 rounded-xl overflow-hidden shrink-0"
-                      style={{
-                        background: C4,
-                        border: `1px solid ${isToday ? color + "44" : C3}`,
-                        boxShadow: "none",
-                      }}
-                    >
-                      {/* Colour bar */}
-                      <span className="shrink-0 w-[3px]" style={{ background: color, opacity: isToday ? 1 : 0.65 }} />
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 py-2 pr-2.5">
-                        <p className="truncate text-[11px] font-semibold leading-tight" style={{ color: C1 }}>
-                          {decodeHtmlEntities(ev.title)}
-                        </p>
-                        <p className="text-[9px] mt-0.5 leading-none tabular-nums" style={{ color: isToday ? color : isTomorrow ? C2 : "var(--foreground-soft)" }}>
-                          {label}{!ev.allDay && ` · ${d.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}`}
-                        </p>
+                <div className="flex flex-col gap-0 overflow-hidden">
+                  {upcoming.map((ev, idx) => {
+                    const d        = new Date(ev.start)
+                    const color    = catColor(ev.category)
+                    const label    = relLabel(d)
+                    const isToday  = label === "I dag"
+                    const timeFrom = fmtTime(ev.start)
+                    const timeTo   = ev.end ? fmtTime(ev.end) : null
+                    const timeStr  = ev.allDay ? "Hele dagen" : timeTo ? `${timeFrom}–${timeTo}` : timeFrom
+                    return (
+                      <div key={ev.id}>
+                        {idx > 0 && (
+                          <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+                        )}
+                        <div className="flex items-center gap-2.5 py-2 px-1">
+                          {/* Color dot */}
+                          <span className="shrink-0 rounded-full" style={{ width: 6, height: 6, background: color, opacity: isToday ? 1 : 0.7, flexShrink: 0 }} />
+                          {/* Title */}
+                          <p className="flex-1 min-w-0 truncate text-[11px] font-medium leading-none" style={{ color: isToday ? "#ffffff" : C2 }}>
+                            {decodeHtmlEntities(ev.title)}
+                          </p>
+                        </div>
+                        {/* Date + time row */}
+                        <div className="flex items-center gap-2.5 pb-1.5 px-1" style={{ marginTop: -4 }}>
+                          <span style={{ width: 6, flexShrink: 0 }} />
+                          <p className="text-[9px] tabular-nums leading-none" style={{ color: isToday ? color : "rgba(255,255,255,0.32)" }}>
+                            {label} · {timeStr}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })
+                    )
+                  })}
+                </div>
               ) : (
                 <div className="flex flex-1 items-center justify-center">
                   <p className="text-[10px]" style={{ color: C3 }}>Ingen kommende begivenheder</p>
@@ -722,25 +718,22 @@ export function TopCarousel() {
     }
   }, [resetIdle])
 
-  const ctrlOpacity = idle ? 0.15 : 1
-  const ctrlTransition = "opacity 800ms ease"
-
   return (
-    <div className="relative px-1 sm:px-16">
+    <div className="relative sm:px-24">
       <div className="mx-auto w-full max-w-[1400px]">
         <div className="relative flex items-center">
 
-          {/* Prev */}
+          {/* Prev — sits outside the viewport in the side padding zone */}
           <button
             onClick={goToPrevious}
-            className="absolute -left-14 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90 sm:-left-20"
-            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)", opacity: ctrlOpacity, transition: ctrlTransition }}
+            className="absolute -left-20 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.10] active:scale-90"
+            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 6px 20px rgba(0,0,0,0.50)" }}
             aria-label="Previous slide"
           >
-            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: C2 }} />
+            <ChevronLeft className="h-6 w-6" style={{ color: C2 }} />
           </button>
 
-          {/* Viewport */}
+          {/* Viewport — fills full width between the padding zones */}
           <div
             className="w-full select-none"
             style={{ overflow: "hidden", cursor: dragDelta !== 0 ? "grabbing" : "grab", touchAction: "pan-y" }}
@@ -761,26 +754,26 @@ export function TopCarousel() {
               onTransitionEnd={handleTransitionEnd}
             >
               {extSlides.map((slide, i) => (
-                <div key={`${slide.id}-${i}`} className="w-full shrink-0 overflow-hidden">
+                <div key={`${slide.id}-${i}`} className="w-full shrink-0 overflow-hidden px-1 sm:px-3">
                   <SlideContent slide={slide} widgetProps={widgetProps} />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Next */}
+          {/* Next — sits outside the viewport in the side padding zone */}
           <button
             onClick={goToNext}
-            className="absolute -right-14 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full hover:bg-white/[0.08] active:scale-90 sm:-right-20"
-            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 4px 12px rgba(0,0,0,0.35)", opacity: ctrlOpacity, transition: ctrlTransition }}
+            className="absolute -right-20 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.10] active:scale-90"
+            style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 6px 20px rgba(0,0,0,0.50)" }}
             aria-label="Next slide"
           >
-            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: C2 }} />
+            <ChevronRight className="h-6 w-6" style={{ color: C2 }} />
           </button>
         </div>
 
         {/* Dot indicators */}
-        <div className="mt-3 flex justify-center gap-2" style={{ opacity: ctrlOpacity, transition: ctrlTransition }}>
+        <div className="mt-3 flex justify-center gap-2">
           {slides.map((slide, i) => (
             <button
               key={slide.id}

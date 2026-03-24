@@ -386,7 +386,7 @@
     position: relative;
     overflow: hidden;
     background: linear-gradient(168deg, #fffde7 0%, #fef9c3 38%, #fef08a 100%);
-    padding: 22px 18px 44px 30px;
+    padding: 22px 18px 52px 30px;
     /* Elliptical bottom-left = classic sticky-note fold */
     border-radius: 0 3px 3px 26px / 0 3px 3px 44px;
     box-shadow:
@@ -397,7 +397,7 @@
       2px 4px 10px rgba(0,0,0,0.18);
     font-family: var(--font-kalam), cursive;
     color: #1a1a5e;
-    min-height: 220px;
+    min-height: 180px;
     display: flex;
     flex-direction: column;
   }
@@ -437,10 +437,8 @@
     margin-bottom: 10px;
     position: relative;
     z-index: 2;
-    /* Truncate with … on overflow */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
   .sticky-y-body {
     font-family: var(--font-kalam), cursive;
@@ -449,13 +447,12 @@
     line-height: 26px;
     color: #1a1a5e;
     opacity: 0.9;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
     flex: 1;
     position: relative;
     z-index: 2;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
   }
   .sticky-y-author-row {
     display: flex;
@@ -528,25 +525,20 @@
   }
   .messages-grid > * {
     width: 100%;
-    max-width: 280px;
+    max-width: 300px;
   }
   @media (max-width: 640px) {
     .messages-grid {
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
     }
     .messages-grid > * {
       max-width: 100%;
     }
     .messages-grid .yellow-sticky {
       width: 100%;
-      padding: 16px 14px 38px 22px;
-      min-height: 180px;
-    }
-  }
-  @media (max-width: 400px) {
-    .messages-grid {
-      grid-template-columns: 1fr;
+      padding: 18px 18px 44px 26px;
+      min-height: 0;
     }
   }
   @media (max-width: 480px) {
@@ -560,8 +552,8 @@
     }
   }
   .sticky-y-body-full {
-    -webkit-line-clamp: 6;
-    min-height: 156px;
+    /* No clamp — show full content */
+    min-height: 80px;
   }
   .message-wall {
     border: 1px solid rgba(130, 168, 224, 0.18);

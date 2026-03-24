@@ -54,7 +54,7 @@ export function StatusBar() {
           </span>
         </div>
 
-        <div className="hidden h-6 w-px sm:block status-bar-divider" />
+        <div className="hidden h-6 w-px min-[390px]:block status-bar-divider" />
 
         <div className="min-w-0 text-right">
           <p className="text-base leading-none font-bold tabular-nums tracking-tight text-foreground-strong sm:text-xl">
