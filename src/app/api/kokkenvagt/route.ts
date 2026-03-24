@@ -49,26 +49,31 @@ export async function GET(request: NextRequest) {
   }
 
   // Public: return current + future weeks only
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const currentWeek = getISOWeek(now)
+  try {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentWeek = getISOWeek(now)
 
-  const entries = await db
-    .select(entryWithAuthor)
-    .from(kokkenvagtEntry)
-    .leftJoin(user, eq(kokkenvagtEntry.authorId, user.id))
-    .where(
-      or(
-        gte(kokkenvagtEntry.year, currentYear),
-        and(
-          eq(kokkenvagtEntry.year, currentYear),
-          gte(kokkenvagtEntry.week, currentWeek)
+    const entries = await db
+      .select(entryWithAuthor)
+      .from(kokkenvagtEntry)
+      .leftJoin(user, eq(kokkenvagtEntry.authorId, user.id))
+      .where(
+        or(
+          gte(kokkenvagtEntry.year, currentYear),
+          and(
+            eq(kokkenvagtEntry.year, currentYear),
+            gte(kokkenvagtEntry.week, currentWeek)
+          )
         )
       )
-    )
-    .orderBy(kokkenvagtEntry.year, kokkenvagtEntry.week)
+      .orderBy(kokkenvagtEntry.year, kokkenvagtEntry.week)
 
-  return NextResponse.json(entries)
+    return NextResponse.json(entries)
+  } catch (error) {
+    console.error("GET /api/kokkenvagt error:", error)
+    return NextResponse.json({ error: "Failed to fetch schedule" }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {

@@ -50,12 +50,17 @@ const DEFAULT_WAGE_DATA: WageResponse = {
 }
 
 export async function GET() {
-  const rows = await db.select().from(wageData).where(eq(wageData.id, 1)).limit(1)
-  if (rows.length === 0) {
+  try {
+    const rows = await db.select().from(wageData).where(eq(wageData.id, 1)).limit(1)
+    if (rows.length === 0) {
+      return NextResponse.json(DEFAULT_WAGE_DATA)
+    }
+    const { groups, currency, lastUpdated } = rows[0]
+    return NextResponse.json({ groups, currency, lastUpdated } satisfies WageResponse)
+  } catch (error) {
+    console.error("GET /api/loen error:", error)
     return NextResponse.json(DEFAULT_WAGE_DATA)
   }
-  const { groups, currency, lastUpdated } = rows[0]
-  return NextResponse.json({ groups, currency, lastUpdated } satisfies WageResponse)
 }
 
 export async function PUT(request: NextRequest) {
@@ -66,27 +71,32 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const body = (await request.json()) as WageResponse
-  const now = new Date()
+  try {
+    const body = (await request.json()) as WageResponse
+    const now = new Date()
 
-  await db
-    .insert(wageData)
-    .values({
-      id: 1,
-      groups: body.groups,
-      currency: body.currency ?? "DKK",
-      lastUpdated: body.lastUpdated ?? now.toISOString().split("T")[0],
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: wageData.id,
-      set: {
+    await db
+      .insert(wageData)
+      .values({
+        id: 1,
         groups: body.groups,
         currency: body.currency ?? "DKK",
         lastUpdated: body.lastUpdated ?? now.toISOString().split("T")[0],
         updatedAt: now,
-      },
-    })
+      })
+      .onConflictDoUpdate({
+        target: wageData.id,
+        set: {
+          groups: body.groups,
+          currency: body.currency ?? "DKK",
+          lastUpdated: body.lastUpdated ?? now.toISOString().split("T")[0],
+          updatedAt: now,
+        },
+      })
 
-  return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error("PUT /api/loen error:", error)
+    return NextResponse.json({ error: "Failed to update wage data" }, { status: 500 })
+  }
 }
