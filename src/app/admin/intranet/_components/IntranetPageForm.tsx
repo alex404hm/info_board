@@ -8,6 +8,8 @@ import * as LucideIcons from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
+import { IntranetEditorClient } from "./IntranetEditorClient"
+
 
 function IconRenderer({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) {
   const IconComponent = (LucideIcons as any)[name] || LucideIcons.Info
@@ -88,8 +90,8 @@ export default function IntranetPageForm({ initialData }: IntranetPageFormProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md py-4 -mt-4 border-b border-border/40">
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto p-6 bg-background/80 rounded-2xl shadow-xl border border-border/40">
+      <div className="flex items-center justify-between sticky top-0 z-10 bg-background/90 backdrop-blur-md py-6 -mt-6 border-b border-border/40 rounded-t-2xl">
         <div className="flex items-center gap-4">
           <Link
             href="/admin/intranet"
@@ -184,22 +186,22 @@ export default function IntranetPageForm({ initialData }: IntranetPageFormProps)
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Indhold (Markdown)</label>
               <span className="text-[10px] text-muted-foreground">Markdown understøttes (overskrifter, lister, tabeller)</span>
             </div>
-            <textarea
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              className="w-full min-h-[400px] rounded-lg border border-border/60 bg-surface px-4 py-3 font-mono text-sm focus:border-accent/40 focus:outline-none resize-y"
-              placeholder="# Overskrift\n\nHer er noget indhold..."
-              required
-            />
+            {/* Shadcn Editor-X integration */}
+            <div className="w-full min-h-[420px] rounded-2xl border border-border/60 bg-surface-soft shadow-lg p-2">
+              <IntranetEditorClient
+                content={formData.content}
+                onSerializedChange={undefined}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {activeTab === "preview" && (
-        <div className="rounded-2xl border border-border/60 bg-surface p-8 max-w-none prose prose-invert prose-sm overflow-auto max-h-[70vh]">
+        <div className="rounded-2xl border border-border/60 bg-surface-soft p-10 max-w-3xl mx-auto prose prose-invert prose-base shadow-lg overflow-auto max-h-[70vh]">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">{formData.title || "Titel"}</h1>
-            <p className="text-muted-foreground">{formData.subtitle || "Undertitel"}</p>
+            <h1 className="text-4xl font-extrabold mb-2">{formData.title || "Titel"}</h1>
+            <p className="text-lg text-muted-foreground">{formData.subtitle || "Undertitel"}</p>
           </div>
           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{formData.content || "*Ingen tekst endnu*"}</ReactMarkdown>
         </div>
