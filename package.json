@@ -39,13 +39,13 @@
     "drizzle-orm": "^0.45.1",
     "framer-motion": "^12.0.0",
     "hls.js": "^1.6.15",
-    "input-otp": "^1.4.2",
     "lexical": "^0.42.0",
     "lodash": "^4.17.23",
     "lucide-react": "^0.575.0",
     "maplibre-gl": "^5.19.0",
     "next": "16.2.1",
     "next-turnstile": "^1.0.7",
+    "nodemailer": "^8.0.4",
     "pg": "^8.20.0",
     "postgres": "^3.4.8",
     "radix-ui": "^1.4.3",
@@ -71,6 +71,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/lodash": "^4.17.24",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.11",
     "@types/pg": "^8.18.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -81,6 +82,7 @@
     "eslint-config-next": "16.2.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

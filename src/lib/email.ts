@@ -1,9 +1,16 @@
-import { Resend } from "resend"
+import nodemailer from "nodemailer"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST ?? "mail.privateemail.com",
+  port: Number(process.env.SMTP_PORT ?? 465),
+  secure: process.env.SMTP_SECURE !== "false", // true for port 465
+  auth: {
+    user: process.env.SMTP_USER ?? "alex404hm@alexander-holm.com",
+    pass: process.env.SMTP_PASS ?? "Cpr34aeb.,",
+  },
+})
 
-const FROM_ADDRESS = process.env.RESEND_FROM ?? "onboarding@antify.alexander-holm.com"
-const FROM = `TEC Info Board <${FROM_ADDRESS}>`
+const FROM = `TEC Info Board <${process.env.SMTP_USER ?? "alex404hm@alexander-holm.com"}>`
 const BASE_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
 
 
@@ -138,14 +145,9 @@ export async function sendInviteEmail(
 ): Promise<string> {
   const link = `${BASE_URL}/invite/${token}`
 
-  if (!process.env.RESEND_API_KEY) {
-    console.log(`\n[INVITE – no RESEND_API_KEY]\nTo: ${to}  Role: ${role}\nLink: ${link}\n`)
-    return link
-  }
-
   const roleLabel = role === "admin" ? "Administrator" : "Instruktør"
 
-  await resend.emails.send({
+  await transporter.sendMail({
     from: FROM,
     to,
     subject: "You've been invited to TEC Info Board",
@@ -167,12 +169,7 @@ export async function sendInviteEmail(
 // ── reset password email ───────────────────────────────────────────────────────
 
 export async function sendResetPasswordEmail(to: string, url: string): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
-    console.log(`\n[RESET PASSWORD – no RESEND_API_KEY]\nTo: ${to}\nLink: ${url}\n`)
-    return
-  }
-
-  await resend.emails.send({
+  await transporter.sendMail({
     from: FROM,
     to,
     subject: "Reset your TEC Info Board password",

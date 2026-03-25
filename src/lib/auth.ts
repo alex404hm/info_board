@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { admin, twoFactor } from "better-auth/plugins"
+import { admin } from "better-auth/plugins"
 
 import { db } from "@/db"
 import * as schema from "@/db/schema"
@@ -24,7 +24,6 @@ export const auth = betterAuth({
       session: schema.session,
       account: schema.account,
       verification: schema.verification,
-      twoFactor: schema.twoFactor,
     },
   }),
   emailAndPassword: {
@@ -52,24 +51,7 @@ export const auth = betterAuth({
       "/sign-in/email": { window: 60, max: 5 },
     },
   },
-  plugins: [admin(), twoFactor({
-    issuer: "InfoBoard",
-    backupCodesOptions: {
-      amount: 10,
-      length: 10,
-    },
-    totpOptions: {
-      digits: 6,
-      period: 30,
-    },
-    otpOptions: {
-      period: 3,
-      sendOTP: async ({ user, otp }, ctx) => {
-        // TODO: Implement sending OTP to user (email/SMS)
-      },
-    },
-    skipVerificationOnEnable: false,
-  })],
+  plugins: [admin()],
   secret,
   baseURL,
   trustedOrigins: [baseURL],
