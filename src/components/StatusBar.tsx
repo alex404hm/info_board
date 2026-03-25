@@ -37,7 +37,7 @@ export function StatusBar() {
             alt="TEC"
             width={100}
             height={36}
-            className="h-9 w-auto"
+            className="h-9 w-auto brightness-0 invert"
           />
         </Link>
         <div className="hidden h-6 w-px sm:block status-bar-divider" />

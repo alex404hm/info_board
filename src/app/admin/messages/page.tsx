@@ -764,7 +764,7 @@ export default function MessagesPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Beskeder</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Beskeder</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Opret opslag til infoskærmen
             {active.length > 0 && <span> — {active.length} {active.length === 1 ? "aktiv" : "aktive"}</span>}
@@ -806,7 +806,7 @@ export default function MessagesPage() {
       {/* ── Form ── */}
       {showForm && (
         <div className="rounded-2xl border border-border/50 bg-card/40 p-6 shadow-xl">
-          <h2 className="mb-5 text-base font-bold">{editingId ? "Rediger besked" : "Ny besked"}</h2>
+          <h2 className="mb-5 text-base font-bold text-foreground">{editingId ? "Rediger besked" : "Ny besked"}</h2>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between">

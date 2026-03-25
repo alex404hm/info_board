@@ -371,7 +371,7 @@ export default function KokkenvagtAdminPage() {
             <ChefHat className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Køkkenvagt</h1>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Køkkenvagt</h1>
             <p className="text-xs text-muted-foreground">Administrer vagtplanen uge for uge</p>
           </div>
         </div>

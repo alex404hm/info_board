@@ -125,15 +125,6 @@ export const drNewsArticle = pgTable("dr_news_article", {
   fetchedAt: timestamp("fetchedAt").notNull(),
 })
 
-export const feedback = pgTable("feedback", {
-  id: text("id").primaryKey(),
-  rating: integer("rating").notNull(),           // 1-5
-  comment: text("comment"),
-  ideas: json("ideas").$type<string[]>().default([]),
-  ip: text("ip"),
-  createdAt: timestamp("createdAt").notNull(),
-})
-
 
 export const wageData = pgTable("wage_data", {
   id: integer("id").primaryKey(),

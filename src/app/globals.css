@@ -103,6 +103,7 @@
   --chart-3: #5eead4;
   --chart-4: #f9a8d4;
   --chart-5: #fbbf24;
+  --input: rgba(255, 255, 255, 0.12);
   --ring: var(--surface-border);
   --border: var(--surface-border);
   --card: var(--surface);
