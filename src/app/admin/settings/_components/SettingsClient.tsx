@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import {
   User,
   Mail,
-  Lock,
   Eye,
   EyeOff,
   Save,
@@ -25,7 +24,6 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { authClient, useSession } from "@/lib/auth-client"
-import Settings2FA from "@/components/admin/Settings2FA"
 import { cn } from "@/lib/utils"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 import {
@@ -852,17 +850,6 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
         )}
       </Card>
 
-      {/* ── 2FA Setup ──────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader
-          icon={Lock}
-          iconColor="text-amber-400"
-          iconBg="bg-amber-400/10"
-          title="To-faktor-godkendelse"
-          subtitle="Beskyt din konto med et ekstra lag sikkerhed"
-        />
-        <Settings2FA />
-      </Card>
     </div>
   )
 }
