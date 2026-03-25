@@ -1,11 +1,5 @@
 import nodemailer from "nodemailer";
-
-// Make sure to set these environment variables in your .env file:
-// SMTP_HOST=mail.privateemail.com
-// SMTP_PORT=465
-// SMTP_USER=your_full_email@yourdomain.com
-// SMTP_PASS=your_email_password
-// SMTP_SECURE=true
+import "dotenv/config"; // Ensures .env is loaded
 
 async function main() {
   const to = "alexander.hm404@gmail.com";
