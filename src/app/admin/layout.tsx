@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import AdminHeader from "./_components/AdminHeader"
+import { AdminThemeProvider } from "./_components/AdminThemeProvider"
 import { AppSidebar } from "@/components/app-sidebar"
 import AdminLogin from "./_components/AdminLogin"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
@@ -46,10 +47,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <SidebarProvider>
-      <div className="admin-theme flex min-h-svh w-full">
+      <AdminThemeProvider>
         <AppSidebar user={user} />
         <SidebarInset className="bg-background">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-[color:var(--surface)] px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-card px-4">
             <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
             <Separator orientation="vertical" className="mr-2 h-4 bg-border/60" />
             <AdminHeader user={user} />
@@ -58,7 +59,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <div className="mx-auto w-full max-w-5xl">{children}</div>
           </main>
         </SidebarInset>
-      </div>
+      </AdminThemeProvider>
     </SidebarProvider>
   )
 }

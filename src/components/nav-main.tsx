@@ -34,6 +34,8 @@ type NavSection = {
   items: NavItem[]
 }
 
+const lastSegment = (url: string) => url.split("/").filter(Boolean).at(-1) ?? ""
+
 export function NavMain({ sections }: { sections: NavSection[] }) {
   const pathname = usePathname()
 

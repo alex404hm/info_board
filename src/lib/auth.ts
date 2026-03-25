@@ -73,25 +73,4 @@ export const auth = betterAuth({
   secret,
   baseURL,
   trustedOrigins: [baseURL],
-  databaseHooks: {
-    session: {
-      create: {
-        after: async (session) => {
-          try {
-            const { log } = await import("@/lib/logger")
-            void log({
-              eventType: "login_success",
-              ip: session.ipAddress ?? null,
-              method: "POST",
-              path: "/sign-in/email",
-              statusCode: 200,
-              userId: session.userId,
-              userAgent: session.userAgent ?? null,
-              details: { sessionId: session.id },
-            })
-          } catch {}
-        },
-      },
-    },
-  },
 })

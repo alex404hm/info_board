@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { notFound } from "next/navigation"
 import { SectionPageShell } from "@/components/SectionPageShell"
 import { IntranetSectionPage } from "@/components/panels/IntranetPanel"

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -43,6 +44,24 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 :root {
@@ -349,35 +368,128 @@
     }
   }
 
+  /* ── Admin theme: dark by default, .light toggles to light ── */
   .admin-theme {
-    --background: #0b1220;
-    --foreground: #e2e8f0;
-    --foreground-muted: #a1b0c7;
-    --foreground-subtle: #7f8ca4;
-    --foreground-soft: #657189;
-    --accent: #60a5fa;
-    --accent-strong: #93c5fd;
-    --accent-soft: rgba(96, 165, 250, 0.18);
-    --accent-border: rgba(96, 165, 250, 0.35);
-    --surface: #0f172a;
-    --surface-soft: #111b2f;
-    --surface-alt: #16213a;
-    --surface-muted: #0b1426;
-    --surface-border: rgba(148, 163, 184, 0.2);
-    --surface-border-strong: rgba(148, 163, 184, 0.3);
-    --panel-shadow: 0 20px 40px rgba(2, 6, 23, 0.5);
-    --panel-shadow-soft: 0 14px 28px rgba(2, 6, 23, 0.45);
-    --tile-border: rgba(148, 163, 184, 0.2);
-    --tile-shadow: 0 18px 34px rgba(2, 6, 23, 0.5);
-    --divider: rgba(148, 163, 184, 0.22);
-    --sidebar: #0f172a;
-    --sidebar-border: rgba(148, 163, 184, 0.2);
-    --sidebar-foreground: #e2e8f0;
-    --sidebar-accent: rgba(96, 165, 250, 0.12);
-    --sidebar-accent-foreground: #e2e8f0;
-    --sidebar-primary: #1d4ed8;
-    --sidebar-primary-foreground: #e2e8f0;
-    --sidebar-active: rgba(96, 165, 250, 0.18);
+    --radius: 0.625rem;
+    /* Shadcn dark values — default for admin */
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+    --sidebar-active: oklch(1 0 0 / 12%);
+    /* Legacy surface vars used by admin utility classes */
+    --surface: oklch(0.205 0 0);
+    --surface-soft: oklch(0.269 0 0);
+    --surface-alt: oklch(0.3 0 0);
+    --surface-muted: oklch(0.12 0 0);
+    --surface-border: oklch(1 0 0 / 10%);
+    --surface-border-strong: oklch(1 0 0 / 20%);
+    --panel-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    --panel-shadow-soft: 0 14px 28px rgba(0, 0, 0, 0.4);
+    --tile-border: oklch(1 0 0 / 10%);
+    --divider: oklch(1 0 0 / 12%);
+    --foreground-muted: oklch(0.708 0 0);
+    --foreground-subtle: oklch(0.556 0 0);
+    --foreground-soft: oklch(0.45 0 0);
+  }
+
+  /* ── Admin light theme (secondary / toggled) ── */
+  .admin-theme.light {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar-active: oklch(0.922 0 0);
+    /* Legacy surface vars */
+    --surface: oklch(0.985 0 0);
+    --surface-soft: oklch(0.97 0 0);
+    --surface-alt: oklch(0.94 0 0);
+    --surface-muted: oklch(0.99 0 0);
+    --surface-border: oklch(0.922 0 0);
+    --surface-border-strong: oklch(0.85 0 0);
+    --panel-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    --panel-shadow-soft: 0 14px 28px rgba(0, 0, 0, 0.06);
+    --tile-border: oklch(0.922 0 0);
+    --divider: oklch(0.9 0 0);
+    --foreground-muted: oklch(0.45 0 0);
+    --foreground-subtle: oklch(0.35 0 0);
+    --foreground-soft: oklch(0.3 0 0);
+  }
+
+  /* ── Admin toast (success / error) — adapts to light & dark ── */
+  .admin-toast-success {
+    background: oklch(0.17 0.07 155 / 0.95);
+    border-color: oklch(0.42 0.14 155 / 0.55);
+    color: oklch(0.83 0.14 155);
+  }
+  .admin-theme.light .admin-toast-success {
+    background: oklch(0.95 0.04 155);
+    border-color: oklch(0.65 0.12 155 / 0.45);
+    color: oklch(0.24 0.12 155);
+  }
+  .admin-toast-error {
+    background: oklch(0.17 0.07 22 / 0.95);
+    border-color: oklch(0.42 0.15 22 / 0.55);
+    color: oklch(0.83 0.16 22);
+  }
+  .admin-theme.light .admin-toast-error {
+    background: oklch(0.96 0.03 22);
+    border-color: oklch(0.65 0.13 22 / 0.45);
+    color: oklch(0.27 0.14 22);
   }
 
   /* ── Yellow sticky note (Kalam font, classic post-it) ── */

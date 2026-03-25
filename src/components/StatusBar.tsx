@@ -31,13 +31,13 @@ export function StatusBar() {
       {/* Left - Branding */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         <Link href="/" className="flex items-center transition-opacity hover:opacity-75">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/logo.svg"
             alt="TEC"
             width={100}
             height={36}
-            priority
-            className="h-auto w-auto brightness-0 invert"
+            className="h-9 w-auto"
           />
         </Link>
         <div className="hidden h-6 w-px sm:block status-bar-divider" />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Save, ArrowLeft, Loader2, Info, Layout, Palette, Type } from "lucide-react"
 import Link from "next/link"
@@ -40,6 +40,7 @@ export default function IntranetPageForm({ initialData }: IntranetPageFormProps)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"edit" | "preview" | "settings">("edit")
+  const editorContentRef = useRef<string>(initialData?.content || "")
 
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -62,14 +63,20 @@ export default function IntranetPageForm({ initialData }: IntranetPageFormProps)
     setError(null)
 
     try {
-      const url = initialData 
-        ? `/api/admin/intranet/${initialData.id}` 
+      // Capture editor content from ref on submit
+      const submitData = {
+        ...formData,
+        content: editorContentRef.current,
+      }
+
+      const url = initialData
+        ? `/api/admin/intranet/${initialData.id}`
         : "/api/admin/intranet"
-      
+
       const res = await fetch(url, {
         method: initialData ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       })
 
       if (!res.ok) {
@@ -194,7 +201,7 @@ export default function IntranetPageForm({ initialData }: IntranetPageFormProps)
                 }
               })()}
               onSerializedChange={(state) =>
-                setFormData((prev) => ({ ...prev, content: JSON.stringify(state) }))
+                (editorContentRef.current = JSON.stringify(state))
               }
             />
           </div>

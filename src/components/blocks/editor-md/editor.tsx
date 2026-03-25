@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useEffect, useRef } from "react"
 import {
   InitialConfigType,
   LexicalComposer,
@@ -35,6 +36,19 @@ export function Editor({
   onSerializedChange?: (editorSerializedState: SerializedEditorState) => void
   readOnly?: boolean
 }) {
+  // Keep props in refs so the onChange callback never needs to change identity.
+  // This prevents OnChangePlugin from re-subscribing on every parent re-render,
+  // which was causing Node's async-hooks Map to overflow with Turbopack dev.
+  const onChangeRef = useRef(onChange)
+  const onSerializedChangeRef = useRef(onSerializedChange)
+  useEffect(() => { onChangeRef.current = onChange }, [onChange])
+  useEffect(() => { onSerializedChangeRef.current = onSerializedChange }, [onSerializedChange])
+
+  const handleChange = useCallback((state: EditorState) => {
+    onChangeRef.current?.(state)
+    onSerializedChangeRef.current?.(state.toJSON())
+  }, []) // stable reference — never recreated
+
   return (
     <div className="bg-background overflow-hidden rounded-lg">
       <LexicalComposer
@@ -53,10 +67,7 @@ export function Editor({
           {!readOnly && (
             <OnChangePlugin
               ignoreSelectionChange={true}
-              onChange={(editorState) => {
-                onChange?.(editorState)
-                onSerializedChange?.(editorState.toJSON())
-              }}
+              onChange={handleChange}
             />
           )}
         </TooltipProvider>

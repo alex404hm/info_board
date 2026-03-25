@@ -8,7 +8,7 @@ function hasTwoFactorPendingCookie(request: NextRequest): boolean {
 }
 
 export function proxy(request: NextRequest) {
-  const { pathname, origin } = request.nextUrl
+  const { pathname } = request.nextUrl
 
   // ── Redirect legacy /login → /admin ──────────────────────────────────────
   if (pathname === "/login") {
@@ -30,35 +30,6 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
   // Always overwrite any client-supplied value so it can't be spoofed.
   requestHeaders.set("x-pathname", pathname)
-
-  // ── Page-view logging (fire-and-forget) ───────────────────────────────────
-  if (
-    !pathname.startsWith("/api/") &&
-    !pathname.startsWith("/_next/") &&
-    !pathname.startsWith("/logo") &&
-    !pathname.startsWith("/weather") &&
-    pathname !== "/favicon.ico"
-  ) {
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      request.headers.get("x-real-ip") ??
-      "unknown"
-
-    fetch(`${origin}/api/log`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-log-secret": process.env.LOG_SECRET ?? "ib-internal-log",
-      },
-      body: JSON.stringify({
-        eventType: "page_view",
-        ip,
-        method: request.method,
-        path: pathname,
-        userAgent: request.headers.get("user-agent"),
-      }),
-    }).catch(() => {})
-  }
 
   return NextResponse.next({ request: { headers: requestHeaders } })
 }

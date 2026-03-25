@@ -355,10 +355,10 @@ export default function KokkenvagtAdminPage() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed right-4 top-4 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-xl ring-1 animate-in slide-in-from-top-2 ${
+        <div className={`fixed right-4 top-4 z-50 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium shadow-xl animate-in slide-in-from-top-2 ${
           toast.type === "success"
-            ? "bg-emerald-950 ring-emerald-800 text-emerald-300"
-            : "bg-red-950 ring-red-800 text-red-300"
+            ? "admin-toast-success"
+            : "admin-toast-error"
         }`}>
           {toast.text}
         </div>
