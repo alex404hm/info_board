@@ -2,7 +2,6 @@ import { StatusBar } from "@/components/StatusBar"
 import { TopCarousel } from "@/components/TopCarousel"
 import { NavTiles } from "@/components/NavTiles"
 import { InfoBoardIdleGuard } from "@/components/InfoBoardIdleGuard"
-import { FeedbackButton } from "@/components/FeedbackButton"
 import { LatestMessageBlock } from "@/components/LatestMessageBlock"
 export default function InfoBoardHome() {
   return (

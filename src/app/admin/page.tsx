@@ -1,14 +1,15 @@
 import { db } from "@/db"
-import { message, user } from "@/db/schema"
-import { eq, and, or, isNull, gte, count } from "drizzle-orm"
+import { message, user, intranetPage } from "@/db/schema"
+import { eq, and, or, isNull, gte, lt, count } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import {
   MessageSquare, Users, ArrowRight,
   CalendarDays, Settings, Coffee, LayoutGrid,
-  ShieldCheck,
+  ShieldCheck, TrendingUp, TrendingDown, Minus, FileText,
 } from "lucide-react"
+import DashboardCharts from "./_components/DashboardCharts"
 
 function NavCard({
   href,
@@ -45,6 +46,32 @@ function NavCard({
   )
 }
 
+function Delta({ thisWeek, lastWeek }: { thisWeek: number; lastWeek: number }) {
+  const diff = thisWeek - lastWeek
+  if (diff === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+        <Minus className="h-3 w-3" />
+        Ingen ændring fra forrige uge
+      </span>
+    )
+  }
+  if (diff > 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs text-emerald-500">
+        <TrendingUp className="h-3 w-3" />
+        +{diff} fra forrige uge
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 text-xs text-rose-400">
+      <TrendingDown className="h-3 w-3" />
+      {diff} fra forrige uge
+    </span>
+  )
+}
+
 function StatCard({
   label,
   value,
@@ -52,6 +79,7 @@ function StatCard({
   iconColor,
   iconBg,
   sub,
+  delta,
 }: {
   label: string
   value: React.ReactNode
@@ -59,6 +87,7 @@ function StatCard({
   iconColor: string
   iconBg: string
   sub?: string
+  delta?: React.ReactNode
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3">
@@ -70,11 +99,16 @@ function StatCard({
       </div>
       <div>
         <p className="text-3xl font-bold text-foreground tabular-nums">{value}</p>
-        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+        {delta
+          ? <div className="mt-0.5">{delta}</div>
+          : sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
+        }
       </div>
     </div>
   )
 }
+
+const DAY_LABELS = ["Søn", "Man", "Tir", "Ons", "Tor", "Fre", "Lør"]
 
 export default async function AdminDashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -82,18 +116,65 @@ export default async function AdminDashboardPage() {
   const name = session?.user.name || "Bruger"
   const now = new Date()
 
-  // Core stats
-  const [activeMessages] = await db
-    .select({ count: count() })
-    .from(message)
-    .where(and(eq(message.active, true), or(isNull(message.expiresAt), gte(message.expiresAt, now))))
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
 
-  const [totalUsers] = await db.select({ count: count() }).from(user)
+  const [
+    [activeMessages],
+    [totalMessages],
+    [totalUsers],
+    [intranetPagesCount],
+    [messagesThisWeek],
+    [messagesLastWeek],
+    recentMessages,
+  ] = await Promise.all([
+    db.select({ count: count() })
+      .from(message)
+      .where(and(eq(message.active, true), or(isNull(message.expiresAt), gte(message.expiresAt, now)))),
+
+    db.select({ count: count() }).from(message),
+
+    db.select({ count: count() }).from(user),
+
+    db.select({ count: count() }).from(intranetPage),
+
+    db.select({ count: count() })
+      .from(message)
+      .where(gte(message.createdAt, oneWeekAgo)),
+
+    db.select({ count: count() })
+      .from(message)
+      .where(and(gte(message.createdAt, twoWeeksAgo), lt(message.createdAt, oneWeekAgo))),
+
+    db.select({ createdAt: message.createdAt })
+      .from(message)
+      .where(gte(message.createdAt, oneWeekAgo)),
+  ])
+
+  // Build per-day counts for chart (last 7 days, oldest first)
+  const dayCounts: Record<string, number> = {}
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    const key = d.toDateString()
+    dayCounts[key] = 0
+  }
+  for (const row of recentMessages) {
+    const key = new Date(row.createdAt).toDateString()
+    if (key in dayCounts) dayCounts[key] = (dayCounts[key] ?? 0) + 1
+  }
+  const messagesPerDay = Object.entries(dayCounts).map(([dateStr, c]) => ({
+    day: DAY_LABELS[new Date(dateStr).getDay()],
+    count: c,
+  }))
 
   const isAdmin = role === "admin"
   const hour = now.getHours()
   const greeting =
     hour < 10 ? "Godmorgen" : hour < 13 ? "God formiddag" : hour < 18 ? "Godeftermiddag" : "Godaften"
+
+  const msgThisWeek = messagesThisWeek?.count ?? 0
+  const msgLastWeek = messagesLastWeek?.count ?? 0
 
   return (
     <div className="space-y-8 w-full">
@@ -111,16 +192,32 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Aktive beskeder"
           value={activeMessages?.count ?? 0}
           icon={MessageSquare}
           iconColor="text-blue-400"
           iconBg="bg-blue-400/10"
-          sub="på infoskærmen"
+          delta={<Delta thisWeek={msgThisWeek} lastWeek={msgLastWeek} />}
         />
-        {isAdmin && (
+        <StatCard
+          label="Beskeder i alt"
+          value={totalMessages?.count ?? 0}
+          icon={MessageSquare}
+          iconColor="text-sky-400"
+          iconBg="bg-sky-400/10"
+          sub="oprettede beskeder"
+        />
+        <StatCard
+          label="Intranet sider"
+          value={intranetPagesCount?.count ?? 0}
+          icon={FileText}
+          iconColor="text-emerald-400"
+          iconBg="bg-emerald-400/10"
+          sub="sider på intranettet"
+        />
+        {isAdmin ? (
           <StatCard
             label="Brugere"
             value={totalUsers?.count ?? 0}
@@ -129,16 +226,20 @@ export default async function AdminDashboardPage() {
             iconBg="bg-violet-400/10"
             sub="registrerede konti"
           />
+        ) : (
+          <StatCard
+            label="Din rolle"
+            value={isAdmin ? "Admin" : "Instruktør"}
+            icon={ShieldCheck}
+            iconColor="text-blue-400"
+            iconBg="bg-blue-400/10"
+            sub="Begrænset adgang"
+          />
         )}
-        <StatCard
-          label="Din rolle"
-          value={isAdmin ? "Admin" : "Instruktør"}
-          icon={ShieldCheck}
-          iconColor={isAdmin ? "text-violet-400" : "text-blue-400"}
-          iconBg={isAdmin ? "bg-violet-400/10" : "bg-blue-400/10"}
-          sub={isAdmin ? "Fuld adgang" : "Begrænset adgang"}
-        />
       </div>
+
+      {/* ── Chart ── */}
+      <DashboardCharts messagesPerDay={messagesPerDay} />
 
       {/* ── Quick actions — instructor ── */}
       {!isAdmin && (

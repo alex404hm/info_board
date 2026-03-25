@@ -1,26 +1,5 @@
 [
   {
-    "name": "Andreas Piet Andersen",
-    "email": "aa@tec.dk",
-    "phone": "+45 2545 3659",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Simon Nicolas El Hanafi",
-    "email": "siha@tec.dk",
-    "phone": "+45 2545 3674",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Noree Ismael",
-    "email": "ni@tec.dk",
-    "phone": "+45 2545 3204",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
     "name": "Casper Nordkvist Vestergaard",
     "email": "cv@tec.dk",
     "phone": "+45 2545 3757",
@@ -35,114 +14,9 @@
     "role": "Instruktør"
   },
   {
-    "name": "Walther Hørmark",
-    "email": "wh@tec.dk",
-    "phone": "+45 2545 3258",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
     "name": "Kristian Kure",
     "email": "kku@tec.dk",
     "phone": "+45 2545 3810",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Per Michael Brun",
-    "email": "pmb@tec.dk",
-    "phone": "+45 2545 3536",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Thomas Kjær",
-    "email": "tkj@tec.dk",
-    "phone": "+45 2545 3126",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Ole Moe",
-    "email": "olm@tec.dk",
-    "phone": "+45 2545 3693",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Mette Lene Bjerg Johansen",
-    "email": "mljo@tec.dk",
-    "phone": "+45 2545 3142",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Jakob Lundø",
-    "email": "jlu@tec.dk",
-    "phone": "+45 2545 3932",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Lennart Bertrand Jensen",
-    "email": "lbje@tec.dk",
-    "phone": "+45 2545 3590",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Magnus Skovgaard Hansen",
-    "email": "msh@tec.dk",
-    "phone": "+45 2545 3064",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Sarfraz Salim",
-    "email": "ssa@tec.dk",
-    "phone": "+45 2545 3134",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Uffe Dalgaard Nielsen",
-    "email": "udn@tec.dk",
-    "phone": "+45 2545 3233",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Jens Peter Bursche",
-    "email": "jpb@tec.dk",
-    "phone": "+45 2545 3591",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Ali Hussain Hamoud Al Shahyib",
-    "email": "ahhs@tec.dk",
-    "phone": "+45 2545 3238",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Daniel Søren Vejbjerg Kristoffersen",
-    "email": "dsvk@tec.dk",
-    "phone": "+45 2545 3489",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Lasse Dall Mikkelsen",
-    "email": "ldmi@tec.dk",
-    "phone": "+45 2545 3197",
-    "profilePicture": "https://tec.dk/img/placeholders/3.svg",
-    "role": "Instruktør"
-  },
-  {
-    "name": "Torben Werner Hansen",
-    "email": "twh@tec.dk",
-    "phone": "+45 2545 3643",
     "profilePicture": "https://tec.dk/img/placeholders/3.svg",
     "role": "Instruktør"
   },

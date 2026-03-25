@@ -14,7 +14,7 @@ export default async function AdminIntranetPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Intranet Sider</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Intranet Sider</h2>
           <p className="text-sm text-muted-foreground">
             Administrer indholdet i de forskellige intranet-sektioner.
           </p>
@@ -39,7 +39,7 @@ export default async function AdminIntranetPage() {
                 <MoveVertical className="h-4 w-4 opacity-30" />
               </div>
               <div>
-                <h3 className="font-bold">{page.title}</h3>
+                <h3 className="font-bold text-foreground">{page.title}</h3>
                 <p className="text-xs text-muted-foreground">{page.subtitle}</p>
               </div>
             </div>
