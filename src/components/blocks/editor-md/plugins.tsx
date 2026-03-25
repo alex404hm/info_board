@@ -78,7 +78,7 @@ export function Plugins({ readOnly = false }: { readOnly?: boolean }) {
       {!readOnly && (
         <ToolbarPlugin>
           {({ blockType }) => (
-            <div className="vertical-align-middle sticky top-0 z-10 flex items-center gap-2 overflow-x-auto border-b border-border/30 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 min-h-[44px]">
+            <div className="vertical-align-middle sticky top-0 z-10 flex flex-wrap items-center gap-1.5 overflow-x-auto border-b border-border bg-card px-2 py-1.5 min-h-[46px]">
               <HistoryToolbarPlugin />
               <BlockFormatDropDown>
                 <FormatParagraph />
