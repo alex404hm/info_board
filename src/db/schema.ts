@@ -134,19 +134,6 @@ export const feedback = pgTable("feedback", {
   createdAt: timestamp("createdAt").notNull(),
 })
 
-export const requestLog = pgTable("request_log", {
-  id: text("id").primaryKey(),
-  timestamp: timestamp("timestamp").notNull(),
-  eventType: text("event_type").notNull(),        // page_view | login_success | login_failure | feedback | api_error | rate_limited
-  ip: text("ip"),
-  method: text("method").notNull().default("GET"),
-  path: text("path").notNull().default("/"),
-  statusCode: integer("status_code"),
-  userId: text("user_id"),
-  userEmail: text("user_email"),
-  userAgent: text("user_agent"),
-  details: json("details").$type<Record<string, unknown>>().default({}),
-})
 
 export const wageData = pgTable("wage_data", {
   id: integer("id").primaryKey(),

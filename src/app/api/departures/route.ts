@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import type { Departure, DepartureGroup } from "@/types"
 
-const ACCESS_ID = process.env.REJSEPLANEN_API_KEY ?? "9dcb0f23-6df6-4de5-b5a6-d17a83e07265"
+const ACCESS_ID = process.env.REJSEPLANEN_API_KEY ?? "change-me"
 
 // Closest stop to the school (Kokkeldal 500S)
 const STOP_ID_1 = process.env.REJSEPLANEN_STOP_ID_1 ?? process.env.REJSEPLANEN_STOP_ID ?? "3849"

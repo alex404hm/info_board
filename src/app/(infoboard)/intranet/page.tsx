@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { SectionPageShell } from "@/components/SectionPageShell"
 import { IntranetPanel } from "@/components/panels/IntranetPanel"
 import { db } from "@/db"

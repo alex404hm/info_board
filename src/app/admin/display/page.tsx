@@ -418,42 +418,7 @@ export default function DisplayPage() {
         )}
       </div>
 
-      {/* Live preview */}
-      <div className="admin-panel p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 bg-sky-400/10 rounded-lg flex items-center justify-center shrink-0">
-            <Monitor className="w-4.5 h-4.5 text-sky-400" />
-          </div>
-          <div>
-            <h2 className="text-white font-semibold">Live Preview</h2>
-            <p className="text-muted text-xs mt-0.5">
-              Exactly how the navigation bar looks on the info board
-            </p>
-          </div>
-        </div>
-
-        {/* Board-themed preview container */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ background: "#15192a" }}
-        >
-          <div
-            className="px-5 py-3"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
-          >
-            <TilePreview config={config} />
-          </div>
-        </div>
-
-        {visibleCount < config.length && (
-          <p className="mt-3 text-xs text-muted">
-            {config.length - visibleCount} tile{config.length - visibleCount !== 1 ? "s" : ""} hidden ·{" "}
-            {visibleCount === 0
-              ? "Enable at least one tile to show the navigation bar."
-              : `${visibleCount} tile${visibleCount !== 1 ? "s" : ""} visible — the layout adjusts automatically.`}
-          </p>
-        )}
-      </div>
+      {/* Live preview removed as requested */}
     </div>
   )
 }

@@ -6,14 +6,14 @@ export const editorTheme: EditorThemeClasses = {
   ltr: "text-left",
   rtl: "text-right",
   heading: {
-    h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
-    h2: "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0",
-    h3: "scroll-m-20 text-2xl font-semibold tracking-tight",
-    h4: "scroll-m-20 text-xl font-semibold tracking-tight",
-    h5: "scroll-m-20 text-lg font-semibold tracking-tight",
-    h6: "scroll-m-20 text-base font-semibold tracking-tight",
+    h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl font-sans",
+    h2: "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0 font-sans",
+    h3: "scroll-m-20 text-2xl font-semibold tracking-tight font-sans",
+    h4: "scroll-m-20 text-xl font-semibold tracking-tight font-sans",
+    h5: "scroll-m-20 text-lg font-semibold tracking-tight font-sans",
+    h6: "scroll-m-20 text-base font-semibold tracking-tight font-sans",
   },
-  paragraph: "leading-7 [&:not(:first-child)]:mt-6",
+  paragraph: "leading-7 [&:not(:first-child)]:mt-6 font-sans text-base",
   quote: "mt-6 border-l-2 pl-6 italic",
   link: "text-primary hover:underline hover:cursor-pointer",
   list: {
@@ -57,7 +57,7 @@ export const editorTheme: EditorThemeClasses = {
   image: "relative inline-block user-select-none cursor-default editor-image",
   inlineImage:
     "relative inline-block user-select-none cursor-default inline-editor-image",
-  keyword: "text-purple-900 font-bold",
+  keyword: "editor-keyword font-bold",
   code: "EditorTheme__code",
   codeHighlight: {
     atrule: "EditorTheme__tokenAttr",

@@ -753,8 +753,8 @@ export default function MessagesPage() {
       {toast && (
         <div className={`fixed right-4 top-4 z-50 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium shadow-2xl animate-in slide-in-from-top-2 ${
           toast.type === "success"
-            ? "border-emerald-700/50 bg-emerald-900/90 text-emerald-200"
-            : "border-red-700/50 bg-red-900/90 text-red-200"
+            ? "admin-toast-success"
+            : "admin-toast-error"
         }`}>
           {toast.type === "success" ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
           {toast.text}

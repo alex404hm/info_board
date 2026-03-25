@@ -67,14 +67,14 @@ export function NavUser({
                 <AvatarFallback className="rounded-lg bg-emerald-600 text-white font-bold">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium text-white">{user.name || "Instruktør"}</span>
-                <span className="truncate text-xs text-slate-400">{user.email}</span>
+                <span className="truncate font-medium text-sidebar-foreground">{user.name || "Instruktør"}</span>
+                <span className="truncate text-xs text-sidebar-foreground/60">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4 text-slate-500" />
+              <ChevronsUpDown className="ml-auto size-4 text-sidebar-foreground/50" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg bg-slate-900 border-white/10 text-white"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -87,21 +87,21 @@ export function NavUser({
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name || "Instruktør"}</span>
-                  <span className="truncate text-xs text-slate-400">{user.email}</span>
+                  <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem asChild className="focus:bg-white/5 focus:text-white cursor-pointer">
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer">
               <Link href="/admin/settings">
                 <User className="mr-2 h-4 w-4" />
                 Min konto
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem 
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
               onClick={handleLogout}
-              className="focus:bg-red-500/10 focus:text-red-400 text-red-400 cursor-pointer"
+              className="focus:bg-destructive/10 focus:text-destructive text-destructive cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Log ud

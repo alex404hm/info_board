@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState } from "react"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Lock } from "lucide-react"
 
@@ -14,20 +13,14 @@ import { Label } from "@/components/ui/label"
 function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="flex min-h-svh flex-col p-8 md:p-12"
-      style={{ "--input": "rgba(255,255,255,0.13)", "--ring": "rgba(95,157,255,0.45)" } as React.CSSProperties}
+      className="flex min-h-svh flex-col items-center justify-center p-8 md:p-12"
+      style={{
+        '--input': 'rgba(255,255,255,0.13)',
+        '--ring': 'rgba(95,157,255,0.45)',
+        backgroundColor: '#0a0a0a',
+      } as React.CSSProperties}
     >
-      <div>
-        <Image
-          src="/logo.svg"
-          alt="TEC"
-          width={72}
-          height={26}
-          className="h-auto w-auto"
-          priority
-        />
-      </div>
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center w-full">
         <div className="w-full max-w-sm">{children}</div>
       </div>
     </div>
