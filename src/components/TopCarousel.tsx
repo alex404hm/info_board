@@ -163,31 +163,27 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
                   Ugens menu
                 </p>
                 <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
-                  {weekMenu.filter(item => item.dateKey > todayKey).map((item) => (
-                    <div key={item.dateKey}
-                      className="flex items-stretch rounded-lg overflow-hidden"
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid transparent",
-                      }}
-                    >
-                      <div className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2">
-                        <span className="w-7 shrink-0 text-[11px] font-bold" style={{ color: "rgba(255,255,255,0.50)" }}>
+                  {weekMenu.filter(item => item.dateKey > todayKey).map((item) => {
+                    const regularName = decodeHtmlEntities(item.regular?.dishName ?? item.dishName)
+                    const veganName   = item.vegetarian?.dishName ? decodeHtmlEntities(item.vegetarian.dishName) : null
+                    return (
+                      <div key={item.dateKey} className="flex items-center gap-3 px-2 py-1.5">
+                        <span className="w-7 shrink-0 text-[11px] font-bold" style={{ color: "rgba(255,255,255,0.45)" }}>
                           {item.dayLabel}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[12px] font-medium leading-snug" style={{ color: "rgba(255,255,255,0.65)" }}>
-                            {decodeHtmlEntities(item.regular?.dishName ?? item.dishName)}
+                          <p className="truncate text-[12px] font-medium leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>
+                            {regularName}
                           </p>
-                          {item.vegetarian?.dishName && (
-                            <p className="truncate text-[11px] leading-snug" style={{ color: "rgba(82,196,132,0.55)" }}>
-                              {decodeHtmlEntities(item.vegetarian.dishName)}
+                          {veganName && (
+                            <p className="truncate text-[11px] leading-snug" style={{ color: "rgba(82,196,132,0.85)" }}>
+                              {veganName}
                             </p>
                           )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
