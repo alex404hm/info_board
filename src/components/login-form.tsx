@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
-import { authClient, useSession } from "@/lib/auth-client"
+import { authClient } from "@/lib/auth-client"
 
 export default function LoginForm({
   className,
@@ -18,18 +18,12 @@ export default function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [show2FASetup, setShow2FASetup] = useState(false);
-  const { data: session } = useSession();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     try {
-      const res = await authClient.signIn.email({ email, password });
-      // If user is logged in and 2FA is not enabled, prompt setup
-      if (res?.data && session?.user && !session.user.twoFactorEnabled) {
-        setShow2FASetup(true);
-      }
+      await authClient.signIn.email({ email, password });
     } catch (err: any) {
       setError(err?.message || "Login failed");
     }
@@ -82,12 +76,6 @@ export default function LoginForm({
             </a>
           </FieldDescription>
         </Field>
-        {show2FASetup && (
-          <FieldDescription className="text-center text-blue-500 mt-4">
-            Two-Factor Authentication is not enabled. Please set up 2FA for your account.
-            {/* You can add a QR code setup component here */}
-          </FieldDescription>
-        )}
       </FieldGroup>
     </form>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useLayoutEffect, useState } from "react"
+import { createContext, useContext, useState } from "react"
 
 type AdminTheme = "dark" | "light"
 
@@ -15,29 +15,21 @@ export function useAdminTheme() {
   return useContext(AdminThemeContext)
 }
 
-// Read saved theme synchronously before first paint to avoid flash
-const getInitialTheme = (): AdminTheme => {
-  if (typeof window === "undefined") return "dark"
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved === "light" || saved === "dark") return saved
-  } catch {}
-  return "dark"
-}
-
-export function AdminThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<AdminTheme>("dark")
-
-  // Apply saved theme before first paint (synchronous on client)
-  useLayoutEffect(() => {
-    setTheme(getInitialTheme())
-  }, [])
+export function AdminThemeProvider({
+  children,
+  initialTheme = "dark",
+}: {
+  children: React.ReactNode
+  initialTheme?: AdminTheme
+}) {
+  const [theme, setTheme] = useState<AdminTheme>(initialTheme)
 
   const toggle = () => {
     setTheme(prev => {
       const next: AdminTheme = prev === "dark" ? "light" : "dark"
       try {
         localStorage.setItem(STORAGE_KEY, next)
+        document.cookie = `${STORAGE_KEY}=${next};path=/;max-age=31536000;samesite=lax`
       } catch {}
       return next
     })
@@ -45,7 +37,7 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <AdminThemeContext.Provider value={{ theme, toggle }}>
-      <div className={`admin-theme${theme === "light" ? " light" : ""} flex min-h-svh w-full`}>
+      <div className={`admin-theme${theme === "light" ? " light" : " dark"} flex min-h-svh w-full text-foreground`}>
         {children}
       </div>
     </AdminThemeContext.Provider>

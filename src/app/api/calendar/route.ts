@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { setting } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { calendarEvent } from "@/db/schema"
 
 export const dynamic = "force-dynamic"
 
@@ -14,127 +13,6 @@ type CalendarEvent = {
   location: string | null
   description: string | null
   category: string | null
-}
-
-function unfoldLines(text: string): string[] {
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n")
-  const unfolded: string[] = []
-
-  for (const line of lines) {
-    if ((line.startsWith(" ") || line.startsWith("\t")) && unfolded.length > 0) {
-      unfolded[unfolded.length - 1] += line.slice(1)
-    } else {
-      unfolded.push(line)
-    }
-  }
-
-  return unfolded
-}
-
-function parseDtValue(raw: string): { iso: string; allDay: boolean } {
-  if (/^\d{8}$/.test(raw)) {
-    const y = raw.slice(0, 4)
-    const mo = raw.slice(4, 6)
-    const d = raw.slice(6, 8)
-    return { iso: `${y}-${mo}-${d}T00:00:00`, allDay: true }
-  }
-
-  const m = raw.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/)
-
-  if (m) {
-    const [, y, mo, d, hh, mm, ss, z] = m
-    return {
-      iso: z === "Z"
-        ? `${y}-${mo}-${d}T${hh}:${mm}:${ss}Z`
-        : `${y}-${mo}-${d}T${hh}:${mm}:${ss}`,
-      allDay: false,
-    }
-  }
-
-  return { iso: raw, allDay: false }
-}
-
-function icsUnescape(s: string): string {
-  return s
-    .replace(/\\n/gi, " ")
-    .replace(/\\,/g, ",")
-    .replace(/\\;/g, ";")
-    .replace(/\\\\/g, "\\")
-    .trim()
-}
-
-function parseICS(text: string): CalendarEvent[] {
-  const lines = unfoldLines(text)
-  const events: CalendarEvent[] = []
-
-  let inEvent = false
-  let props: Record<string, string> = {}
-  let allDayHint = false
-
-  for (const line of lines) {
-    if (line === "BEGIN:VEVENT") {
-      inEvent = true
-      props = {}
-      allDayHint = false
-      continue
-    }
-
-    if (line === "END:VEVENT") {
-      inEvent = false
-
-      if (!props["DTSTART"]) continue
-
-      const startParsed = parseDtValue(props["DTSTART"])
-      const endParsed = props["DTEND"]
-        ? parseDtValue(props["DTEND"])
-        : null
-
-      events.push({
-        id: props["UID"] ?? `evt-${crypto.randomUUID()}`,
-        title: props["SUMMARY"]
-          ? icsUnescape(props["SUMMARY"])
-          : "Begivenhed",
-        start: startParsed.iso,
-        end: endParsed?.iso ?? null,
-        allDay: allDayHint || startParsed.allDay,
-        location: props["LOCATION"]
-          ? icsUnescape(props["LOCATION"])
-          : null,
-        description: props["DESCRIPTION"]
-          ? icsUnescape(props["DESCRIPTION"])
-          : null,
-        category: props["CATEGORIES"]
-          ? icsUnescape(props["CATEGORIES"])
-              .split(",")[0]
-              .trim()
-          : null,
-      })
-
-      continue
-    }
-
-    if (!inEvent) continue
-
-    const colonIdx = line.indexOf(":")
-    if (colonIdx < 1) continue
-
-    const propDef = line.slice(0, colonIdx)
-    const value = line.slice(colonIdx + 1)
-
-    const semiIdx = propDef.indexOf(";")
-    const propName =
-      semiIdx > 0 ? propDef.slice(0, semiIdx) : propDef
-    const paramStr =
-      semiIdx > 0 ? propDef.slice(semiIdx + 1) : ""
-
-    if (propName === "DTSTART" && paramStr.includes("VALUE=DATE")) {
-      allDayHint = true
-    }
-
-    props[propName] = value
-  }
-
-  return events
 }
 
 // ─── Danish public holidays + school holidays ─────────────────────────────────
@@ -244,37 +122,27 @@ function buildDanishHolidays(): CalendarEvent[] {
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
-async function getIcsUrl(): Promise<string | null> {
-  try {
-    const rows = await db.select().from(setting).where(eq(setting.key, "outlook_calendar_url")).limit(1)
-    const dbUrl = rows[0]?.value?.trim()
-    if (dbUrl) return dbUrl
-  } catch {
-    // fall through to env var
-  }
-  return process.env.OUTLOOK_CALENDAR_ICS_URL ?? null
-}
-
 export async function GET() {
-  const icsUrl = await getIcsUrl()
   const holidays = buildDanishHolidays()
 
-  if (!icsUrl) {
-    const events = holidays.sort((a, b) => a.start.localeCompare(b.start))
-    return NextResponse.json({ configured: false, events })
-  }
-
   try {
-    const res = await fetch(icsUrl, { cache: "no-store", headers: { "User-Agent": "TEC-InfoBoard/1.0" } })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const dbEvents = await db
+      .select({
+        id: calendarEvent.id,
+        title: calendarEvent.title,
+        start: calendarEvent.start,
+        end: calendarEvent.end,
+        allDay: calendarEvent.allDay,
+        location: calendarEvent.location,
+        description: calendarEvent.description,
+        category: calendarEvent.category,
+      })
+      .from(calendarEvent)
 
-    const text = await res.text()
-    const icsEvents = parseICS(text)
-    const events = [...icsEvents, ...holidays].sort((a, b) => a.start.localeCompare(b.start))
-
+    const events = [...dbEvents, ...holidays].sort((a, b) => a.start.localeCompare(b.start))
     return NextResponse.json({ configured: true, events })
   } catch {
     const events = holidays.sort((a, b) => a.start.localeCompare(b.start))
-    return NextResponse.json({ configured: true, events, error: "Kunne ikke hente fra Outlook" })
+    return NextResponse.json({ configured: true, events })
   }
 }

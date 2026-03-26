@@ -810,7 +810,7 @@ export default function MessagesPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between">
-                <label className="text-sm font-medium">Titel</label>
+                <label className="text-sm font-medium text-foreground">Titel</label>
                 <span className="text-xs text-muted-foreground">{title.length}/{MAX_TITLE}</span>
               </div>
               <input
@@ -827,7 +827,7 @@ export default function MessagesPage() {
 
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between">
-                <label className="text-sm font-medium">Indhold</label>
+                <label className="text-sm font-medium text-foreground">Indhold</label>
                 <span className="text-xs text-muted-foreground">{content.length}/{MAX_BODY}</span>
               </div>
               <textarea
@@ -842,7 +842,7 @@ export default function MessagesPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Prioritet</label>
+              <label className="text-sm font-medium text-foreground">Prioritet</label>
               <PriorityPicker value={priority} onChange={setPriority} />
             </div>
 
@@ -852,7 +852,7 @@ export default function MessagesPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CalendarRange className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Vis i bestemt tidsrum</span>
+                  <span className="text-sm font-medium text-foreground">Vis i bestemt tidsrum</span>
                   <span className="text-xs text-muted-foreground">(interval)</span>
                 </div>
                 <button
@@ -971,7 +971,7 @@ export default function MessagesPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Gentag besked</span>
+                  <span className="text-sm font-medium text-foreground">Gentag besked</span>
                 </div>
                 <button
                   type="button"

@@ -4,12 +4,13 @@ import { SectionPageShell } from "@/components/SectionPageShell"
 import { IntranetPanel } from "@/components/panels/IntranetPanel"
 import { db } from "@/db"
 import { intranetPage } from "@/db/schema"
-import { asc } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 
 export default async function IntranetPage() {
   const categories = await db
     .select()
     .from(intranetPage)
+    .where(eq(intranetPage.isDraft, false))
     .orderBy(asc(intranetPage.order))
 
   return (

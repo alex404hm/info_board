@@ -13,9 +13,6 @@ import {
   MapPin,
 } from "lucide-react"
 import * as LucideIcons from "lucide-react"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import rehypeRaw from "rehype-raw"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,6 +31,7 @@ export type IntranetPageData = {
   accentColor: string
   content: string
   order: number
+  isDraft: boolean
   updatedAt: Date
 }
 
@@ -156,51 +154,15 @@ function LinkPill({ href, children, internal = false }: { href: string; children
   )
 }
 
-// ── Markdown Renderer ─────────────────────────────────────────────────────────
+// ── Rich Content Renderer ──────────────────────────────────────────────────────
 
-function MarkdownContent({ content }: { content: string }) {
+function RichContent({ content }: { content: string }) {
+  if (!content || content.startsWith("{")) return null
   return (
-    <div className="space-y-4">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
-        components={{
-          h1: ({ children }) => <h1 className="text-2xl font-bold mb-4">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-6">{children}</h2>,
-          h3: ({ children }) => <H3>{children}</H3>,
-          h4: ({ children }) => <h4 className="text-sm font-bold mb-2 mt-4" style={{ color: "var(--foreground)" }}>{children}</h4>,
-          p: ({ children }) => {
-            const text = children?.toString() || ""
-            if (text.startsWith("!! ")) {
-              return <InfoBox type="warning">{text.slice(3)}</InfoBox>
-            }
-            if (text.startsWith("*** ")) {
-              return <InfoBox type="success">{text.slice(4)}</InfoBox>
-            }
-            return <p className="text-sm leading-relaxed" style={{ color: "var(--foreground-muted)" }}>{children}</p>
-          },
-          ul: ({ children }) => <BulletList>{children}</BulletList>,
-          li: ({ children }) => <BulletItem>{children}</BulletItem>,
-          blockquote: ({ children }) => <InfoBox type="info">{children}</InfoBox>,
-          a: ({ href, children }) => {
-            const isInternal = href?.startsWith("/")
-            return <LinkPill href={href || "#"} internal={isInternal}>{children}</LinkPill>
-          },
-          strong: ({ children }) => <strong className="font-bold" style={{ color: "var(--foreground)" }}>{children}</strong>,
-          table: ({ children }) => (
-            <div className="overflow-x-auto rounded-xl my-4" style={{ border: "1px solid var(--surface-border)" }}>
-              <table className="w-full text-sm">{children}</table>
-            </div>
-          ),
-          thead: ({ children }) => <thead style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--surface-border)" }}>{children}</thead>,
-          th: ({ children }) => <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>{children}</th>,
-          tr: ({ children }) => <tr className="border-b last:border-0 border-[var(--surface-border)]" style={{ background: "transparent" }}>{children}</tr>,
-          td: ({ children }) => <td className="px-4 py-2.5 text-sm" style={{ color: "var(--foreground-muted)" }}>{children}</td>,
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
+    <div
+      className="rich-content"
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
   )
 }
 
@@ -234,7 +196,7 @@ function DetailView({ cat, onBack }: { cat: IntranetPageData; onBack: () => void
         </div>
       </div>
 
-      <MarkdownContent content={cat.content} />
+      <RichContent content={cat.content} />
 
       <div className="mt-8 flex flex-wrap items-center gap-4 rounded-2xl px-5 py-4" style={{ background: "var(--surface)", border: "1px solid var(--surface-border)" }}>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(95,157,255,0.1)" }}>

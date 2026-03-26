@@ -156,6 +156,23 @@ export const intranetPage = pgTable("intranet_page", {
   accentColor: text("accent_color").notNull().default("#60a5fa"),
   content: text("content").notNull().default(""),
   order: integer("order").notNull().default(0),
+  isDraft: boolean("is_draft").notNull().default(false),
+  updatedAt: timestamp("updatedAt").notNull(),
+})
+
+export const calendarEvent = pgTable("calendar_event", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  start: text("start").notNull(),
+  end: text("end"),
+  allDay: boolean("all_day").notNull().default(true),
+  location: text("location"),
+  description: text("description"),
+  category: text("category"),
+  authorId: text("authorId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull(),
   updatedAt: timestamp("updatedAt").notNull(),
 })
 

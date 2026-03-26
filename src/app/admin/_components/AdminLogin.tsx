@@ -211,13 +211,15 @@ export default function AdminLogin() {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Adgangskode</Label>
-                <button
+                <Button
                   type="button"
-                  className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-muted-foreground"
                   onClick={() => { setMode("forgot"); setForgotEmail(email) }}
                 >
                   Glemt adgangskode?
-                </button>
+                </Button>
               </div>
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -232,14 +234,16 @@ export default function AdminLogin() {
                   disabled={loading || tooManyAttempts}
                   className="h-11 pl-9 pr-11"
                 />
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   tabIndex={-1}
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                  className="absolute right-0 top-0 h-full w-11 rounded-l-none text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                </Button>
               </div>
             </div>
 

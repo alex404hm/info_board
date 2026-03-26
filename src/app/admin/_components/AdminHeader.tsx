@@ -11,7 +11,8 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/calendar": { title: "Calendar",          subtitle: "Outlook ICS integration" },
   "/admin/display":  { title: "Display & Layout",  subtitle: "Configure navigation tiles" },
   "/admin/settings": { title: "My Account",        subtitle: "Profile, password & sessions" },
-  "/admin/intranet": { title: "Intranet",          subtitle: "Administrer intranet-sider og indhold" },
+  "/admin/intranet":    { title: "Intranet",          subtitle: "Administrer intranet-sider og indhold" },
+  "/admin/kokkenvagt": { title: "Køkkenvagt",        subtitle: "Administrer vagtplanen uge for uge" },
 }
 
 interface AdminHeaderProps {

@@ -18,7 +18,6 @@ import {
   LogOut,
   KeyRound,
   Camera,
-  X,
   UploadCloud,
   ImageIcon,
 } from "lucide-react"
@@ -462,12 +461,8 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-5">
-          {/* Clickable avatar with hover overlay */}
-          <button
-            type="button"
-            onClick={() => setAvatarDialogOpen(true)}
-            className="group relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
+          {/* Avatar with bottom-right upload badge */}
+          <div className="relative shrink-0">
             <Avatar className="h-20 w-20 rounded-full">
               {committedAvatar && (
                 <AvatarImage
@@ -480,31 +475,27 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
                 {initials}
               </AvatarFallback>
             </Avatar>
-            {/* Hover overlay */}
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-              <Camera className="h-5 w-5 text-white" />
-            </span>
-          </button>
+            {/* Camera badge button — bottom-right corner */}
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={() => setAvatarDialogOpen(true)}
+              className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-background bg-muted shadow-sm hover:bg-accent hover:text-accent-foreground"
+              aria-label="Skift profilbillede"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </Button>
+          </div>
 
           <div className="min-w-0">
             <p className="font-semibold text-foreground truncate">{initialUser.name || "Bruger"}</p>
             <p className="text-sm text-muted truncate">{initialUser.email}</p>
-            <div className="mt-2.5 flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAvatarDialogOpen(true)}
-              >
-                <Camera className="h-3.5 w-3.5" />
-                Skift billede
-              </Button>
-              {avatarSaved && (
-                <span className="flex items-center gap-1 text-xs text-emerald-400">
-                  <CheckCircle className="h-3.5 w-3.5" /> Gemt
-                </span>
-              )}
-            </div>
+            {avatarSaved && (
+              <span className="mt-1.5 flex items-center gap-1 text-xs text-emerald-400">
+                <CheckCircle className="h-3.5 w-3.5" /> Billede gemt
+              </span>
+            )}
           </div>
         </div>
 
