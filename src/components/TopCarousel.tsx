@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useDailyDishData } from "@/hooks/use-api-data"
@@ -249,7 +249,18 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
       todayMidnight.setHours(0, 0, 0, 0)
 
       const upcoming = calendarEvents
-        .filter(ev => { const d = new Date(ev.start); return !isNaN(d.getTime()) && d >= todayMidnight })
+        .filter(ev => {
+          const start = new Date(ev.start)
+          if (isNaN(start.getTime())) return false
+          if (start >= todayMidnight) return true
+          // Also show ongoing multi-day events (started before today but not yet ended)
+          if (ev.end) {
+            const end = new Date(ev.end)
+            end.setHours(0, 0, 0, 0)
+            return end >= todayMidnight
+          }
+          return false
+        })
         .sort((a, b) => a.start.localeCompare(b.start))
         .slice(0, 5)
 
@@ -262,7 +273,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
           {/* ── Header ── */}
           <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0" style={{ borderBottom: `1px solid ${C3}` }}>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 shrink-0">
-              <Calendar className="h-[18px] w-[18px]" style={{ color: "#a78bfa" }} />
+              <Image src="/logo/outlook.svg" alt="Outlook" width={20} height={20} className="h-full w-full rounded-[3px] object-fill" />
             </div>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] leading-none" style={{ color: "var(--foreground-muted)" }}>Kalender</p>
@@ -617,7 +628,7 @@ export function TopCarousel() {
     }
 
     void loadCalendar(); void loadDepartures(); void loadTrafik(); void loadDrNews()
-    const calId   = setInterval(loadCalendar,  10 * 60 * 1000)
+    const calId   = setInterval(loadCalendar,  2 * 60 * 1000)
     const depId   = setInterval(loadDepartures,     30 * 1000)
     const trafId  = setInterval(loadTrafik,     2 * 60 * 1000)
     const newsId  = setInterval(loadDrNews,    10 * 60 * 1000)

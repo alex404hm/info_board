@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
-import { headers } from "next/headers"
+import { headers, cookies } from "next/headers"
 import AdminHeader from "./_components/AdminHeader"
 import { AdminThemeProvider } from "./_components/AdminThemeProvider"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -32,9 +32,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     role: getUserRole(session),
   }
 
+  const cookieStore = await cookies()
+  const themeCookie = cookieStore.get("admin-theme")?.value
+  const initialTheme = themeCookie === "light" ? "light" : "dark"
+
   return (
     <SidebarProvider>
-      <AdminThemeProvider>
+      <AdminThemeProvider initialTheme={initialTheme}>
         <AppSidebar user={user} />
         <SidebarInset className="bg-background">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-card px-4">

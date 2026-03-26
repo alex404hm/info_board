@@ -79,7 +79,7 @@ function SidebarLogo({ role }: { role: string }) {
         viewBox="0 0 98 34"
         fill="currentColor"
         aria-label="TEC"
-        className="h-4 w-auto shrink-0 text-sidebar-foreground"
+        className={collapsed ? "h-5 w-5 shrink-0 text-sidebar-foreground" : "h-4 w-auto shrink-0 text-sidebar-foreground"}
       >
         <path d="M37.4531 33.1214H37.4831V33.2298H64.3249V30.3762H40.2834V3.37987H64.3291V0.527344H37.4883L37.4531 33.1214Z" />
         <path d="M43.8203 7.22852V15.4161H58.7137V12.5636H46.6506V10.081H64.3298V7.22852H43.8203Z" />

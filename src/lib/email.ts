@@ -1,16 +1,20 @@
 import nodemailer from "nodemailer"
 
+if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  throw new Error("SMTP_USER and SMTP_PASS environment variables are required")
+}
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST ?? "mail.privateemail.com",
   port: Number(process.env.SMTP_PORT ?? 465),
-  secure: process.env.SMTP_SECURE !== "false", // true for port 465
+  secure: process.env.SMTP_SECURE !== "false",
   auth: {
-    user: process.env.SMTP_USER ?? "alex404hm@alexander-holm.com",
-    pass: process.env.SMTP_PASS ?? "Cpr34aeb.,",
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 })
 
-const FROM = `TEC Info Board <${process.env.SMTP_USER ?? "alex404hm@alexander-holm.com"}>`
+const FROM = `TEC Info Board <${process.env.SMTP_USER}>`
 const BASE_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
 
 

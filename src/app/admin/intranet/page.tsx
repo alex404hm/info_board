@@ -45,6 +45,11 @@ export default async function AdminIntranetPage() {
             </div>
             
             <div className="flex items-center gap-3">
+              {page.isDraft && (
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-400">
+                  Kladde
+                </span>
+              )}
               <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground bg-muted px-2 py-0.5 rounded">
                 {page.key}
               </span>

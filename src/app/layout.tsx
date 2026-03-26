@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Kalam, Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmDialogProvider } from "@/components/confirm-dialog-provider";
 import "./globals.css";
+import "@/styles/tiptap-global.scss";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({subsets:['latin'],variable:'--font-inter'});

@@ -55,8 +55,16 @@ function cells(y: number, m: number) {
 }
 
 function onDay(ev: CalendarEvent, y: number, m: number, d: number) {
-  const dt = new Date(ev.start)
-  return !isNaN(dt.getTime()) && dt.getFullYear() === y && dt.getMonth() === m && dt.getDate() === d
+  const start = new Date(ev.start)
+  if (isNaN(start.getTime())) return false
+  start.setHours(0, 0, 0, 0)
+  const cell = new Date(y, m, d)
+  if (ev.end) {
+    const end = new Date(ev.end)
+    end.setHours(0, 0, 0, 0)
+    return cell >= start && cell <= end
+  }
+  return start.getFullYear() === y && start.getMonth() === m && start.getDate() === d
 }
 
 function fmtTime(iso: string) {
@@ -74,9 +82,9 @@ function daysUntil(iso: string) {
   return Math.floor((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-function EventRow({ ev, isEventToday }: { ev: CalendarEvent; isEventToday: (iso: string) => boolean }) {
+function EventRow({ ev, isEventToday }: { ev: CalendarEvent; isEventToday: (ev: CalendarEvent) => boolean }) {
   const col = catColor(ev.category)
-  const today = isEventToday(ev.start)
+  const today = isEventToday(ev)
   const days = daysUntil(ev.start)
   const isSoon = days > 0 && days <= 5
   const dateStr = new Date(ev.start).toLocaleDateString("da-DK", { day: "numeric", month: "short" })
@@ -140,10 +148,10 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
   )
 }
 
-function UpcomingList({ events, isEventToday }: { events: CalendarEvent[]; isEventToday: (iso: string) => boolean }) {
-  const todayEvts = events.filter((e) => isEventToday(e.start))
-  const soonEvts = events.filter((e) => { const d = daysUntil(e.start); return d > 0 && d <= 5 })
-  const laterEvts = events.filter((e) => !isEventToday(e.start) && daysUntil(e.start) > 5)
+function UpcomingList({ events, isEventToday }: { events: CalendarEvent[]; isEventToday: (ev: CalendarEvent) => boolean }) {
+  const todayEvts = events.filter((e) => isEventToday(e))
+  const soonEvts = events.filter((e) => { const d = daysUntil(e.start); return !isEventToday(e) && d > 0 && d <= 5 })
+  const laterEvts = events.filter((e) => !isEventToday(e) && daysUntil(e.start) > 5)
 
   return (
     <div className="space-y-0.5">
@@ -183,11 +191,16 @@ export function CalendarPanel() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/calendar")
-      .then((r) => r.json())
-      .then((d) => setEvents(Array.isArray(d.events) ? d.events : []))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    let mounted = true
+    const load = () =>
+      fetch("/api/calendar")
+        .then((r) => r.json())
+        .then((d) => { if (mounted) setEvents(Array.isArray(d.events) ? d.events : []) })
+        .catch(() => {})
+        .finally(() => { if (mounted) setLoading(false) })
+    void load()
+    const id = setInterval(load, 2 * 60 * 1000)
+    return () => { mounted = false; clearInterval(id) }
   }, [])
 
   const prev = () => {
@@ -225,18 +238,30 @@ export function CalendarPanel() {
     limit.setDate(limit.getDate() + 30)
     return events
       .filter((e) => {
-        const d = new Date(e.start)
-        return d >= t && d < limit
+        const start = new Date(e.start)
+        if (isNaN(start.getTime())) return false
+        // Include ongoing multi-day events (started before today but end is today or later)
+        if (e.end) {
+          const end = new Date(e.end)
+          end.setHours(0, 0, 0, 0)
+          return end >= t && start < limit
+        }
+        return start >= t && start < limit
       })
       .sort((a, b) => a.start.localeCompare(b.start))
   })()
 
-  const isEventToday = (iso: string) => {
-    const d = new Date(iso)
-    d.setHours(0, 0, 0, 0)
+  const isEventToday = (ev: CalendarEvent) => {
+    const start = new Date(ev.start)
+    start.setHours(0, 0, 0, 0)
     const t = new Date()
     t.setHours(0, 0, 0, 0)
-    return d.getTime() === t.getTime()
+    if (ev.end) {
+      const end = new Date(ev.end)
+      end.setHours(0, 0, 0, 0)
+      return start <= t && end >= t
+    }
+    return start.getTime() === t.getTime()
   }
 
   return (

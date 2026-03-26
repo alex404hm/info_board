@@ -395,7 +395,7 @@ export default function KokkenvagtAdminPage() {
       {showForm && (
         <div className="rounded-2xl border border-border/60 bg-card/60 shadow-sm">
           <div className="border-b border-border/40 px-6 py-4">
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-sm font-semibold text-foreground">
               {editingId ? "Rediger vagt" : "Opret ny vagt"}
             </h2>
           </div>
