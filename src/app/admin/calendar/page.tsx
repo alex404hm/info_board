@@ -6,6 +6,7 @@ import {
 } from "lucide-react"
 import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
+import { Button } from "@/components/ui/button"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -287,7 +288,8 @@ export default function CalendarAdminPage() {
             <p className="text-xs text-muted-foreground">Opret og administrer begivenheder manuelt</p>
           </div>
         </div>
-        <button
+        <Button
+          variant={showForm ? "outline" : "default"}
           onClick={() => {
             if (showForm) {
               resetForm()
@@ -296,11 +298,10 @@ export default function CalendarAdminPage() {
               setShowForm(true)
             }
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95"
         >
           {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           {showForm ? "Annuller" : "Ny begivenhed"}
-        </button>
+        </Button>
       </div>
 
       {/* Form */}
@@ -458,22 +459,14 @@ export default function CalendarAdminPage() {
             </div>
 
             <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="rounded-xl px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-              >
+              <Button type="button" variant="ghost" onClick={resetForm}>
                 Annuller
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || !startDate || !title}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-              >
+              </Button>
+              <Button type="submit" disabled={submitting || !startDate || !title}>
                 {submitting
                   ? (editingId ? "Gemmer…" : "Opretter…")
                   : editingId ? "Gem ændringer" : "Opret begivenhed"}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -555,20 +548,23 @@ export default function CalendarAdminPage() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => handleEdit(entry)}
-                            className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
                             title="Rediger"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => handleDelete(entry.id)}
-                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
                             title="Slet"
+                            className="hover:bg-red-500/10 hover:text-red-400"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>

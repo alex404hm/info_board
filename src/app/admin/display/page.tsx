@@ -14,6 +14,7 @@ import {
   GripVertical,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import {
   TILE_DEFINITIONS,
   DEFAULT_TILE_CONFIG,
@@ -258,24 +259,16 @@ export default function DisplayPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={resetToDefaults}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-[color:var(--surface-alt)] border border-border/60 transition-colors"
-          >
+          <Button variant="outline" onClick={resetToDefaults}>
             <RotateCcw className="w-4 h-4" />
             Reset
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={handleSave}
             disabled={saving || !dirty}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0",
-              saved
-                ? "bg-emerald-600/20 border border-emerald-600/40 text-emerald-400"
-                : "bg-primary hover:bg-accent text-primary-foreground",
-              (saving || !dirty) && "opacity-50 cursor-not-allowed",
-            )}
+            variant={saved ? "outline" : "default"}
+            className={saved ? "border-emerald-600/40 text-emerald-400" : ""}
           >
             {saved ? (
               <>
@@ -293,7 +286,7 @@ export default function DisplayPage() {
                 Save Changes
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

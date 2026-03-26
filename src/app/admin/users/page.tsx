@@ -18,6 +18,7 @@ import {
   Clock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 type User = {
   id: string
@@ -335,13 +336,10 @@ export default function UsersPage() {
             )}
           </p>
         </div>
-        <button
-          onClick={openInvite}
-          className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 transition-colors"
-        >
+        <Button onClick={openInvite}>
           <Plus className="h-4 w-4" />
           Invite User
-        </button>
+        </Button>
       </div>
 
       {/* Users table */}
@@ -353,14 +351,10 @@ export default function UsersPage() {
               <span className="ml-2 text-sm font-normal text-muted">({users.length})</span>
             )}
           </h2>
-          <button
-            onClick={loadUsers}
-            disabled={loading}
-            className="flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-xs text-muted hover:text-foreground transition-colors disabled:opacity-50"
-          >
+          <Button variant="outline" size="sm" onClick={loadUsers} disabled={loading}>
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
             Refresh
-          </button>
+          </Button>
         </div>
 
         {loading ? (
@@ -432,11 +426,13 @@ export default function UsersPage() {
                     />
 
                     {isPending && (
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleResendInvite(u.email)}
                         disabled={resendingEmail === u.email}
                         title="Resend invitation email"
-                        className="flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.08] px-2.5 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 transition-colors"
+                        className="border-amber-500/20 bg-amber-500/[0.08] text-amber-400 hover:bg-amber-500/20 hover:text-amber-400"
                       >
                         {resendingEmail === u.email ? (
                           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -444,16 +440,17 @@ export default function UsersPage() {
                           <Send className="h-3.5 w-3.5" />
                         )}
                         <span className="hidden sm:inline">Resend</span>
-                      </button>
+                      </Button>
                     )}
 
-                    <button
+                    <Button
+                      variant="destructive"
+                      size="icon-sm"
                       onClick={() => setDeleteId(u.id)}
                       title="Delete user"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/20 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )
@@ -476,12 +473,9 @@ export default function UsersPage() {
                   They'll receive a link to set up their account.
                 </p>
               </div>
-              <button
-                onClick={() => setShowInvite(false)}
-                className="text-muted hover:text-foreground transition-colors"
-              >
+              <Button variant="ghost" size="icon-sm" onClick={() => setShowInvite(false)}>
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             {!inviteSent ? (
@@ -535,24 +529,17 @@ export default function UsersPage() {
                 )}
 
                 <div className="flex gap-3 pt-1">
-                  <button
-                    onClick={handleInvite}
-                    disabled={inviting}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
-                  >
+                  <Button onClick={handleInvite} disabled={inviting} className="flex-1">
                     {inviting ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
                     {inviting ? "Sending…" : "Send Invite"}
-                  </button>
-                  <button
-                    onClick={() => setShowInvite(false)}
-                    className="rounded-lg border border-border/60 px-4 py-2.5 text-sm font-medium text-muted hover:text-foreground transition-colors"
-                  >
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowInvite(false)}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -568,12 +555,9 @@ export default function UsersPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowInvite(false)}
-                  className="w-full rounded-lg border border-border/60 px-4 py-2.5 text-sm font-medium text-muted hover:text-foreground transition-colors"
-                >
+                <Button variant="outline" className="w-full" onClick={() => setShowInvite(false)}>
                   Done
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -592,10 +576,11 @@ export default function UsersPage() {
               This will permanently delete the user and all their sessions. This cannot be undone.
             </p>
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="destructive"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white"
               >
                 {deleting ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
@@ -603,13 +588,10 @@ export default function UsersPage() {
                   <Trash2 className="h-4 w-4" />
                 )}
                 {deleting ? "Deleting…" : "Delete"}
-              </button>
-              <button
-                onClick={() => setDeleteId(null)}
-                className="flex-1 rounded-lg border border-border/60 px-4 py-2.5 text-sm font-medium text-muted hover:text-foreground transition-colors"
-              >
+              </Button>
+              <Button variant="outline" onClick={() => setDeleteId(null)} className="flex-1">
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>

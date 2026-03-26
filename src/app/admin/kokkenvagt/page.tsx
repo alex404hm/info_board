@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Trash2, Plus, Edit2, X, CalendarDays, Clock, ChefHat, ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, format, addMonths, subMonths, isSameMonth } from "date-fns"
 import { da } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -375,7 +376,8 @@ export default function KokkenvagtAdminPage() {
             <p className="text-xs text-muted-foreground">Administrer vagtplanen uge for uge</p>
           </div>
         </div>
-        <button
+        <Button
+          variant={showForm ? "outline" : "default"}
           onClick={() => {
             if (showForm) {
               resetForm()
@@ -384,11 +386,10 @@ export default function KokkenvagtAdminPage() {
               setShowForm(true)
             }
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95"
         >
           {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           {showForm ? "Annuller" : "Ny vagt"}
-        </button>
+        </Button>
       </div>
 
       {/* Form */}
@@ -511,22 +512,14 @@ export default function KokkenvagtAdminPage() {
             </div>
 
             <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="rounded-xl px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-              >
+              <Button type="button" variant="ghost" onClick={resetForm}>
                 Annuller
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || !selectedDate}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-              >
+              </Button>
+              <Button type="submit" disabled={submitting || !selectedDate}>
                 {submitting
                   ? (editingId ? "Gemmer…" : "Opretter…")
                   : editingId ? "Gem ændringer" : "Opret vagt"}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -598,20 +591,23 @@ export default function KokkenvagtAdminPage() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => handleEdit(entry)}
-                            className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
                             title="Rediger"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => handleDelete(entry.id)}
-                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
                             title="Slet"
+                            className="hover:bg-red-500/10 hover:text-red-400"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
