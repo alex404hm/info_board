@@ -2,11 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
-  Trash2, Plus, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown,
+  Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon,
 } from "lucide-react"
+import { format } from "date-fns"
+import { da } from "date-fns/locale"
 import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { AdminCreateButton } from "../_components/AdminCreateButton"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,17 +124,25 @@ export default function CalendarAdminPage() {
   const [title, setTitle] = useState("")
   const [category, setCategory] = useState("")
   const [allDay, setAllDay] = useState(true)
-  const [startDate, setStartDate] = useState("")
+  const [startDateObj, setStartDateObj] = useState<Date | undefined>(undefined)
   const [startTime, setStartTime] = useState("09:00")
-  const [endDate, setEndDate] = useState("")
+  const [endDateObj, setEndDateObj] = useState<Date | undefined>(undefined)
   const [endTime, setEndTime] = useState("10:00")
   const [location, setLocation] = useState("")
   const [description, setDescription] = useState("")
   const [formBaseline, setFormBaseline] = useState<FormSnapshot>(EMPTY_FORM)
 
+  // Derived string values for buildISO / snapshot
+  const startDate = startDateObj ? format(startDateObj, "yyyy-MM-dd") : ""
+  const endDate = endDateObj ? format(endDateObj, "yyyy-MM-dd") : ""
+
   const currentSnapshot = useMemo<FormSnapshot>(() => ({
-    title, category, allDay, startDate, startTime, endDate, endTime, location, description,
-  }), [title, category, allDay, startDate, startTime, endDate, endTime, location, description])
+    title, category, allDay,
+    startDate: startDateObj ? format(startDateObj, "yyyy-MM-dd") : "",
+    startTime,
+    endDate: endDateObj ? format(endDateObj, "yyyy-MM-dd") : "",
+    endTime, location, description,
+  }), [title, category, allDay, startDateObj, startTime, endDateObj, endTime, location, description])
 
   const hasUnsavedChanges = showForm && !isSameSnapshot(currentSnapshot, formBaseline)
 
@@ -163,9 +176,9 @@ export default function CalendarAdminPage() {
     setTitle("")
     setCategory("")
     setAllDay(true)
-    setStartDate("")
+    setStartDateObj(undefined)
     setStartTime("09:00")
-    setEndDate("")
+    setEndDateObj(undefined)
     setEndTime("10:00")
     setLocation("")
     setDescription("")
@@ -179,6 +192,8 @@ export default function CalendarAdminPage() {
     const st = parseTime(entry.start) || "09:00"
     const ed = entry.end ? parseDate(entry.end) : ""
     const et = entry.end ? parseTime(entry.end) || "10:00" : "10:00"
+    const sdObj = sd ? new Date(sd + "T12:00:00") : undefined
+    const edObj = ed ? new Date(ed + "T12:00:00") : undefined
     const snap: FormSnapshot = {
       title: entry.title,
       category: entry.category ?? "",
@@ -194,9 +209,9 @@ export default function CalendarAdminPage() {
     setTitle(entry.title)
     setCategory(entry.category ?? "")
     setAllDay(entry.allDay)
-    setStartDate(sd)
+    setStartDateObj(sdObj)
     setStartTime(st)
-    setEndDate(ed)
+    setEndDateObj(edObj)
     setEndTime(et)
     setLocation(entry.location ?? "")
     setDescription(entry.description ?? "")
@@ -288,20 +303,25 @@ export default function CalendarAdminPage() {
             <p className="text-xs text-muted-foreground">Opret og administrer begivenheder manuelt</p>
           </div>
         </div>
-        <Button
-          variant={showForm ? "outline" : "default"}
-          onClick={() => {
-            if (showForm) {
-              resetForm()
-            } else {
+        {showForm ? (
+          <Button
+            variant="outline"
+            onClick={resetForm}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+          >
+            <X className="h-4 w-4" />
+            Annuller
+          </Button>
+        ) : (
+          <AdminCreateButton
+            onClick={() => {
               setFormBaseline(EMPTY_FORM)
               setShowForm(true)
-            }
-          }}
-        >
-          {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {showForm ? "Annuller" : "Ny begivenhed"}
-        </Button>
+            }}
+          >
+            Ny begivenhed
+          </AdminCreateButton>
+        )}
       </div>
 
       {/* Form */}
@@ -462,11 +482,15 @@ export default function CalendarAdminPage() {
               <Button type="button" variant="ghost" onClick={resetForm}>
                 Annuller
               </Button>
-              <Button type="submit" disabled={submitting || !startDate || !title}>
-                {submitting
-                  ? (editingId ? "Gemmer…" : "Opretter…")
-                  : editingId ? "Gem ændringer" : "Opret begivenhed"}
-              </Button>
+              {editingId ? (
+                <Button type="submit" disabled={submitting || !startDate || !title}>
+                  {submitting ? "Gemmer..." : "Gem ændringer"}
+                </Button>
+              ) : (
+                <AdminCreateButton type="submit" disabled={submitting || !startDate || !title}>
+                  {submitting ? "Opretter..." : "Opret begivenhed"}
+                </AdminCreateButton>
+              )}
             </div>
           </form>
         </div>

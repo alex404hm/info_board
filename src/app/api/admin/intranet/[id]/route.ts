@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
 
+type IntranetPageInsert = typeof intranetPage.$inferInsert
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -19,12 +21,25 @@ export async function PATCH(
   }
 
   try {
-    const data = await req.json()
+    const data = (await req.json()) as Partial<IntranetPageInsert>
     
     await db
       .update(intranetPage)
       .set({
-        ...data,
+        key: data.key,
+        title: data.title,
+        subtitle: data.subtitle ?? null,
+        icon: data.icon,
+        iconColor: data.iconColor,
+        iconBg: data.iconBg,
+        bgFrom: data.bgFrom,
+        bgTo: data.bgTo,
+        glowA: data.glowA,
+        glowB: data.glowB,
+        accentColor: data.accentColor,
+        content: data.content,
+        order: data.order,
+        isDraft: data.isDraft,
         updatedAt: new Date(),
       })
       .where(eq(intranetPage.id, id))

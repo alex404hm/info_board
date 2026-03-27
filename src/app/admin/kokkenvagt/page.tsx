@@ -1,13 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Trash2, Plus, Edit2, X, CalendarDays, Clock, ChefHat, ChevronLeft, ChevronRight } from "lucide-react"
+import { Trash2, Edit2, X, CalendarDays, Clock, ChefHat, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, format, addMonths, subMonths, isSameMonth } from "date-fns"
 import { da } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
+import { AdminCreateButton } from "../_components/AdminCreateButton"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -376,20 +377,25 @@ export default function KokkenvagtAdminPage() {
             <p className="text-xs text-muted-foreground">Administrer vagtplanen uge for uge</p>
           </div>
         </div>
-        <Button
-          variant={showForm ? "outline" : "default"}
-          onClick={() => {
-            if (showForm) {
-              resetForm()
-            } else {
+        {showForm ? (
+          <Button
+            variant="outline"
+            onClick={resetForm}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+          >
+            <X className="h-4 w-4" />
+            Annuller
+          </Button>
+        ) : (
+          <AdminCreateButton
+            onClick={() => {
               setFormBaseline(EMPTY_FORM_SNAPSHOT)
               setShowForm(true)
-            }
-          }}
-        >
-          {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {showForm ? "Annuller" : "Ny vagt"}
-        </Button>
+            }}
+          >
+            Ny vagt
+          </AdminCreateButton>
+        )}
       </div>
 
       {/* Form */}
@@ -515,11 +521,15 @@ export default function KokkenvagtAdminPage() {
               <Button type="button" variant="ghost" onClick={resetForm}>
                 Annuller
               </Button>
-              <Button type="submit" disabled={submitting || !selectedDate}>
-                {submitting
-                  ? (editingId ? "Gemmer…" : "Opretter…")
-                  : editingId ? "Gem ændringer" : "Opret vagt"}
-              </Button>
+              {editingId ? (
+                <Button type="submit" disabled={submitting || !selectedDate}>
+                  {submitting ? "Gemmer..." : "Gem ændringer"}
+                </Button>
+              ) : (
+                <AdminCreateButton type="submit" disabled={submitting || !selectedDate}>
+                  {submitting ? "Opretter..." : "Opret vagt"}
+                </AdminCreateButton>
+              )}
             </div>
           </form>
         </div>

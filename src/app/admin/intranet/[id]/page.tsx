@@ -22,5 +22,5 @@ export default async function EditIntranetPage({ params }: Props) {
 
   if (!page) notFound()
 
-  return <IntranetPageForm initialData={page} />
+  return <IntranetPageForm initialData={{ ...page, subtitle: page.subtitle || "" }} />
 }

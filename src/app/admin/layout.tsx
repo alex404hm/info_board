@@ -9,8 +9,8 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator"
 
 export const metadata = {
-  title: "Admin Dashboard - TEC Info Board",
-  description: "Administrator dashboard for TEC Info Board",
+  title: "Admin - TEC Info Board",
+  description: "Login and administration for TEC Info Board",
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

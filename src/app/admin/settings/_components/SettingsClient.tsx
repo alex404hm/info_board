@@ -18,10 +18,7 @@ import {
   LogOut,
   KeyRound,
   Camera,
-  UploadCloud,
-  ImageIcon,
 } from "lucide-react"
-import Image from "next/image"
 import { authClient, useSession } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
@@ -31,15 +28,6 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog"
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -237,75 +225,60 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
 
   // ── avatar ──
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
-  const [avatarPreview,    setAvatarPreview]    = useState<string | null>(null)
-  const [avatarFile,       setAvatarFile]       = useState<File | null>(null)
-  const [avatarLoading,    setAvatarLoading]    = useState(false)
-  const [avatarError,      setAvatarError]      = useState("")
-  const [avatarSaved,      setAvatarSaved]      = useState(false)
-  const [isDragging,       setIsDragging]       = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUser.image ?? null)
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const [avatarError, setAvatarError] = useState("")
+  const [avatarSaved, setAvatarSaved] = useState(false)
   // committed avatar URL (updated after successful upload)
   const [committedAvatar, setCommittedAvatar] = useState<string | null>(initialUser.image ?? null)
 
-  function pickFile(file: File) {
-    if (file.size > 4 * 1024 * 1024) { setAvatarError("Billedet må max være 4 MB."); return }
-    setAvatarError("")
-    setAvatarFile(file)
-    setAvatarPreview(URL.createObjectURL(file))
-  }
-
-  function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file) pickFile(file)
-  }
-
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  function handleDragLeave() {
-    setIsDragging(false)
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setIsDragging(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) pickFile(file)
-  }
-
-  function handleDialogClose(open: boolean) {
-    if (!open) {
-      setAvatarPreview(null)
-      setAvatarFile(null)
-      setAvatarError("")
+  async function handleDirectAvatarUpload(file: File) {
+    if (file.size > 4 * 1024 * 1024) {
+      setAvatarError("Billedet må max være 4 MB.")
       if (fileInputRef.current) fileInputRef.current.value = ""
+      return
     }
-    setAvatarDialogOpen(open)
-  }
 
-  async function handleUploadAvatar() {
-    if (!avatarFile) return
-    setAvatarLoading(true)
+    const previewUrl = URL.createObjectURL(file)
     setAvatarError("")
+    setAvatarSaved(false)
+    setAvatarPreview(previewUrl)
+    setAvatarLoading(true)
+
     try {
       const fd = new FormData()
-      fd.append("avatar", avatarFile)
+      fd.append("avatar", file)
       const res = await fetch("/api/admin/avatar", { method: "POST", body: fd })
       const json = await res.json()
-      if (!res.ok) { setAvatarError(json.error ?? "Upload fejlede."); return }
+
+      if (!res.ok) {
+        setAvatarPreview(committedAvatar)
+        setAvatarError(json.error ?? "Upload fejlede.")
+        return
+      }
+
       const { error } = await authClient.updateUser({ image: json.url })
-      if (error) { setAvatarError(error.message ?? "Kunne ikke opdatere profilbillede."); return }
+      if (error) {
+        setAvatarPreview(committedAvatar)
+        setAvatarError(error.message ?? "Kunne ikke opdatere profilbillede.")
+        return
+      }
+
       setCommittedAvatar(json.url)
+      setAvatarPreview(json.url)
       setAvatarSaved(true)
-      setAvatarDialogOpen(false)
-      setAvatarPreview(null)
-      setAvatarFile(null)
       setTimeout(() => setAvatarSaved(false), 3000)
     } finally {
+      URL.revokeObjectURL(previewUrl)
       setAvatarLoading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
     }
+  }
+
+  async function handleDirectAvatarFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await handleDirectAvatarUpload(file)
   }
 
   const initials = (initialUser.name ?? initialUser.email ?? "?")
@@ -461,158 +434,60 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-5">
-          {/* Avatar with bottom-right upload badge */}
           <div className="relative shrink-0">
-            <Avatar className="h-20 w-20 rounded-full">
-              {committedAvatar && (
-                <AvatarImage
-                  src={committedAvatar}
-                  alt="Profilbillede"
-                  className="rounded-full object-cover"
-                />
-              )}
-              <AvatarFallback className="rounded-full bg-emerald-600 text-white text-xl font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            {/* Camera badge button — bottom-right corner */}
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={() => setAvatarDialogOpen(true)}
-              className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-background bg-muted shadow-sm hover:bg-accent hover:text-accent-foreground"
-              aria-label="Skift profilbillede"
-            >
-              <Camera className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          <div className="min-w-0">
-            <p className="font-semibold text-foreground truncate">{initialUser.name || "Bruger"}</p>
-            <p className="text-sm text-muted truncate">{initialUser.email}</p>
-            {avatarSaved && (
-              <span className="mt-1.5 flex items-center gap-1 text-xs text-emerald-400">
-                <CheckCircle className="h-3.5 w-3.5" /> Billede gemt
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Avatar upload dialog */}
-        <Dialog open={avatarDialogOpen} onOpenChange={handleDialogClose}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Skift profilbillede</DialogTitle>
-              <DialogDescription>
-                Upload et nyt billede. Det vil erstatte dit nuværende profilbillede.
-              </DialogDescription>
-            </DialogHeader>
-
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               className="hidden"
-              onChange={handleFileInput}
+              onChange={(e) => { void handleDirectAvatarFileInput(e) }}
             />
-
-            {avatarPreview ? (
-              /* ── Preview state ── */
-              <div className="flex flex-col items-center gap-4 py-2">
-                <div className="relative">
-                  <div className="h-28 w-28 overflow-hidden rounded-full ring-4 ring-border/60 ring-offset-2 ring-offset-background">
-                    <Image
-                      src={avatarPreview}
-                      alt="Preview"
-                      width={112}
-                      height={112}
-                      className="h-full w-full object-cover"
-                      unoptimized
-                    />
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-foreground truncate max-w-[220px]">
-                    {avatarFile?.name}
-                  </p>
-                  <p className="text-xs text-muted mt-0.5">
-                    {avatarFile ? (avatarFile.size / 1024).toFixed(0) + " KB" : ""}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImageIcon className="h-3.5 w-3.5" />
-                  Vælg andet billede
-                </Button>
-              </div>
-            ) : (
-              /* ── Drop zone ── */
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={cn(
-                  "flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-all",
-                  isDragging
-                    ? "border-primary/60 bg-primary/5"
-                    : "border-border hover:border-muted-foreground/40 hover:bg-muted/30"
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+              className={cn(
+                "group relative block rounded-full transition-transform focus:outline-none focus:ring-2 focus:ring-ring/60 focus:ring-offset-2 focus:ring-offset-background",
+                avatarLoading && "cursor-wait opacity-80",
+              )}
+              aria-label="Upload profilbillede"
+            >
+              <Avatar className="h-20 w-20 rounded-full">
+                {avatarPreview && (
+                  <AvatarImage
+                    src={avatarPreview}
+                    alt="Profilbillede"
+                    className="rounded-full object-cover"
+                  />
                 )}
-              >
-                <div className={cn(
-                  "flex h-14 w-14 items-center justify-center rounded-full transition-colors",
-                  isDragging ? "bg-primary/10" : "bg-muted/50"
-                )}>
-                  <UploadCloud className={cn(
-                    "h-7 w-7 transition-colors",
-                    isDragging ? "text-primary" : "text-muted-foreground"
-                  )} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Træk et billede hertil
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted">
-                    eller <span className="text-primary underline underline-offset-2">klik for at vælge</span>
-                  </p>
-                </div>
-                <p className="text-xs text-muted">
-                  JPG, PNG, WebP eller GIF · Max 4 MB
-                </p>
-              </div>
+                <AvatarFallback className="rounded-full bg-emerald-600 text-white text-xl font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-white transition-colors group-hover:bg-black/35 group-focus-visible:bg-black/35">
+                <Camera className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+              </span>
+            </button>
+          </div>
+
+          <div className="min-w-0">
+            <p className="font-semibold text-foreground truncate">{initialUser.name || "Bruger"}</p>
+            <p className="text-sm text-muted truncate">{initialUser.email}</p>
+            <p className="mt-1 text-xs text-muted">Klik direkte pa billedet for at vaelge et nyt profilbillede.</p>
+            {avatarSaved && (
+              <span className="mt-1.5 flex items-center gap-1 text-xs text-emerald-400">
+                <CheckCircle className="h-3.5 w-3.5" /> Billede gemt
+              </span>
             )}
+            {avatarLoading && (
+              <span className="mt-1.5 flex items-center gap-1 text-xs text-muted">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Uploader billede...
+              </span>
+            )}
+          </div>
+        </div>
 
-            {avatarError && <ErrorBanner message={avatarError} />}
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Annuller
-                </Button>
-              </DialogClose>
-              <Button
-                type="button"
-                onClick={handleUploadAvatar}
-                disabled={!avatarFile || avatarLoading}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white border-transparent"
-              >
-                {avatarLoading ? (
-                  <><RefreshCw className="h-4 w-4 animate-spin" /> Uploader…</>
-                ) : (
-                  <><Save className="h-4 w-4" /> Gem billede</>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {avatarError && <ErrorBanner message={avatarError} />}
 
         <div className="space-y-4 max-w-md">
           <Field label="Visningsnavn">

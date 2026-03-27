@@ -2,19 +2,12 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createContext, useContext, useState, useMemo } from "react"
-import {
-  ArrowLeft,
-  AlertTriangle,
-  Info,
-  CheckCircle,
-  ExternalLink,
-  ChevronRight,
-  MapPin,
-} from "lucide-react"
+import { createContext, useContext, useState } from "react"
+import type { ComponentType, CSSProperties, ReactNode } from "react"
+import { ArrowLeft, ExternalLink, MapPin } from "lucide-react"
 import * as LucideIcons from "lucide-react"
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+import { MdxContent } from "@/components/intranet/MdxContent"
 
 export type IntranetPageData = {
   id: string
@@ -35,23 +28,32 @@ export type IntranetPageData = {
   updatedAt: Date
 }
 
-// ── In-app browser context ────────────────────────────────────────────────────
-
 const OpenUrlContext = createContext<((url: string) => void) | null>(null)
 
-// ── Icon Renderer ─────────────────────────────────────────────────────────────
-
-function IconRenderer({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) {
-  const IconComponent = (LucideIcons as any)[name] || LucideIcons.Info
+function IconRenderer({
+  name,
+  className,
+  style,
+}: {
+  name: string
+  className?: string
+  style?: CSSProperties
+}) {
+  const iconMap = LucideIcons as unknown as Record<
+    string,
+    ComponentType<{ className?: string; style?: CSSProperties }>
+  >
+  const IconComponent = iconMap[name] || LucideIcons.Info
   return <IconComponent className={className} style={style} />
 }
 
-// ── In-app browser overlay ────────────────────────────────────────────────────
-
 function InAppBrowser({ url, onBack }: { url: string; onBack: () => void }) {
   const domain = (() => {
-    try { return new URL(url).hostname.replace(/^www\./, "") }
-    catch { return url }
+    try {
+      return new URL(url).hostname.replace(/^www\./, "")
+    } catch {
+      return url
+    }
   })()
 
   return (
@@ -84,59 +86,37 @@ function InAppBrowser({ url, onBack }: { url: string; onBack: () => void }) {
           <ArrowLeft className="h-4 w-4" />
           Tilbage
         </button>
-        <span className="truncate text-xs" style={{ color: "var(--foreground-soft)" }}>{domain}</span>
+        <span className="truncate text-xs" style={{ color: "var(--foreground-soft)" }}>
+          {domain}
+        </span>
       </div>
-      <iframe src={url} className="flex-1 w-full border-0" title={domain} sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" />
+      <iframe
+        src={url}
+        className="flex-1 w-full border-0"
+        title={domain}
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+      />
     </div>
   )
 }
 
-// ── Shared UI components ──────────────────────────────────────────────────────
-
-function InfoBox({ type, children }: { type: "info" | "warning" | "success"; children: React.ReactNode }) {
-  const s = {
-    info: { bg: "rgba(95,157,255,0.08)", border: "rgba(95,157,255,0.28)", icon: <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#5f9dff" }} /> },
-    warning: { bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.32)", icon: <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#f97316" }} /> },
-    success: { bg: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.28)", icon: <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#34d399" }} /> },
-  }[type]
-  return (
-    <div className="flex gap-2.5 rounded-xl p-3.5 text-sm leading-relaxed" style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-      {s.icon}
-      <div style={{ color: "var(--foreground-muted)" }}>{children}</div>
-    </div>
-  )
-}
-
-function H3({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="mb-2 mt-5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest first:mt-0" style={{ color: "var(--foreground-soft)" }}>
-      <ChevronRight className="h-3 w-3 shrink-0" />
-      {children}
-    </h3>
-  )
-}
-
-function BulletList({ children }: { children: React.ReactNode }) {
-  return (
-    <ul className="space-y-1.5">
-      {children}
-    </ul>
-  )
-}
-
-function BulletItem({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2 text-sm leading-relaxed" style={{ color: "var(--foreground-muted)" }}>
-      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--accent)" }} />
-      <span>{children}</span>
-    </li>
-  )
-}
-
-function LinkPill({ href, children, internal = false }: { href: string; children: React.ReactNode; internal?: boolean }) {
+function LinkPill({
+  href,
+  children,
+  internal = false,
+}: {
+  href: string
+  children: ReactNode
+  internal?: boolean
+}) {
   const openUrl = useContext(OpenUrlContext)
-  const baseStyle = { color: "var(--accent)", border: "1px solid rgba(95,157,255,0.22)", background: "rgba(95,157,255,0.06)" }
-  const className = "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/5 active:scale-95"
+  const baseStyle = {
+    color: "var(--accent)",
+    border: "1px solid rgba(95,157,255,0.22)",
+    background: "rgba(95,157,255,0.06)",
+  }
+  const className =
+    "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/5 active:scale-95"
 
   if (internal) {
     return (
@@ -146,6 +126,7 @@ function LinkPill({ href, children, internal = false }: { href: string; children
       </Link>
     )
   }
+
   return (
     <button onClick={() => openUrl?.(href)} className={className} style={baseStyle}>
       {children}
@@ -154,20 +135,6 @@ function LinkPill({ href, children, internal = false }: { href: string; children
   )
 }
 
-// ── Rich Content Renderer ──────────────────────────────────────────────────────
-
-function RichContent({ content }: { content: string }) {
-  if (!content || content.startsWith("{")) return null
-  return (
-    <div
-      className="rich-content"
-      dangerouslySetInnerHTML={{ __html: content }}
-    />
-  )
-}
-
-// ── Detail view ────────────────────────────────────────────────────────────────
-
 function DetailView({ cat, onBack }: { cat: IntranetPageData; onBack: () => void }) {
   return (
     <div>
@@ -175,39 +142,76 @@ function DetailView({ cat, onBack }: { cat: IntranetPageData; onBack: () => void
         <button
           onClick={onBack}
           className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition-all active:scale-95"
-          style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
+          style={{
+            background: "var(--surface-soft)",
+            border: "1px solid var(--surface-border)",
+            color: "var(--foreground-muted)",
+          }}
         >
           <ArrowLeft className="h-4 w-4" />
           Tilbage
         </button>
       </div>
 
-      <div className="relative mb-6 overflow-hidden rounded-2xl px-6 py-7" style={{ background: `linear-gradient(135deg, ${cat.bgFrom}, ${cat.bgTo})` }}>
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full blur-3xl" style={{ background: cat.glowA }} />
-        <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full blur-2xl" style={{ background: cat.glowB }} />
+      <div
+        className="relative mb-6 overflow-hidden rounded-2xl px-6 py-7"
+        style={{ background: `linear-gradient(135deg, ${cat.bgFrom}, ${cat.bgTo})` }}
+      >
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full blur-3xl"
+          style={{ background: cat.glowA }}
+        />
+        <div
+          className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full blur-2xl"
+          style={{ background: cat.glowB }}
+        />
         <div className="relative flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: cat.iconBg, border: "1px solid rgba(255,255,255,0.16)", boxShadow: `0 0 24px ${cat.glowA}` }}>
+          <div
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+            style={{
+              background: cat.iconBg,
+              border: "1px solid rgba(255,255,255,0.16)",
+              boxShadow: `0 0 24px ${cat.glowA}`,
+            }}
+          >
             <IconRenderer name={cat.icon} className="h-7 w-7" style={{ color: cat.iconColor }} />
           </div>
           <div>
             <p className="text-2xl font-black tracking-tight text-white">{cat.title}</p>
-            <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>{cat.subtitle}</p>
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
+              {cat.subtitle}
+            </p>
           </div>
         </div>
       </div>
 
-      <RichContent content={cat.content} />
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(20,28,51,0.98),rgba(9,14,26,0.98))] p-6 shadow-[0_30px_80px_rgba(3,7,18,0.5)] md:p-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(95,157,255,0.2),transparent_65%)]" />
+        <MdxContent content={cat.content} className="relative" />
+      </div>
 
-      <div className="mt-8 flex flex-wrap items-center gap-4 rounded-2xl px-5 py-4" style={{ background: "var(--surface)", border: "1px solid var(--surface-border)" }}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(95,157,255,0.1)" }}>
+      <div
+        className="mt-8 flex flex-wrap items-center gap-4 rounded-2xl px-5 py-4"
+        style={{ background: "var(--surface)", border: "1px solid var(--surface-border)" }}
+      >
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+          style={{ background: "rgba(95,157,255,0.1)" }}
+        >
           <MapPin className="h-4 w-4" style={{ color: "#5f9dff" }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Spørgsmål?</p>
-          <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>Kontakt studieadministrationen eller din uddannelsesvejleder på TEC.</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+            Spørgsmål?
+          </p>
+          <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>
+            Kontakt studieadministrationen eller din uddannelsesvejleder på TEC.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <LinkPill href="/kontakter" internal>Kontakter</LinkPill>
+          <LinkPill href="/kontakter" internal>
+            Kontakter
+          </LinkPill>
           <LinkPill href="https://www.tec.dk">tec.dk</LinkPill>
         </div>
       </div>
@@ -215,14 +219,16 @@ function DetailView({ cat, onBack }: { cat: IntranetPageData; onBack: () => void
   )
 }
 
-// ── Hub view ───────────────────────────────────────────────────────────────────
-
 function HubView({ categories }: { categories: IntranetPageData[] }) {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight md:text-4xl" style={{ color: "var(--foreground)" }}>Intranet</h1>
-        <p className="mt-1.5 text-sm" style={{ color: "var(--foreground-muted)" }}>Løn, befordring, læreplads og rettigheder for lærlinge</p>
+        <h1 className="text-3xl font-black tracking-tight md:text-4xl" style={{ color: "var(--foreground)" }}>
+          Intranet
+        </h1>
+        <p className="mt-1.5 text-sm" style={{ color: "var(--foreground-muted)" }}>
+          Løn, befordring, læreplads og rettigheder for lærlinge
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -231,28 +237,46 @@ function HubView({ categories }: { categories: IntranetPageData[] }) {
             key={cat.key}
             href={`/intranet/${cat.key}`}
             className="group flex flex-col overflow-hidden rounded-2xl text-left transition-all duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
-            style={{ background: "var(--surface)", border: "1px solid var(--surface-border)", boxShadow: "0 1px 3px rgba(0,0,0,0.18)" }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = cat.accentColor + "66"
-              el.style.boxShadow = `0 0 0 1px ${cat.accentColor}44, 0 4px 20px ${cat.accentColor}22`
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--surface-border)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
             }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = "var(--surface-border)"
-              el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.18)"
+            onMouseEnter={(event) => {
+              const element = event.currentTarget as HTMLElement
+              element.style.borderColor = `${cat.accentColor}66`
+              element.style.boxShadow = `0 0 0 1px ${cat.accentColor}44, 0 4px 20px ${cat.accentColor}22`
+            }}
+            onMouseLeave={(event) => {
+              const element = event.currentTarget as HTMLElement
+              element.style.borderColor = "var(--surface-border)"
+              element.style.boxShadow = "0 1px 3px rgba(0,0,0,0.18)"
             }}
           >
-            <div className="relative flex items-center justify-center overflow-hidden" style={{ aspectRatio: "4/3", background: `linear-gradient(145deg, ${cat.bgFrom}, ${cat.bgTo})` }}>
+            <div
+              className="relative flex items-center justify-center overflow-hidden"
+              style={{ aspectRatio: "4/3", background: `linear-gradient(145deg, ${cat.bgFrom}, ${cat.bgTo})` }}
+            >
               <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full blur-2xl" style={{ background: cat.glowA }} />
               <div className="absolute -bottom-6 -left-6 h-28 w-28 rounded-full blur-2xl" style={{ background: cat.glowB }} />
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-110" style={{ background: cat.iconBg, border: "1px solid rgba(255,255,255,0.14)", boxShadow: `0 0 20px ${cat.glowA}` }}>
+              <div
+                className="relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-110"
+                style={{
+                  background: cat.iconBg,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  boxShadow: `0 0 20px ${cat.glowA}`,
+                }}
+              >
                 <IconRenderer name={cat.icon} className="h-8 w-8" style={{ color: cat.iconColor }} />
               </div>
             </div>
             <div className="px-4 py-3.5" style={{ borderTop: "1px solid var(--surface-border)" }}>
-              <p className="truncate text-sm font-bold" style={{ color: "var(--foreground)" }}>{cat.title}</p>
-              <p className="mt-0.5 truncate text-xs" style={{ color: "var(--foreground-muted)" }}>{cat.subtitle}</p>
+              <p className="truncate text-sm font-bold" style={{ color: "var(--foreground)" }}>
+                {cat.title}
+              </p>
+              <p className="mt-0.5 truncate text-xs" style={{ color: "var(--foreground-muted)" }}>
+                {cat.subtitle}
+              </p>
             </div>
           </Link>
         ))}
@@ -261,21 +285,26 @@ function HubView({ categories }: { categories: IntranetPageData[] }) {
   )
 }
 
-// ── Main exports ────────────────────────────────────────────────────────────────
-
 export function IntranetPanel({ categories }: { categories: IntranetPageData[] }) {
   return <HubView categories={categories} />
 }
 
-export function IntranetSectionPage({ sectionKey, categories }: { sectionKey: string; categories: IntranetPageData[] }) {
+export function IntranetSectionPage({
+  sectionKey,
+  categories,
+}: {
+  sectionKey: string
+  categories: IntranetPageData[]
+}) {
   const [browserUrl, setBrowserUrl] = useState<string | null>(null)
   const router = useRouter()
-  const cat = categories.find((c) => c.key === sectionKey)
+  const cat = categories.find((category) => category.key === sectionKey)
+
   if (!cat) return null
 
   return (
     <OpenUrlContext.Provider value={setBrowserUrl}>
-      {browserUrl && <InAppBrowser url={browserUrl} onBack={() => setBrowserUrl(null)} />}
+      {browserUrl ? <InAppBrowser url={browserUrl} onBack={() => setBrowserUrl(null)} /> : null}
       <DetailView cat={cat} onBack={() => router.push("/intranet")} />
     </OpenUrlContext.Provider>
   )
