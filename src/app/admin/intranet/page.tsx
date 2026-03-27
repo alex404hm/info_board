@@ -2,7 +2,8 @@ import { db } from "@/db"
 import { intranetPage } from "@/db/schema"
 import { asc } from "drizzle-orm"
 import Link from "next/link"
-import { Plus, Edit2, MoveVertical } from "lucide-react"
+import { Edit2, MoveVertical } from "lucide-react"
+import { adminCreateButtonClassName } from "../_components/AdminCreateButton"
 
 export default async function AdminIntranetPage() {
   const pages = await db
@@ -19,11 +20,23 @@ export default async function AdminIntranetPage() {
             Administrer indholdet i de forskellige intranet-sektioner.
           </p>
         </div>
-        <Link
-          href="/admin/intranet/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
+        <Link href="/admin/intranet/new" className={adminCreateButtonClassName}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+            <path d="M12 5v14" />
+          </svg>
           Ny side
         </Link>
       </div>

@@ -1,21 +1,24 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Save, ArrowLeft, Loader2, Info, Layout, Palette, Type, FileEdit, Check, Globe, Clock, AlertCircle } from "lucide-react"
-import Link from "next/link"
-import * as LucideIcons from "lucide-react"
+import {
+  LoaderCircle,
+  Save,
+  Trash2,
+} from "lucide-react"
+
 import { TiptapEditor } from "@/components/tiptap-editor"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  convertIntranetContentToMarkdown,
+  normalizeIntranetEditorContent,
+} from "@/lib/intranet-editor-content"
 
-const LOCAL_DRAFT_KEY = "intranet-new-draft"
+// form.content stores HTML (what Tiptap uses); markdown conversion happens only at API boundary
 
-function IconRenderer({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) {
-  const IconComponent = (LucideIcons as any)[name] || LucideIcons.Info
-  return <IconComponent className={className} style={style} />
-}
-
-interface IntranetPageData {
+type IntranetPageRecord = {
   id: string
   key: string
   title: string
@@ -31,581 +34,328 @@ interface IntranetPageData {
   content: string
   order: number
   isDraft: boolean
-  updatedAt: Date
 }
 
-interface IntranetPageFormProps {
-  initialData?: IntranetPageData
+const DEFAULT_FORM: IntranetPageRecord = {
+  id: "",
+  key: "",
+  title: "",
+  subtitle: "",
+  icon: "BookOpen",
+  iconColor: "#5f9dff",
+  iconBg: "rgba(95,157,255,0.18)",
+  bgFrom: "rgba(20,31,56,0.98)",
+  bgTo: "rgba(10,16,30,0.98)",
+  glowA: "rgba(95,157,255,0.18)",
+  glowB: "rgba(95,157,255,0.08)",
+  accentColor: "#5f9dff",
+  content: "",
+  order: 0,
+  isDraft: true,
 }
 
-const TABS = [
-  { id: "edit", Icon: Type, label: "Rediger" },
-  { id: "preview", Icon: Layout, label: "Forhåndsvisning" },
-  { id: "settings", Icon: Palette, label: "Design" },
-] as const
-
-const inputClass =
-  "w-full rounded-lg border border-input bg-card px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none transition-colors"
-
-const settingsInputClass =
-  "w-full rounded-lg border border-input bg-card px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none transition-colors"
-
-function loadLocalDraft() {
-  try {
-    const raw = localStorage.getItem(LOCAL_DRAFT_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
 }
 
-export default function IntranetPageForm({ initialData }: IntranetPageFormProps) {
+export default function IntranetPageForm({ initialData }: { initialData?: IntranetPageRecord }) {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<"edit" | "preview" | "settings">("edit")
-  const [draftSaved, setDraftSaved] = useState(false)
-  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "pending" | "saving" | "saved">("idle")
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [localDraftRestored, setLocalDraftRestored] = useState(false)
+  const [pageId, setPageId] = useState(initialData?.id ?? "")
+  const [form, setForm] = useState<IntranetPageRecord>(() => ({
+    ...DEFAULT_FORM,
+    ...initialData,
+    // Store as HTML for the editor — markdown conversion happens only when sending to the API
+    content: normalizeIntranetEditorContent(initialData?.content ?? ""),
+  }))
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [deleteState, setDeleteState] = useState<"idle" | "deleting">("idle")
+  const [keyTouched, setKeyTouched] = useState(Boolean(initialData?.key))
+  const hasMountedRef = useRef(false)
+  const lastAutoSavedSnapshotRef = useRef("")
 
-  const defaultFormData = {
-    title: initialData?.title || "",
-    subtitle: initialData?.subtitle || "",
-    key: initialData?.key || "",
-    icon: initialData?.icon || "Info",
-    iconColor: initialData?.iconColor || "#60a5fa",
-    iconBg: initialData?.iconBg || "rgba(96,165,250,0.22)",
-    bgFrom: initialData?.bgFrom || "rgba(30,58,138,0.95)",
-    bgTo: initialData?.bgTo || "rgba(15,23,42,0.99)",
-    glowA: initialData?.glowA || "rgba(96,165,250,0.22)",
-    glowB: initialData?.glowB || "rgba(59,130,246,0.12)",
-    accentColor: initialData?.accentColor || "#60a5fa",
-    content: initialData?.content || "",
-    isDraft: initialData?.isDraft ?? true,
+  useEffect(() => {
+    if (keyTouched) return
+
+    setForm((current) => ({
+      ...current,
+      key: slugify(current.title),
+    }))
+  }, [keyTouched, form.title])
+
+  function setField<K extends keyof IntranetPageRecord>(field: K, value: IntranetPageRecord[K]) {
+    setForm((current) => ({ ...current, [field]: value }))
+    setSaveState("idle")
+    setAutoSaveState("idle")
   }
 
-  const [formData, setFormData] = useState(defaultFormData)
-  const formDataRef = useRef(formData)
-  const editorContentRef = useRef<string>(initialData?.content || "")
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isDirtyRef = useRef(false)
+  const buildPayload = useCallback((overrides?: Partial<IntranetPageRecord>) => {
+    const next = { ...form, ...overrides }
 
-  // Keep formDataRef in sync so auto-save always has the latest values
-  useEffect(() => { formDataRef.current = formData }, [formData])
-
-  // Restore local draft for new pages
-  useEffect(() => {
-    if (initialData) return
-    const draft = loadLocalDraft()
-    if (draft && (draft.title || draft.content)) {
-      setFormData((prev) => ({ ...prev, ...draft }))
-      editorContentRef.current = draft.content || ""
-      setLocalDraftRestored(true)
+    return {
+      ...next,
+      icon: DEFAULT_FORM.icon,
+      iconColor: DEFAULT_FORM.iconColor,
+      iconBg: DEFAULT_FORM.iconBg,
+      bgFrom: DEFAULT_FORM.bgFrom,
+      bgTo: DEFAULT_FORM.bgTo,
+      glowA: DEFAULT_FORM.glowA,
+      glowB: DEFAULT_FORM.glowB,
+      accentColor: DEFAULT_FORM.accentColor,
+      // Convert HTML → markdown+MDX for storage
+      content: convertIntranetContentToMarkdown(next.content),
+      key: slugify(next.key || next.title),
+      subtitle: next.subtitle || null,
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form])
 
-  // Warn before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirtyRef.current) {
-        e.preventDefault()
-        e.returnValue = ""
-      }
+  const hasContentToAutosave = useCallback(() => {
+    const plainContent = form.content
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .trim()
+
+    return Boolean(form.title.trim() || form.subtitle?.trim() || plainContent)
+  }, [form.content, form.subtitle, form.title])
+
+  const saveDraft = useCallback(async () => {
+    const payload = buildPayload({ isDraft: true })
+
+    const endpoint = pageId ? `/api/admin/intranet/${pageId}` : "/api/admin/intranet"
+    const method = pageId ? "PATCH" : "POST"
+
+    const response = await fetch(endpoint, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(data?.error ?? "Autosave failed")
     }
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [])
 
-  const markDirty = useCallback(() => {
-    isDirtyRef.current = true
-    setHasUnsavedChanges(true)
-  }, [])
+    if (!pageId && data?.id) {
+      setPageId(data.id)
+      router.replace(`/admin/intranet/${data.id}`)
+    }
+  }, [buildPayload, pageId, router])
 
-  const markClean = useCallback(() => {
-    isDirtyRef.current = false
-    setHasUnsavedChanges(false)
-  }, [])
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      lastAutoSavedSnapshotRef.current = JSON.stringify(buildPayload({ isDraft: true }))
+      return
+    }
 
-  // Auto-save to server (existing pages) or localStorage (new pages)
-  const scheduleAutoSave = useCallback(() => {
-    markDirty()
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
-    setAutoSaveStatus("pending")
+    if (saveState === "saving" || deleteState === "deleting") return
+    if (!hasContentToAutosave()) return
 
-    autoSaveTimerRef.current = setTimeout(async () => {
-      setAutoSaveStatus("saving")
+    const snapshot = JSON.stringify(buildPayload({ isDraft: true }))
+    if (snapshot === lastAutoSavedSnapshotRef.current) return
 
-      // New page: save to localStorage
-      if (!initialData) {
-        try {
-          const snapshot = {
-            ...formDataRef.current,
-            content: editorContentRef.current,
-          }
-          localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(snapshot))
-          setAutoSaveStatus("saved")
-          setTimeout(() => setAutoSaveStatus("idle"), 3000)
-        } catch {
-          setAutoSaveStatus("idle")
-        }
-        return
-      }
+    const timeout = window.setTimeout(async () => {
+      setAutoSaveState("saving")
 
-      // Existing page: save to server
       try {
-        await fetch(`/api/admin/intranet/${initialData.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formDataRef.current,
-            content: editorContentRef.current,
-            isDraft: true,
-          }),
-        })
-        setFormData((prev) => ({ ...prev, isDraft: true }))
-        setAutoSaveStatus("saved")
-        setTimeout(() => setAutoSaveStatus("idle"), 3000)
-      } catch {
-        setAutoSaveStatus("idle")
+        await saveDraft()
+        lastAutoSavedSnapshotRef.current = snapshot
+        setForm((current) => (current.isDraft ? current : { ...current, isDraft: true }))
+        setAutoSaveState("saved")
+        router.refresh()
+      } catch (error) {
+        console.error(error)
+        setAutoSaveState("error")
       }
-    }, 3000)
-  }, [initialData, markDirty])
+    }, 500)
 
-  const handleSaveDraft = async () => {
-    setLoading(true)
-    setError(null)
+    return () => window.clearTimeout(timeout)
+  }, [buildPayload, deleteState, form, hasContentToAutosave, pageId, router, saveDraft, saveState])
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSaveState("saving")
+
+    const payload = buildPayload({ isDraft: false })
+
+    const isNewPage = !pageId
+    const endpoint = isNewPage ? "/api/admin/intranet" : `/api/admin/intranet/${pageId}`
+    const method = isNewPage ? "POST" : "PATCH"
+
     try {
-      const submitData = {
-        ...formData,
-        content: editorContentRef.current,
-        isDraft: true,
-      }
-      const url = initialData
-        ? `/api/admin/intranet/${initialData.id}`
-        : "/api/admin/intranet"
-      const res = await fetch(url, {
-        method: initialData ? "PATCH" : "POST",
+      const response = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submitData),
+        body: JSON.stringify(payload),
       })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Kunne ikke gemme kladden")
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Save failed")
       }
 
-      localStorage.removeItem(LOCAL_DRAFT_KEY)
-      markClean()
-
-      if (!initialData) {
-        const data = await res.json()
+      if (isNewPage && data.id) {
+        setPageId(data.id)
         router.replace(`/admin/intranet/${data.id}`)
-        return
       }
-      setFormData((prev) => ({ ...prev, isDraft: true }))
-      setDraftSaved(true)
-      setTimeout(() => setDraftSaved(false), 2500)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Der skete en fejl")
-    } finally {
-      setLoading(false)
+
+      const savedSnapshot = JSON.stringify({ ...payload, isDraft: true })
+      lastAutoSavedSnapshotRef.current = savedSnapshot
+      setForm((current) => ({ ...current, isDraft: false }))
+      setAutoSaveState("saved")
+      setSaveState("saved")
+
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setSaveState("error")
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  async function handleDelete() {
+    if (!pageId) return
+    if (!window.confirm(`Slet siden "${form.title || form.key}"?`)) return
+
+    setDeleteState("deleting")
 
     try {
-      const submitData = {
-        ...formData,
-        content: editorContentRef.current,
-        isDraft: false,
-      }
-
-      const url = initialData
-        ? `/api/admin/intranet/${initialData.id}`
-        : "/api/admin/intranet"
-
-      const res = await fetch(url, {
-        method: initialData ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submitData),
+      const response = await fetch(`/api/admin/intranet/${pageId}`, {
+        method: "DELETE",
       })
 
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Kunne ikke gemme siden")
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error ?? "Delete failed")
       }
 
-      localStorage.removeItem(LOCAL_DRAFT_KEY)
-      markClean()
       router.push("/admin/intranet")
       router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Der skete en fejl")
-    } finally {
-      setLoading(false)
+    } catch (error) {
+      console.error(error)
+      setDeleteState("idle")
     }
   }
 
-  const dismissLocalDraft = () => {
-    localStorage.removeItem(LOCAL_DRAFT_KEY)
-    setFormData(defaultFormData)
-    editorContentRef.current = initialData?.content || ""
-    setLocalDraftRestored(false)
-  }
+  const saveIndicator =
+    deleteState === "deleting"
+      ? "Sletter..."
+      : saveState === "saving"
+        ? "Offentliggør..."
+        : saveState === "error" || autoSaveState === "error"
+          ? "Kunne ikke gemme"
+          : autoSaveState === "saving"
+            ? "Gemmer..."
+            : autoSaveState === "saved" || saveState === "saved"
+              ? "Gemt"
+              : "Klar"
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 w-full max-w-none rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
-    >
-      {/* ── Sticky header ───────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between sticky top-0 z-10 bg-card/95 backdrop-blur-md px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/intranet"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-foreground leading-none">
-                {initialData ? "Rediger side" : "Ny side"}
-              </h2>
-              {formData.isDraft && (
-                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-amber-100 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-400">
-                  Kladde
-                </span>
-              )}
-              {hasUnsavedChanges && !formData.isDraft && (
-                <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-orange-100 dark:bg-orange-500/15 border border-orange-300 dark:border-orange-500/30 text-orange-700 dark:text-orange-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
-                  Ikke gemt
-                </span>
-              )}
-            </div>
-            {formData.title && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">{formData.title}</p>
-            )}
+    <form onSubmit={handleSubmit} className="space-y-6 pb-10">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+              {initialData ? "Rediger intranet-side" : "Ny intranet-side"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Rediger siden direkte og se formateringen med det samme.
+            </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-1">
-          {/* Tab switcher */}
-          {TABS.map(({ id, Icon, label }) => (
-            <Button
-              key={id}
-              type="button"
-              size="sm"
-              variant={activeTab === id ? "secondary" : "ghost"}
-              onClick={() => setActiveTab(id)}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="min-w-20 text-right text-sm text-muted-foreground">
+              {saveIndicator}
+            </div>
+            {initialData?.id ? (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleteState === "deleting"}
+              >
+                <Trash2 />
+                {deleteState === "deleting" ? "Sletter..." : "Slet"}
+              </Button>
+            ) : null}
+            <Button type="submit" disabled={saveState === "saving" || deleteState === "deleting"}>
+              {saveState === "saving" ? <LoaderCircle className="animate-spin" /> : <Save />}
+              {saveState === "saving" ? "Offentliggør..." : "Offentliggør"}
             </Button>
-          ))}
-
-          {/* Auto-save indicator */}
-          {autoSaveStatus !== "idle" && (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground px-2">
-              {autoSaveStatus === "saving" ? (
-                <><Loader2 className="h-3 w-3 animate-spin" />Gemmer…</>
-              ) : autoSaveStatus === "saved" ? (
-                <><Check className="h-3 w-3 text-green-500" />{initialData ? "Autogemt" : "Gemt lokalt"}</>
-              ) : (
-                <><Clock className="h-3 w-3" />Ændringer ikke gemt</>
-              )}
-            </span>
-          )}
-
-          <div className="w-px h-5 bg-border mx-1.5" />
-
-          {/* Save as draft */}
-          <Button
-            type="button"
-            variant={draftSaved ? "outline" : "secondary"}
-            onClick={handleSaveDraft}
-            disabled={loading}
-            className={draftSaved ? "border-green-500/40 text-green-400" : ""}
-          >
-            {draftSaved ? (
-              <Check className="h-4 w-4" />
-            ) : loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileEdit className="h-4 w-4" />
-            )}
-            {draftSaved ? "Gemt!" : "Gem kladde"}
-          </Button>
-
-          {/* Publish */}
-          <Button type="submit" disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : formData.isDraft ? <Globe className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-            {formData.isDraft ? "Udgiv" : "Gem"}
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Error banner ─────────────────────────────────────────────────── */}
-      {error && (
-        <div className="mx-6 flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
-          <Info className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {/* ── Local draft restore banner ────────────────────────────────────── */}
-      {localDraftRestored && !initialData && (
-        <div className="mx-6 flex items-center justify-between gap-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/25 px-4 py-3 text-sm text-blue-700 dark:text-blue-400">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Vi gendannede dine tidligere usavede ændringer.</span>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={dismissLocalDraft}
-            className="shrink-0"
-          >
-            Start forfra
-          </Button>
         </div>
-      )}
 
-      {/* ── Tab panels — always mounted, hidden via CSS ─────────────────── */}
-
-      {/* Edit tab */}
-      <div className={activeTab === "edit" ? "space-y-5 px-6 pb-8" : "hidden"}>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Titel <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => { setFormData((p) => ({ ...p, title: e.target.value })); scheduleAutoSave() }}
-              className={inputClass}
-              placeholder="F.eks. Befordring"
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-foreground">Titel</span>
+            <Input
+              value={form.title}
+              onChange={(event) => setField("title", event.target.value)}
+              placeholder="Personalehandbog"
               required
             />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Key (URL) <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.key}
-              onChange={(e) => { setFormData((p) => ({ ...p, key: e.target.value })); markDirty() }}
-              className={inputClass}
-              placeholder="F.eks. befordring"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Undertitel
           </label>
-          <input
-            type="text"
-            value={formData.subtitle}
-            onChange={(e) => { setFormData((p) => ({ ...p, subtitle: e.target.value })); scheduleAutoSave() }}
-            className={inputClass}
-            placeholder="F.eks. Tilskud og refusionsskema"
-          />
-        </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Indhold
-          </label>
-          <TiptapEditor
-            content={editorContentRef.current}
-            onChange={(html) => {
-              editorContentRef.current = html
-              setFormData((p) => ({ ...p, content: html }))
-              scheduleAutoSave()
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Preview tab */}
-      <div className={activeTab === "preview" ? "px-6 pb-8 space-y-5" : "hidden"}>
-        {formData.isDraft && (
-          <div className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/25 text-amber-700 dark:text-amber-400">
-            <FileEdit className="h-4 w-4 shrink-0" />
-            Dette er en kladde og er ikke synlig for brugerne endnu.
-          </div>
-        )}
-
-        {/* Gradient hero — mirrors the actual page */}
-        <div
-          className="relative overflow-hidden rounded-2xl px-6 py-7"
-          style={{ background: `linear-gradient(135deg, ${formData.bgFrom}, ${formData.bgTo})` }}
-        >
-          <div
-            className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full blur-3xl"
-            style={{ background: formData.glowA }}
-          />
-          <div
-            className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full blur-2xl"
-            style={{ background: formData.glowB }}
-          />
-          <div className="relative flex items-center gap-4">
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
-              style={{
-                background: formData.iconBg,
-                border: "1px solid rgba(255,255,255,0.16)",
-                boxShadow: `0 0 24px ${formData.glowA}`,
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-foreground">Nogle / URL</span>
+            <Input
+              value={form.key}
+              onChange={(event) => {
+                setKeyTouched(true)
+                setField("key", slugify(event.target.value))
               }}
-            >
-              <IconRenderer name={formData.icon} className="h-7 w-7" style={{ color: formData.iconColor }} />
-            </div>
-            <div>
-              <p className="text-2xl font-black tracking-tight text-white">
-                {formData.title || "Titel"}
-              </p>
-              <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
-                {formData.subtitle || ""}
-              </p>
-            </div>
-          </div>
+              placeholder="personalehaandbog"
+              required
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-foreground">Rækkefølge</span>
+            <Input
+              type="number"
+              value={form.order}
+              onChange={(event) => setField("order", Number(event.target.value) || 0)}
+            />
+          </label>
         </div>
 
-        {/* Rendered content — always reads live editorContentRef */}
-        {formData.content ? (
-          <div className="rich-content" dangerouslySetInnerHTML={{ __html: formData.content }} />
-        ) : (
-          <p className="text-sm text-muted-foreground italic">Ingen indhold endnu…</p>
-        )}
+        <label className="mt-4 block space-y-2">
+          <span className="text-sm font-medium text-foreground">Undertitel</span>
+          <Input
+            value={form.subtitle ?? ""}
+            onChange={(event) => setField("subtitle", event.target.value)}
+            placeholder="Kort beskrivelse under sidenavnet"
+          />
+        </label>
       </div>
 
-      {/* Settings tab */}
-      <div className={activeTab === "settings" ? "grid grid-cols-2 gap-8 px-6 pb-8" : "hidden"}>
-        {/* Left column */}
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Ikon indstillinger</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Ikon navn (Lucide)
-                </label>
-                <div className="flex gap-2">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-secondary border border-border">
-                    <IconRenderer name={formData.icon} className="h-4 w-4" style={{ color: formData.iconColor }} />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.icon}
-                    onChange={(e) => setFormData((p) => ({ ...p, icon: e.target.value }))}
-                    className={settingsInputClass.replace("w-full", "flex-1 min-w-0")}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Ikon farve
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={formData.iconColor}
-                    onChange={(e) => setFormData((p) => ({ ...p, iconColor: e.target.value }))}
-                    className="h-9 w-10 flex-shrink-0 rounded-lg border border-input bg-card p-1 cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={formData.iconColor}
-                    onChange={(e) => setFormData((p) => ({ ...p, iconColor: e.target.value }))}
-                    className={settingsInputClass.replace("w-full", "flex-1 min-w-0")}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Baggrundsgradient</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Start farve
-                </label>
-                <input
-                  type="text"
-                  value={formData.bgFrom}
-                  onChange={(e) => setFormData((p) => ({ ...p, bgFrom: e.target.value }))}
-                  className={settingsInputClass}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Slut farve
-                </label>
-                <input
-                  type="text"
-                  value={formData.bgTo}
-                  onChange={(e) => setFormData((p) => ({ ...p, bgTo: e.target.value }))}
-                  className={settingsInputClass}
-                />
-              </div>
-            </div>
+      <section className="rounded-2xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-5 py-4">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold text-foreground">Indhold</h3>
+            <p className="text-sm text-muted-foreground">
+              Skriv her. Siden gemmes automatisk, mens du arbejder.
+            </p>
           </div>
         </div>
 
-        {/* Right column */}
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Glow & Accent</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Glow A
-                </label>
-                <input
-                  type="text"
-                  value={formData.glowA}
-                  onChange={(e) => setFormData((p) => ({ ...p, glowA: e.target.value }))}
-                  className={settingsInputClass}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Glow B
-                </label>
-                <input
-                  type="text"
-                  value={formData.glowB}
-                  onChange={(e) => setFormData((p) => ({ ...p, glowB: e.target.value }))}
-                  className={settingsInputClass}
-                />
-              </div>
-              <div className="space-y-1.5 col-span-2">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Accent Farve
-                </label>
-                <input
-                  type="text"
-                  value={formData.accentColor}
-                  onChange={(e) => setFormData((p) => ({ ...p, accentColor: e.target.value }))}
-                  className={settingsInputClass}
-                />
-              </div>
-            </div>
-          </div>
+        <div className="space-y-4 p-5">
+          <TiptapEditor
+            content={form.content}
+            placeholder="Skriv indholdet her. Brug editorens toolbar eller skriv direkte i editoren."
+            onChange={(value) => setField("content", value)}
+          />
+
+          <p className="text-xs text-muted-foreground">
+            Billeder indsattes direkte i editoren. PDF-filer gemmes som links og vises stadig som
+            embedded preview pa den offentlige intranet-side.
+          </p>
         </div>
-      </div>
+      </section>
     </form>
   )
 }

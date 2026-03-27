@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { YellowStickyNote } from "@/components/YellowStickyNote"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 import { useConfirmDialog } from "@/components/confirm-dialog-provider"
+import { AdminCreateButton } from "../_components/AdminCreateButton"
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 interface Message {
@@ -785,20 +786,25 @@ export default function MessagesPage() {
             </button>
           )}
           {!selectionMode && (
-            <button
-              onClick={() => {
-                if (showForm) {
-                  resetForm()
-                } else {
+            showForm ? (
+              <Button
+                variant="outline"
+                onClick={resetForm}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+              >
+                <X className="h-4 w-4" />
+                Annuller
+              </Button>
+            ) : (
+              <AdminCreateButton
+                onClick={() => {
                   setFormBaseline(EMPTY_FORM_SNAPSHOT)
                   setShowForm(true)
-                }
-              }}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95"
-            >
-              {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {showForm ? "Annuller" : "Ny besked"}
-            </button>
+                }}
+              >
+                Ny besked
+              </AdminCreateButton>
+            )
           )}
         </div>
       </div>
@@ -1014,13 +1020,19 @@ export default function MessagesPage() {
               <button type="button" onClick={resetForm} className="rounded-xl px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Annuller
               </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50"
-              >
-                {submitting ? (editingId ? "Gemmer…" : "Sender…") : editingId ? "Gem ændringer" : "Send besked"}
-              </button>
+              {editingId ? (
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {submitting ? "Gemmer..." : "Gem ændringer"}
+                </button>
+              ) : (
+                <AdminCreateButton type="submit" disabled={submitting} className="px-6">
+                  {submitting ? "Sender..." : "Send besked"}
+                </AdminCreateButton>
+              )}
             </div>
           </form>
         </div>

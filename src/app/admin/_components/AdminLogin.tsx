@@ -147,9 +147,13 @@ export default function AdminLogin() {
               </p>
             )}
 
-            <Button type="submit" size="lg" disabled={forgotLoading} className="w-full">
+            <button
+              type="submit"
+              disabled={forgotLoading}
+              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9"
+            >
               {forgotLoading ? "Sender…" : "Send nulstillingslink"}
-            </Button>
+            </button>
 
             <Button
               type="button"
@@ -258,14 +262,13 @@ export default function AdminLogin() {
               </p>
             )}
 
-            <Button
+            <button
               type="submit"
-              size="lg"
               disabled={loading || tooManyAttempts}
-              className="w-full"
+              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9"
             >
               {loading ? "Logger ind…" : "Log ind"}
-            </Button>
+            </button>
           </div>
         </form>
       </div>

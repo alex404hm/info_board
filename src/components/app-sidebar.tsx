@@ -29,7 +29,7 @@ const adminSections = [
   {
     label: "Administration",
     items: [
-      { title: "Dashboard",   url: "/admin",          icon: LayoutDashboard },
+      { title: "Dashboard",   url: "/admin/dashboard", icon: LayoutDashboard },
       { title: "Brugere",     url: "/admin/users",    icon: Users },
     ],
   },
@@ -47,7 +47,7 @@ function buildInstructorSections() {
     {
       label: "Administrer",
       items: [
-        { title: "Dashboard",        url: "/admin",            icon: LayoutDashboard },
+        { title: "Dashboard",        url: "/admin/dashboard",  icon: LayoutDashboard },
         { title: "Beskeder",         url: "/admin/messages",   icon: MessageSquare },
         { title: "Kalender",         url: "/admin/calendar",   icon: CalendarDays },
         { title: "Display & Layout", url: "/admin/display",    icon: LayoutGrid },

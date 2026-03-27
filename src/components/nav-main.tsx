@@ -46,7 +46,7 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
           <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
           <SidebarMenu>
             {section.items.map((item) => {
-              const isActive = pathname === item.url || (pathname.startsWith(item.url + "/") && item.url !== "/admin")
+              const isActive = pathname === item.url || pathname.startsWith(item.url + "/")
               return (
                 <Collapsible key={item.title} asChild defaultOpen={isActive || item.isActive}>
                   <SidebarMenuItem>

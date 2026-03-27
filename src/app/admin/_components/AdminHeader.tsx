@@ -6,7 +6,7 @@ import { ExternalLink, Moon, Sun } from "lucide-react"
 import { useAdminTheme } from "./AdminThemeProvider"
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  "/admin":          { title: "Dashboard",        subtitle: "Overview of your info board" },
+  "/admin/dashboard": { title: "Dashboard",        subtitle: "Overview of your info board" },
   "/admin/messages": { title: "Messages",          subtitle: "Manage announcements & alerts" },
   "/admin/calendar": { title: "Calendar",          subtitle: "Outlook ICS integration" },
   "/admin/display":  { title: "Display & Layout",  subtitle: "Configure navigation tiles" },
@@ -31,7 +31,7 @@ export default function AdminHeader({ user: _user }: AdminHeaderProps) {
   // Find the best match by checking if the pathname starts with the key
   const matchedKey = Object.keys(PAGE_TITLES)
     .sort((a, b) => b.length - a.length) // Longest match first
-    .find(key => pathname === key || (key !== "/admin" && pathname.startsWith(key + "/")))
+    .find(key => pathname === key || pathname.startsWith(key + "/"))
 
   const page = matchedKey ? PAGE_TITLES[matchedKey] : { title: "Admin", subtitle: "" }
 
