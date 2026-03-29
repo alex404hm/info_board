@@ -111,7 +111,7 @@ export function AppSidebar({ user, ...props }: { user: any } & React.ComponentPr
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" className="border-r border-border/60" {...props}>
-      <SidebarHeader className="border-b border-border/60">
+      <SidebarHeader className="h-16 border-b border-border/60 justify-center">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarLogo role={user.role} />
