@@ -180,7 +180,7 @@ function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdi
         opacity: !msg.active ? 0.6 : 1,
       }}
     >
-      <button onClick={() => onPin(msg.id, msg.pinned)} title={msg.pinned ? "Frigør" : "Fastgør besked"} className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: msg.pinned ? "#7c3aed" : "#1a1a5e" }}>
+      <button onClick={() => onPin(msg.id, msg.pinned)} title={msg.pinned ? "Frigør" : "Fastgør besked"} className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: msg.pinned ? "#7c3aed" : "#1a1a5e", outline: "none" }}>
         {msg.pinned ? <PinOff size={13} /> : <Pin size={13} />}
       </button>
       <button onClick={() => onEdit(msg)} title="Rediger" className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: "#1a1a5e" }}>

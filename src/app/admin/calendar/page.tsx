@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon,
 } from "lucide-react"
@@ -131,6 +131,40 @@ export default function CalendarAdminPage() {
   const [location, setLocation] = useState("")
   const [description, setDescription] = useState("")
   const [formBaseline, setFormBaseline] = useState<FormSnapshot>(EMPTY_FORM)
+
+  // Address autocomplete
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
+  const [locationOpen, setLocationOpen] = useState(false)
+  const locationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const locationWrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current)
+    const q = location.trim()
+    if (q.length < 2) { setLocationSuggestions([]); setLocationOpen(false); return }
+    locationDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://api.dataforsyningen.dk/autocomplete?type=adresse&stormodtagerpostnumre=true&supplerendebynavn=true&fuzzy=true&q=${encodeURIComponent(q)}&startfra=vejnavn`
+        )
+        if (!res.ok) return
+        const data = (await res.json()) as { tekst: string }[]
+        setLocationSuggestions(data.slice(0, 8).map((d) => d.tekst))
+        setLocationOpen(true)
+      } catch { /* ignore */ }
+    }, 250)
+    return () => { if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current) }
+  }, [location])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (locationWrapperRef.current && !locationWrapperRef.current.contains(e.target as Node)) {
+        setLocationOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   // Derived string values for buildISO / snapshot
   const startDate = startDateObj ? format(startDateObj, "yyyy-MM-dd") : ""
@@ -397,13 +431,27 @@ export default function CalendarAdminPage() {
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <CalendarDays className="h-3 w-3" /> Startdato <span className="text-destructive">*</span>
                 </label>
-                <input
-                  type="date"
-                  required
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm outline-none transition-colors focus:ring-2 focus:ring-primary/30"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start rounded-xl text-left font-normal"
+                      style={!startDateObj ? { color: "var(--muted-foreground)" } : {}}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDateObj ? format(startDateObj, "d. MMM yyyy", { locale: da }) : "Vælg startdato"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDateObj}
+                      onSelect={(d) => setStartDateObj(d ?? undefined)}
+                      locale={da}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {!allDay && (
@@ -425,13 +473,33 @@ export default function CalendarAdminPage() {
                   <CalendarDays className="h-3 w-3" /> Slutdato
                   <span className="normal-case font-normal text-muted-foreground/60">(valgfrit)</span>
                 </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm outline-none transition-colors focus:ring-2 focus:ring-primary/30"
-                />
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="flex-1 justify-start rounded-xl text-left font-normal"
+                        style={!endDateObj ? { color: "var(--muted-foreground)" } : {}}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDateObj ? format(endDateObj, "d. MMM yyyy", { locale: da }) : "Vælg slutdato"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDateObj}
+                        onSelect={(d) => setEndDateObj(d ?? undefined)}
+                        disabled={(d) => startDateObj ? d < startDateObj : false}
+                        locale={da}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {endDateObj && (
+                    <Button type="button" variant="outline" className="rounded-xl px-3" onClick={() => setEndDateObj(undefined)}>✕</Button>
+                  )}
+                </div>
               </div>
 
               {!allDay && endDate && (
@@ -455,13 +523,38 @@ export default function CalendarAdminPage() {
                 <MapPin className="h-3 w-3" /> Lokation
                 <span className="normal-case font-normal text-muted-foreground/60">(valgfrit)</span>
               </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Fx lokale, adresse…"
-                className="h-10 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30"
-              />
+              <div ref={locationWrapperRef} className="relative">
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => { setLocation(e.target.value); setLocationOpen(true) }}
+                  onFocus={() => { if (locationSuggestions.length > 0) setLocationOpen(true) }}
+                  placeholder="Fx lokale, adresse…"
+                  className="h-10 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30"
+                  autoComplete="off"
+                />
+                {locationOpen && locationSuggestions.length > 0 && (
+                  <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-xl border border-border bg-popover py-1 shadow-lg">
+                    {locationSuggestions.map((s) => (
+                      <li key={s}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-sm transition-colors hover:bg-muted/60"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            setLocation(s)
+                            setLocationOpen(false)
+                            setLocationSuggestions([])
+                          }}
+                        >
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          {s}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             {/* Description */}

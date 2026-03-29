@@ -1,86 +1,125 @@
-import { db } from "@/db"
-import { intranetPage } from "@/db/schema"
-import { asc } from "drizzle-orm"
-import Link from "next/link"
-import { Edit2, MoveVertical } from "lucide-react"
-import { adminCreateButtonClassName } from "../_components/AdminCreateButton"
+import { INTRANET_SECTIONS } from "@/lib/intranet-static"
+import {
+  BookOpen, Bus, Briefcase, Shield, HeartPulse, CalendarOff, Banknote, Info,
+  ExternalLink, type LucideIcon,
+} from "lucide-react"
 
-export default async function AdminIntranetPage() {
-  const pages = await db
-    .select()
-    .from(intranetPage)
-    .orderBy(asc(intranetPage.order))
+const ICON_MAP: Record<string, LucideIcon> = {
+  Bus, Briefcase, BookOpen, Shield, HeartPulse, CalendarOff, Banknote, Info,
+}
+
+function SectionCard({
+  title,
+  subtitle,
+  icon,
+  iconColor,
+  iconBg,
+  accentColor,
+  content,
+  sectionKey,
+}: {
+  title: string
+  subtitle: string
+  icon: string
+  iconColor: string
+  iconBg: string
+  accentColor: string
+  content: string
+  sectionKey: string
+}) {
+  const Icon = ICON_MAP[icon] ?? Info
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/60 transition-all hover:border-border hover:shadow-md">
+      {/* Accent top bar */}
+      <div className="h-0.5 w-full" style={{ background: accentColor }} />
+
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        {/* Header */}
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            style={{ background: iconBg, color: iconColor }}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-bold text-foreground">{title}</h3>
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          </div>
+          <a
+            href={`/intranet/${sectionKey}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Se side"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+
+        {/* Preview text */}
+        <p className="line-clamp-3 flex-1 text-xs leading-relaxed text-muted-foreground">
+          {content}
+        </p>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 border-t border-border/40 pt-3">
+          <span
+            className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider"
+            style={{ background: iconBg, color: iconColor }}
+          >
+            {sectionKey}
+          </span>
+          <span className="ml-auto inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
+            Aktiv
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function AdminIntranetPage() {
+  return (
+    <div className="space-y-6 pb-10">
+      {/* Page header */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <BookOpen className="h-5 w-5" />
+        </div>
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Intranet Sider</h2>
-          <p className="text-sm text-muted-foreground">
-            Administrer indholdet i de forskellige intranet-sektioner.
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Intranet</h1>
+          <p className="text-xs text-muted-foreground">
+            {INTRANET_SECTIONS.length} statiske informationssider
           </p>
         </div>
-        <Link href="/admin/intranet/new" className={adminCreateButtonClassName}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-          </svg>
-          Ny side
-        </Link>
       </div>
 
-      <div className="grid gap-4">
-        {pages.map((page) => (
-          <div
-            key={page.id}
-            className="group relative flex items-center justify-between rounded-xl border border-border bg-card px-6 py-4 transition-all hover:border-border hover:shadow-md"
-          >
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                <MoveVertical className="h-4 w-4 opacity-30" />
-              </div>
-              <div>
-                <h3 className="font-bold text-foreground">{page.title}</h3>
-                <p className="text-xs text-muted-foreground">{page.subtitle}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {page.isDraft && (
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-400">
-                  Kladde
-                </span>
-              )}
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                {page.key}
-              </span>
-              <Link
-                href={`/admin/intranet/${page.id}`}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              >
-                <Edit2 className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
+      {/* Info banner */}
+      <div className="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
+        <p className="text-blue-300/80">
+          Intranet-siderne er statiske og vedligeholdes direkte i koden. Klik på{" "}
+          <ExternalLink className="inline h-3.5 w-3.5" /> for at se siden på infoskærmen.
+        </p>
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {INTRANET_SECTIONS.map((section) => (
+          <SectionCard
+            key={section.key}
+            title={section.title}
+            subtitle={section.subtitle}
+            icon={section.icon}
+            iconColor={section.iconColor}
+            iconBg={section.iconBg}
+            accentColor={section.accentColor}
+            content={section.content}
+            sectionKey={section.key}
+          />
         ))}
-        
-        {pages.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 p-12 text-center">
-            <p className="text-sm text-muted-foreground">Ingen intranet-sider fundet.</p>
-          </div>
-        )}
       </div>
     </div>
   )
