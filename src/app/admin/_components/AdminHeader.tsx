@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { ExternalLink, Moon, Sun } from "lucide-react"
+import { ExternalLink, Sun, Moon } from "lucide-react"
 import { useAdminTheme } from "./AdminThemeProvider"
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
@@ -11,7 +11,6 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/calendar": { title: "Calendar",          subtitle: "Outlook ICS integration" },
   "/admin/display":  { title: "Display & Layout",  subtitle: "Configure navigation tiles" },
   "/admin/settings": { title: "My Account",        subtitle: "Profile, password & sessions" },
-  "/admin/intranet":    { title: "Intranet",          subtitle: "Administrer intranet-sider og indhold" },
   "/admin/kokkenvagt": { title: "Køkkenvagt",        subtitle: "Administrer vagtplanen uge for uge" },
 }
 
@@ -46,23 +45,23 @@ export default function AdminHeader({ user: _user }: AdminHeaderProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           onClick={toggle}
-          aria-label="Toggle theme"
-          className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          title={theme === "dark" ? "Skift til lyst tema" : "Skift til mørkt tema"}
+          className="rounded-lg p-2 transition-colors border border-border bg-card text-muted-foreground hover:text-foreground hover:border-ring"
+          style={{ outline: "none" }}
         >
           {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         </button>
-
         <Link
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden sm:flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-medium transition-colors border border-border bg-card text-muted-foreground hover:text-foreground hover:border-ring"
+          title="Se infoskærm"
+          className="rounded-lg p-2 transition-colors border border-border bg-card text-muted-foreground hover:text-foreground hover:border-ring"
         >
-          <ExternalLink className="h-3 w-3" />
-          Se infoskærm
+          <ExternalLink className="h-3.5 w-3.5" />
         </Link>
       </div>
     </div>

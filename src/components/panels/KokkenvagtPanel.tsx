@@ -390,7 +390,7 @@ function MobileGuideSheet({
               si={si}
               checked={checked}
               toggle={toggle}
-              defaultOpen={si === 0}
+              defaultOpen={false}
             />
           ))}
 
@@ -632,7 +632,7 @@ export function KokkenvagtPanel() {
               si={si}
               checked={checked}
               toggle={toggle}
-              defaultOpen={si === 0}
+              defaultOpen={false}
             />
           ))}
 

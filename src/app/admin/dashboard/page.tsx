@@ -1,13 +1,13 @@
 import { db } from "@/db"
-import { message, user, intranetPage } from "@/db/schema"
-import { eq, and, or, isNull, gte, lt, count } from "drizzle-orm"
+import { message, user } from "@/db/schema"
+import { and, or, isNull, gte, lt, count } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import {
   MessageSquare, Users, ArrowRight,
   CalendarDays, Settings, Coffee, LayoutGrid,
-  ShieldCheck, TrendingUp, TrendingDown, Minus, FileText,
+  ShieldCheck, TrendingUp, TrendingDown, Minus,
 } from "lucide-react"
 import { ChartBarInteractive } from "@/components/chart-bar-interactive"
 
@@ -80,6 +80,7 @@ function StatCard({
   iconBg,
   sub,
   delta,
+  className,
 }: {
   label: string
   value: React.ReactNode
@@ -88,9 +89,10 @@ function StatCard({
   iconBg: string
   sub?: string
   delta?: React.ReactNode
+  className?: string
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3">
+    <div className={`rounded-xl border border-border bg-card p-5 flex flex-col gap-3 ${className ?? ""}`}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
@@ -121,16 +123,14 @@ export default async function AdminDashboardPage() {
     [activeMessages],
     [totalMessages],
     [totalUsers],
-    [intranetPagesCount],
     [messagesThisWeek],
     [messagesLastWeek]
   ] = await Promise.all([
     db.select({ count: count() })
       .from(message)
-      .where(and(eq(message.active, true), or(isNull(message.expiresAt), gte(message.expiresAt, now)))),
+      .where(and(or(isNull(message.expiresAt), gte(message.expiresAt, now)))),
     db.select({ count: count() }).from(message),
     db.select({ count: count() }).from(user),
-    db.select({ count: count() }).from(intranetPage),
     db.select({ count: count() })
       .from(message)
       .where(gte(message.createdAt, oneWeekAgo)),
@@ -160,7 +160,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex flex-wrap justify-center gap-3">
         <StatCard
           label="Aktive beskeder"
           value={activeMessages?.count ?? 0}
@@ -168,6 +168,7 @@ export default async function AdminDashboardPage() {
           iconColor="text-blue-400"
           iconBg="bg-blue-400/10"
           delta={<Delta thisWeek={msgThisWeek} lastWeek={msgLastWeek} />}
+          className="flex-1 min-w-[200px] max-w-[280px]"
         />
         <StatCard
           label="Beskeder i alt"
@@ -176,14 +177,7 @@ export default async function AdminDashboardPage() {
           iconColor="text-sky-400"
           iconBg="bg-sky-400/10"
           sub="oprettede beskeder"
-        />
-        <StatCard
-          label="Intranet sider"
-          value={intranetPagesCount?.count ?? 0}
-          icon={FileText}
-          iconColor="text-emerald-400"
-          iconBg="bg-emerald-400/10"
-          sub="sider på intranettet"
+          className="flex-1 min-w-[200px] max-w-[280px]"
         />
         {isAdmin ? (
           <StatCard
@@ -193,6 +187,7 @@ export default async function AdminDashboardPage() {
             iconColor="text-violet-400"
             iconBg="bg-violet-400/10"
             sub="registrerede konti"
+            className="flex-1 min-w-[200px] max-w-[280px]"
           />
         ) : (
           <StatCard
@@ -202,6 +197,7 @@ export default async function AdminDashboardPage() {
             iconColor="text-blue-400"
             iconBg="bg-blue-400/10"
             sub="Begrænset adgang"
+            className="flex-1 min-w-[200px] max-w-[280px]"
           />
         )}
       </div>
