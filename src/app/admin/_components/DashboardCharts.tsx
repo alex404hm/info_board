@@ -67,7 +67,11 @@ export default function DashboardCharts({ messagesPerDay }: DashboardChartsProps
                 formatter={(value) => [value ?? 0, "Beskeder"]}
                 labelStyle={{ color: "var(--muted-foreground)" }}
               />
-              <Bar dataKey="count" fill="#5f9dff" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="count"
+                fill="#08a39b"
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         )}
