@@ -108,7 +108,7 @@ export function InfoBoardIdleGuard({
             border: "1px solid rgba(255, 255, 255, 0.12)",
             color: "rgba(255, 255, 255, 0.8)",
           }}
-          aria-label="Close"
+          aria-label="Luk"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -129,17 +129,17 @@ export function InfoBoardIdleGuard({
         </div>
 
         {/* Heading */}
-        <h2 className="mb-3 text-4xl font-bold text-white text-center">Are you still here?</h2>
+        <h2 className="mb-3 text-4xl font-bold text-white text-center">Er du stadig her?</h2>
 
         {/* Description */}
         <p className="mb-10 text-base text-slate-300 text-center max-w-md">
-          No activity detected. You will be redirected to the home page in{" "}
+          Ingen aktivitet registreret. Du bliver sendt til forsiden om{" "}
           <span
             className={`font-semibold transition-colors ${isLow ? "text-red-400" : "text-cyan-300"}`}
           >
             {count}
           </span>{" "}
-          second{count !== 1 ? "s" : ""}.
+          sekund{count !== 1 ? "er" : ""}.
         </p>
 
         {/* Buttons container */}
@@ -162,7 +162,7 @@ export function InfoBoardIdleGuard({
               e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.4)"
             }}
           >
-            Stay here
+            Bliv her
           </button>
 
           {/* Leave button */}
@@ -184,7 +184,7 @@ export function InfoBoardIdleGuard({
             }}
           >
             <LogOut className="w-3.5 h-3.5" />
-            Go home
+            Gå til forsiden
           </button>
         </div>
       </div>

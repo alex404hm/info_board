@@ -2,14 +2,26 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
-  Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon,
+  Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon, Plus,
 } from "lucide-react"
 import { format } from "date-fns"
 import { da } from "date-fns/locale"
 import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Calendar } from "@/components/ui/calendar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { AdminCreateButton } from "../_components/AdminCreateButton"
 
@@ -25,6 +37,11 @@ type CalendarEventEntry = {
   description: string | null
   category: string | null
   authorName?: string | null
+}
+
+type CalendarCategory = {
+  id: string
+  name: string
 }
 
 type FormSnapshot = {
@@ -53,26 +70,6 @@ const EMPTY_FORM: FormSnapshot = {
 
 function isSameSnapshot(a: FormSnapshot, b: FormSnapshot) {
   return JSON.stringify(a) === JSON.stringify(b)
-}
-
-// ─── Category config ──────────────────────────────────────────────────────────
-
-const CATEGORIES = [
-  { value: "Skole",    label: "Skole",    pill: "bg-blue-500/15 text-blue-400",    dot: "bg-blue-400" },
-  { value: "Workshop", label: "Workshop", pill: "bg-violet-500/15 text-violet-400", dot: "bg-violet-400" },
-  { value: "Fagligt",  label: "Fagligt",  pill: "bg-emerald-500/15 text-emerald-400", dot: "bg-emerald-400" },
-  { value: "Praktik",  label: "Praktik",  pill: "bg-orange-500/15 text-orange-400", dot: "bg-orange-400" },
-  { value: "Socialt",  label: "Socialt",  pill: "bg-pink-500/15 text-pink-400",    dot: "bg-pink-400" },
-  { value: "Studie",   label: "Studie",   pill: "bg-teal-500/15 text-teal-400",    dot: "bg-teal-400" },
-  { value: "Andet",    label: "Andet",    pill: "bg-slate-500/15 text-slate-400",  dot: "bg-slate-400" },
-]
-
-function catStyle(category: string | null) {
-  return CATEGORIES.find((c) => c.value === category) ?? {
-    pill: "bg-slate-500/15 text-slate-400",
-    dot: "bg-slate-400",
-    label: category ?? "—",
-  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -114,10 +111,15 @@ function fmtTime(iso: string): string {
 export default function CalendarAdminPage() {
   const confirmDialog = useConfirmDialog()
   const [entries, setEntries] = useState<CalendarEventEntry[]>([])
+  const [categories, setCategories] = useState<CalendarCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [creatingCategory, setCreatingCategory] = useState(false)
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null)
+  const [deleteEntry, setDeleteEntry] = useState<CalendarEventEntry | null>(null)
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   // Form state
@@ -130,6 +132,8 @@ export default function CalendarAdminPage() {
   const [endTime, setEndTime] = useState("10:00")
   const [location, setLocation] = useState("")
   const [description, setDescription] = useState("")
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false)
   const [formBaseline, setFormBaseline] = useState<FormSnapshot>(EMPTY_FORM)
 
   // Address autocomplete
@@ -182,11 +186,17 @@ export default function CalendarAdminPage() {
 
   useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
-    title: editingId ? "Du har ikke-gemte ændringer" : "Du har en ikke-gemt begivenhed",
+    title: "Er du sikker på, at du vil forlade siden?",
     description: "Hvis du forlader siden nu, mister du dine ændringer.",
-    confirmText: "Forlad uden at gemme",
+    confirmText: "Forlad",
     cancelText: "Bliv og gem",
   })
+
+  const categoryOptions = useMemo(() => {
+    if (!category) return categories
+    const exists = categories.some((item) => item.name === category)
+    return exists ? categories : [{ id: "__selected__", name: category }, ...categories]
+  }, [categories, category])
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -194,12 +204,30 @@ export default function CalendarAdminPage() {
       if (res.ok) setEntries(await res.json())
     } catch (e) {
       console.error("Failed to fetch calendar events:", e)
-    } finally {
-      setLoading(false)
     }
   }, [])
 
-  useEffect(() => { void fetchEntries() }, [fetchEntries])
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch("/api/calendar-categories")
+      if (!res.ok) return
+      const data = (await res.json()) as CalendarCategory[]
+      setCategories(Array.isArray(data) ? data : [])
+    } catch (e) {
+      console.error("Failed to fetch calendar categories:", e)
+    }
+  }, [])
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      await Promise.all([fetchEntries(), fetchCategories()])
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchCategories, fetchEntries])
+
+  useEffect(() => { void loadData() }, [loadData])
 
   function showToast(type: "success" | "error", text: string) {
     setToast({ type, text })
@@ -292,25 +320,88 @@ export default function CalendarAdminPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    const ok = await confirmDialog({
-      title: "Slet begivenhed?",
-      description: "Denne handling kan ikke fortrydes.",
-      confirmText: "Slet begivenhed",
-      cancelText: "Annuller",
-      tone: "danger",
-    })
-    if (!ok) return
+  function handleDelete(entry: CalendarEventEntry) {
+    setDeleteEntry(entry)
+  }
+
+  async function confirmDeleteEntry() {
+    if (!deleteEntry) return
+    const id = deleteEntry.id
+    setDeletingEntryId(id)
     try {
       const res = await fetch(`/api/calendar-events/${id}`, { method: "DELETE" })
       if (res.ok) {
         await fetchEntries()
         showToast("success", "Begivenhed slettet")
+        setDeleteEntry(null)
       } else {
         showToast("error", "Fejl ved sletning")
       }
     } catch {
       showToast("error", "Fejl ved sletning")
+    } finally {
+      setDeletingEntryId(null)
+    }
+  }
+
+  async function handleCreateCategory() {
+    const name = newCategoryName.trim()
+    if (!name) return
+    setCreatingCategory(true)
+    try {
+      const res = await fetch("/api/calendar-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      })
+
+      if (!res.ok) {
+        showToast("error", "Kunne ikke oprette kategori")
+        return
+      }
+
+      const created = (await res.json()) as CalendarCategory
+      setCategories((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name, "da")))
+      setCategory(created.name)
+      setNewCategoryName("")
+      setCategoryPopoverOpen(false)
+      showToast("success", "Kategori oprettet")
+    } catch {
+      showToast("error", "Kunne ikke oprette kategori")
+    } finally {
+      setCreatingCategory(false)
+    }
+  }
+
+  async function handleDeleteCategory(item: CalendarCategory) {
+    const ok = await confirmDialog({
+      title: "Slet kategori?",
+      description: "Kategorien fjernes fra listen og fra begivenheder, der bruger den.",
+      confirmText: "Slet kategori",
+      cancelText: "Annullere",
+      tone: "danger",
+    })
+
+    if (!ok) return
+
+    setDeletingCategoryId(item.id)
+    try {
+      const res = await fetch(`/api/calendar-categories/${item.id}`, { method: "DELETE" })
+      if (!res.ok) {
+        showToast("error", "Kunne ikke slette kategori")
+        return
+      }
+
+      setCategories((prev) => prev.filter((categoryItem) => categoryItem.id !== item.id))
+      if (category === item.name) {
+        setCategory("")
+      }
+      await fetchEntries()
+      showToast("success", "Kategori slettet")
+    } catch {
+      showToast("error", "Kunne ikke slette kategori")
+    } finally {
+      setDeletingCategoryId(null)
     }
   }
 
@@ -389,18 +480,81 @@ export default function CalendarAdminPage() {
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <Tag className="h-3 w-3" /> Kategori
                 </label>
-                <div className="relative">
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="h-10 w-full appearance-none rounded-xl border border-input bg-transparent px-3.5 pr-9 text-sm outline-none transition-colors focus:ring-2 focus:ring-primary/30"
-                  >
-                    <option value="">Ingen kategori</option>
-                    {CATEGORIES.map((c) => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 flex-1 justify-between rounded-xl border-input bg-transparent px-3.5 font-normal"
+                      >
+                        <span className="truncate text-sm text-left">
+                          {category || "Ingen kategori"}
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="max-h-64 w-[var(--radix-dropdown-menu-trigger-width)] rounded-xl">
+                      <DropdownMenuLabel>Vælg kategori</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setCategory("")} className={category === "" ? "bg-accent" : ""}>
+                        Ingen kategori
+                      </DropdownMenuItem>
+                      {categoryOptions.map((item) => (
+                        <DropdownMenuItem
+                          key={item.id}
+                          onClick={() => setCategory(item.name)}
+                          className={category === item.name ? "bg-accent" : ""}
+                        >
+                          {item.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        className="h-10 w-10 rounded-xl border-border/70 bg-card/60 hover:bg-muted/60"
+                        title="Opret kategori"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 rounded-2xl border border-border/60 bg-popover/95 p-3 shadow-xl" align="end">
+                      <div className="mb-2.5 flex items-center gap-2">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+                          <Plus className="h-3.5 w-3.5" />
+                        </span>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ny kategori</p>
+                        </div>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Navn på kategori"
+                        className="h-8 w-full rounded-lg border border-input/80 bg-background/70 px-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/25"
+                      />
+
+                      <div className="mt-2.5 flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-8 rounded-lg px-3"
+                          disabled={creatingCategory || !newCategoryName.trim()}
+                          onClick={handleCreateCategory}
+                        >
+                          {creatingCategory ? "Gemmer..." : "Opret"}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
@@ -627,7 +781,6 @@ export default function CalendarAdminPage() {
               </thead>
               <tbody className="divide-y divide-border/30">
                 {entries.map((entry) => {
-                  const cat = catStyle(entry.category)
                   return (
                     <tr key={entry.id} className="group transition-colors hover:bg-muted/20">
                       <td className="px-5 py-4 font-medium text-foreground max-w-[200px] truncate">
@@ -635,8 +788,8 @@ export default function CalendarAdminPage() {
                       </td>
                       <td className="px-5 py-4">
                         {entry.category ? (
-                          <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${cat.pill}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${cat.dot}`} />
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-500/15 px-2 py-0.5 text-xs font-semibold text-slate-400">
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                             {entry.category}
                           </span>
                         ) : (
@@ -664,7 +817,7 @@ export default function CalendarAdminPage() {
                         {entry.location || <span className="opacity-30">—</span>}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon-sm"
@@ -676,7 +829,7 @@ export default function CalendarAdminPage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => handleDelete(entry.id)}
+                            onClick={() => handleDelete(entry)}
                             title="Slet"
                             className="hover:bg-red-500/10 hover:text-red-400"
                           >
@@ -692,6 +845,31 @@ export default function CalendarAdminPage() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!deleteEntry} onOpenChange={(open) => !open && setDeleteEntry(null)}>
+        <AlertDialogContent size="sm" className="border-border/60 bg-popover text-foreground dark:bg-[lab(7.78201%_-.0000149012_0)]">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogMedia className="mx-auto bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+              <Trash2 className="h-5 w-5" />
+            </AlertDialogMedia>
+            <AlertDialogTitle className="text-foreground">Slet begivenhed?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Er du sikker på, at du vil slette begivenheden <strong className="font-semibold text-foreground">{deleteEntry?.title}</strong>? Handlingen kan ikke fortrydes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="grid grid-cols-2 gap-2.5 bg-transparent pt-2">
+            <AlertDialogCancel variant="outline" className="h-10 rounded-lg border-border/70 bg-muted/50 text-foreground hover:bg-muted" disabled={deletingEntryId === deleteEntry?.id}>Annuller</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              className="h-10 rounded-lg font-semibold text-destructive-foreground"
+              disabled={deletingEntryId === deleteEntry?.id}
+              onClick={() => { void confirmDeleteEntry() }}
+            >
+              {deletingEntryId === deleteEntry?.id ? "Sletter..." : "Slet"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

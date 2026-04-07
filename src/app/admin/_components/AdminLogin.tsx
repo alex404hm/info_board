@@ -45,20 +45,23 @@ export default function AdminLogin() {
       await signIn.email(
         { email: email.trim().toLowerCase(), password },
         {
-          onSuccess: () => router.refresh(),
+          onSuccess: () => {
+            router.push("/admin/dashboard")
+            router.refresh()
+          },
           onError: (ctx) => {
             setAttempts((n) => n + 1)
             setError(
               ctx.error.status === 429
-                ? "Too many attempts. Please wait a moment."
-                : "Invalid email or password.",
+                ? "For mange forsøg. Vent venligst et øjeblik."
+                : "Ugyldig e-mail eller adgangskode.",
             )
           },
         },
       )
     } catch {
       setAttempts((n) => n + 1)
-      setError("Invalid email or password.")
+      setError("Ugyldig e-mail eller adgangskode.")
     } finally {
       setLoading(false)
     }
@@ -73,7 +76,7 @@ export default function AdminLogin() {
       redirectTo: "/reset-password",
     })
     if (error) {
-      setForgotError("Could not send reset email. Please try again.")
+      setForgotError("Kunne ikke sende nulstillingsmail. Prøv igen.")
     } else {
       setMode("forgot-sent")
     }
@@ -147,13 +150,14 @@ export default function AdminLogin() {
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={forgotLoading}
-              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9"
+              size="lg"
+              className="w-full"
             >
               {forgotLoading ? "Sender…" : "Send nulstillingslink"}
-            </button>
+            </Button>
 
             <Button
               type="button"
@@ -256,19 +260,18 @@ export default function AdminLogin() {
               <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 {tooManyAttempts
                   ? "For mange fejlede forsøg. Genindlæs siden for at prøve igen."
-                  : error === "Invalid email or password."
-                    ? "Forkert e-mail eller adgangskode."
-                    : error}
+                  : error}
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading || tooManyAttempts}
-              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9"
+              size="lg"
+              className="w-full"
             >
               {loading ? "Logger ind…" : "Log ind"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

@@ -40,8 +40,6 @@ export function StatusBar() {
             className="h-9 w-auto brightness-0 invert"
           />
         </Link>
-        <div className="hidden h-6 w-px sm:block status-bar-divider" />
-        <span className="hidden text-sm font-semibold text-soft md:inline">Infotavle</span>
       </div>
 
       {/* Right - Weather, Clock, Date */}

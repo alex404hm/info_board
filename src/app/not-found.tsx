@@ -1,64 +1,61 @@
+"use client"
+
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
+import React from "react"
+import { motion } from "framer-motion"
+import { ArrowLeft } from "lucide-react"
 
-export default function NotFound() {
+export default function NotFoundPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
-      {/* Logo */}
-      <Link href="/" className="mb-12 opacity-80 hover:opacity-100 transition-opacity">
-        <img
-          src="/logo.svg"
-          alt="TEC"
-          width={80}
-          height={28}
-          className="h-8 w-auto brightness-0 dark:invert"
-        />
-      </Link>
-
-      {/* 404 number */}
-      <div className="relative select-none mb-2">
-        <span className="text-[10rem] sm:text-[14rem] font-black leading-none tracking-tighter text-muted/40">
-          404
-        </span>
-        <span className="absolute inset-0 flex items-center justify-center text-[10rem] sm:text-[14rem] font-black leading-none tracking-tighter text-foreground/5 blur-2xl">
-          404
-        </span>
-      </div>
-
-      <Separator className="w-16 my-6" />
-
-      {/* Message */}
-      <div className="text-center space-y-2 mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-          Siden blev ikke fundet
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base max-w-sm">
-          Den side, du leder efter, eksisterer ikke eller er blevet flyttet.
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-3">
-        <Button asChild size="lg" className="gap-2">
-          <Link href="/">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 md:px-8 lg:px-12 xl:px-16">
+      <div className="mx-auto flex w-full max-w-3xl items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="w-full space-y-7 text-center"
+        >
+          <div className="space-y-3">
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.04, duration: 0.35, ease: "easeOut" }}
+              className="text-6xl font-black tracking-tight text-blue-500/90 sm:text-7xl"
             >
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            Gå til forsiden
-          </Link>
-        </Button>
+              404
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08, duration: 0.4, ease: "easeOut" }}
+              className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl"
+            >
+              Siden blev ikke fundet
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.14, duration: 0.35, ease: "easeOut" }}
+              className="mx-auto max-w-xl text-base text-muted-foreground sm:text-lg"
+            >
+              Beklager, vi kunne ikke finde den side, du leder efter.
+            </motion.p>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.35, ease: "easeOut" }}
+          >
+            <Link
+              href="/"
+              prefetch={false}
+              className="inline-flex h-11 items-center gap-2 rounded-lg border border-blue-400/50 bg-blue-600 px-7 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Tilbage til forsiden
+            </Link>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   )

@@ -12,7 +12,7 @@ export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() })
   const role = getUserRole(session)
   if (!session || !["teacher", "admin"].includes(role ?? "")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Ikke autoriseret" }, { status: 401 })
   }
 
   const events = await db
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() })
   const role = getUserRole(session)
   if (!session || !["teacher", "admin"].includes(role ?? "")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Ikke autoriseret" }, { status: 401 })
   }
 
   const body = await request.json()
@@ -68,6 +68,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(row[0], { status: 201 })
   } catch (error) {
     console.error("Failed to create calendar event:", error)
-    return NextResponse.json({ error: "Failed to create event" }, { status: 400 })
+    return NextResponse.json({ error: "Kunne ikke oprette begivenhed" }, { status: 400 })
   }
 }

@@ -17,17 +17,9 @@ type BoardMessage = {
 const POLL_INTERVAL = 15_000
 const MESSAGES_CHANNEL = "messages_updated"
 
-const PRIORITY_BADGE: Record<string, React.ReactNode> = {
-  urgent: (
-    <div style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "#dc2626", color: "#fff", borderRadius: 3, padding: "1px 6px", display: "inline-block", marginBottom: 6, position: "relative", zIndex: 2 }}>
-      Vigtigt
-    </div>
-  ),
-  high: (
-    <div style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "#ea580c", color: "#fff", borderRadius: 3, padding: "1px 6px", display: "inline-block", marginBottom: 6, position: "relative", zIndex: 2 }}>
-      Høj
-    </div>
-  ),
+const PRIORITY_BADGE: Record<string, { label: string; color: string }> = {
+  urgent: { label: "Vigtigt", color: "#dc2626" },
+  high:   { label: "Høj",    color: "#ea580c" },
 }
 
 export function LatestMessageBlock() {
@@ -56,19 +48,23 @@ export function LatestMessageBlock() {
     }
   }, [])
 
-  const pinnedBadge = msg?.pinned ? (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4, position: "relative", zIndex: 2 }}>
-      <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "#7c3aed", color: "#fff", borderRadius: 3, padding: "1px 6px" }}>
-        📌 Fastgjort
-      </span>
-    </div>
-  ) : null
+  const badge = msg ? PRIORITY_BADGE[msg.priority] : undefined
+  const hasBadge = !!badge
+  const isPinned = msg?.pinned ?? false
 
-  const headerSlot = msg ? (
-    <>
-      {pinnedBadge}
-      {PRIORITY_BADGE[msg.priority] ?? null}
-    </>
+  const headerSlot = msg && (isPinned || hasBadge) ? (
+    <div style={{ display: "flex", gap: 5, marginBottom: 6, position: "relative", zIndex: 2, flexWrap: "wrap" }}>
+      {isPinned && (
+        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "#7c3aed", color: "#fff", borderRadius: 3, padding: "1px 6px" }}>
+          📌 Fastgjort
+        </span>
+      )}
+      {hasBadge && (
+        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: badge!.color, color: "#fff", borderRadius: 3, padding: "1px 6px" }}>
+          {badge!.label}
+        </span>
+      )}
+    </div>
   ) : null
 
   return (

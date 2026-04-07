@@ -1,30 +1,28 @@
 import * as React from "react"
 import { Plus, type LucideIcon } from "lucide-react"
-import { Slot } from "radix-ui"
 
+import { Button, type buttonVariants } from "@/components/ui/button"
+import { type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
-export const adminCreateButtonClassName =
-  "inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
-
-type AdminCreateButtonProps = React.ComponentProps<"button"> & {
-  asChild?: boolean
-  icon?: LucideIcon
-}
+type AdminCreateButtonProps = React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+    icon?: LucideIcon
+  }
 
 export function AdminCreateButton({
-  asChild = false,
   className,
   icon: Icon = Plus,
   children,
+  variant = "default",
+  size = "default",
   ...props
 }: AdminCreateButtonProps) {
-  const Comp = asChild ? Slot.Root : "button"
-
   return (
-    <Comp className={cn(adminCreateButtonClassName, className)} {...props}>
+    <Button variant={variant} size={size} className={cn(className)} {...props}>
       <Icon className="h-4 w-4" aria-hidden="true" />
       {children}
-    </Comp>
+    </Button>
   )
 }

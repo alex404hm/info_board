@@ -6,7 +6,7 @@ import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import {
   MessageSquare, Users, ArrowRight,
-  CalendarDays, Settings, Coffee, LayoutGrid,
+  Settings, LayoutGrid,
   ShieldCheck, TrendingUp, TrendingDown, Minus,
 } from "lucide-react"
 import { ChartBarInteractive } from "@/components/chart-bar-interactive"
@@ -192,7 +192,7 @@ export default async function AdminDashboardPage() {
         ) : (
           <StatCard
             label="Din rolle"
-            value={isAdmin ? "Admin" : "Instruktør"}
+            value={isAdmin ? "Administrator" : "Instruktør"}
             icon={ShieldCheck}
             iconColor="text-blue-400"
             iconBg="bg-blue-400/10"
@@ -203,44 +203,6 @@ export default async function AdminDashboardPage() {
       </div>
 
       <ChartBarInteractive days={30} />
-
-      {!isAdmin && (
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Hurtig adgang
-          </h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <NavCard
-              href="/admin/messages"
-              icon={MessageSquare}
-              label="Beskeder"
-              description="Opret og administrer opslag på skærmen"
-              accent="#5f9dff"
-            />
-            <NavCard
-              href="/admin/kokkenvagt"
-              icon={Coffee}
-              label="Køkkenvagt"
-              description="Vagtplan og instruktioner for køkkenet"
-              accent="#f59e0b"
-            />
-            <NavCard
-              href="/admin/calendar"
-              icon={CalendarDays}
-              label="Kalender"
-              description="Outlook ICS kalenderintegration"
-              accent="#34d399"
-            />
-            <NavCard
-              href="/admin/settings"
-              icon={Settings}
-              label="Min konto"
-              description="Profil, adgangskode og sessioner"
-              accent="#94a3b8"
-            />
-          </div>
-        </section>
-      )}
 
       {isAdmin && (
         <section className="space-y-3">

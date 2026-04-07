@@ -20,13 +20,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .where(eq(invitation.token, token))
 
   if (!inv) {
-    return NextResponse.json({ error: "Invalid invitation" }, { status: 404 })
+    return NextResponse.json({ error: "Ugyldig invitation" }, { status: 404 })
   }
   if (inv.acceptedAt) {
-    return NextResponse.json({ error: "Invitation already used" }, { status: 410 })
+    return NextResponse.json({ error: "Invitation er allerede brugt" }, { status: 410 })
   }
   if (inv.expiresAt < new Date()) {
-    return NextResponse.json({ error: "Invitation expired" }, { status: 410 })
+    return NextResponse.json({ error: "Invitation er udløbet" }, { status: 410 })
   }
 
   return NextResponse.json({ email: inv.email, role: inv.role })
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { name, password, phoneNumber, image } = await req.json()
 
   if (!name?.trim() || !password || password.length < 10) {
-    return NextResponse.json({ error: "Invalid input" }, { status: 400 })
+    return NextResponse.json({ error: "Ugyldig input" }, { status: 400 })
   }
 
   const now = new Date()
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     )
 
   if (!inv) {
-    return NextResponse.json({ error: "Invalid or expired invitation" }, { status: 410 })
+    return NextResponse.json({ error: "Ugyldig eller udløbet invitation" }, { status: 410 })
   }
 
   const { hashPassword } = await import("better-auth/crypto")

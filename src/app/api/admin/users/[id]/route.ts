@@ -14,20 +14,20 @@ async function requireAdmin() {
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin()
-  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  if (!session) return NextResponse.json({ error: "Forbudt" }, { status: 403 })
 
   const { id } = await params
   const { name, role } = await req.json()
 
   if (role && !["teacher", "admin"].includes(role)) {
-    return NextResponse.json({ error: "Invalid role" }, { status: 400 })
+    return NextResponse.json({ error: "Ugyldig rolle" }, { status: 400 })
   }
 
   // Prevent removing the last admin
   if (role && role !== "admin") {
     const admins = await db.select({ id: user.id }).from(user).where(eq(user.role, "admin"))
     if (admins.length === 1 && admins[0].id === id) {
-      return NextResponse.json({ error: "Cannot remove the last admin account" }, { status: 400 })
+      return NextResponse.json({ error: "Kan ikke fjerne den sidste administratorkonto" }, { status: 400 })
     }
   }
 
@@ -45,13 +45,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin()
-  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  if (!session) return NextResponse.json({ error: "Forbudt" }, { status: 403 })
 
   const { id } = await params
 
   // Prevent self-deletion
   if (session.user.id === id) {
-    return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 })
+    return NextResponse.json({ error: "Kan ikke slette din egen konto" }, { status: 400 })
   }
 
   // Prevent deleting the last admin
@@ -59,7 +59,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (targetUser[0]?.role === "admin") {
     const admins = await db.select({ id: user.id }).from(user).where(eq(user.role, "admin"))
     if (admins.length === 1) {
-      return NextResponse.json({ error: "Cannot delete the last admin account" }, { status: 400 })
+      return NextResponse.json({ error: "Kan ikke slette den sidste administratorkonto" }, { status: 400 })
     }
   }
 

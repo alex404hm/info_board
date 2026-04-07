@@ -176,6 +176,13 @@ export const calendarEvent = pgTable("calendar_event", {
   updatedAt: timestamp("updatedAt").notNull(),
 })
 
+export const calendarCategory = pgTable("calendar_category", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+})
+
 export const messageRelations = relations(message, ({ one }) => ({
   author: one(user, { fields: [message.authorId], references: [user.id] }),
 }))

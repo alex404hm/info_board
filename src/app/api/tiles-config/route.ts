@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session || getUserRole(session) !== "teacher") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Ikke autoriseret" }, { status: 401 })
     }
 
     const config = await request.json()
