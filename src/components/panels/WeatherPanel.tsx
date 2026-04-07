@@ -9,7 +9,8 @@ export function WeatherPanel() {
   const weather = useWeatherData()
   const icon    = getWeatherIcon(weather?.symbolCode ?? undefined, weather?.updatedAt)
   const days    = weather?.forecastDays ?? []
-  const windMs  = weather?.windKmh != null ? weather.windKmh / 3.6 : null
+  const windMs  = weather?.windMs ?? null
+  const windKmh = weather?.windKmh ?? null
 
   return (
     <div className="space-y-4">
@@ -122,7 +123,7 @@ export function WeatherPanel() {
           <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.04] px-4 py-4">
             <Wind className="h-5 w-5 shrink-0 text-amber-400" />
             <div>
-              <p className="text-lg font-black text-foreground-strong">{weather?.windKmh ?? "--"}</p>
+              <p className="text-lg font-black text-foreground-strong">{windKmh ?? "--"}</p>
               <p className="text-[10px] uppercase tracking-wide text-subtle">Vind km/t</p>
             </div>
           </div>

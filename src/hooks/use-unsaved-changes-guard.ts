@@ -9,14 +9,16 @@ type UnsavedChangesGuardOptions = {
   description?: string
   confirmText?: string
   cancelText?: string
+  onConfirmLeave?: () => void
 }
 
 export function useUnsavedChangesGuard({
   enabled,
-  title = "Du har ikke-gemte ændringer",
+  title = "Er du sikker på, at du vil forlade siden?",
   description = "Hvis du forlader siden nu, mister du dine ændringer.",
   confirmText = "Forlad uden at gemme",
-  cancelText = "Bliv på siden",
+  cancelText = "Annullere",
+  onConfirmLeave,
 }: UnsavedChangesGuardOptions) {
   const confirm = useConfirmDialog()
 
@@ -24,6 +26,7 @@ export function useUnsavedChangesGuard({
     if (!enabled) return
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowUnload) return
       e.preventDefault()
       // Modern browsers ignore custom text here, but returnValue must be set.
       e.returnValue = description
@@ -31,6 +34,7 @@ export function useUnsavedChangesGuard({
 
     let allowBrowserBack = false
     let isPromptOpen = false
+    let allowUnload = false
 
     const handleDocumentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null
@@ -61,7 +65,11 @@ export function useUnsavedChangesGuard({
         cancelText,
         tone: "warning",
       }).then((ok) => {
-        if (ok) window.location.assign(nextUrl.toString())
+        if (ok) {
+          onConfirmLeave?.()
+          allowUnload = true
+          window.location.assign(nextUrl.toString())
+        }
       }).finally(() => {
         isPromptOpen = false
       })
@@ -85,7 +93,9 @@ export function useUnsavedChangesGuard({
         tone: "warning",
       }).then((ok) => {
         if (!ok) return
+        onConfirmLeave?.()
         allowBrowserBack = true
+        allowUnload = true
         window.history.back()
       }).finally(() => {
         isPromptOpen = false
@@ -102,5 +112,5 @@ export function useUnsavedChangesGuard({
       window.removeEventListener("popstate", handlePopState)
       document.removeEventListener("click", handleDocumentClick, true)
     }
-  }, [cancelText, confirm, confirmText, description, enabled, title])
+  }, [cancelText, confirm, confirmText, description, enabled, onConfirmLeave, title])
 }

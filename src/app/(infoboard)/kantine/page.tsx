@@ -7,13 +7,12 @@ import { useRouter } from "next/navigation"
 
 import { StatusBar } from "@/components/StatusBar"
 import { InfoBoardIdleGuard } from "@/components/InfoBoardIdleGuard"
-import { CanteenPanel } from "@/components/panels/CanteenPanel"
+import { CanteenGrid } from "@/components/panels/CanteenPanel"
 import type { TileConfig } from "@/lib/tiles-config"
 
 export default function CanteenPage() {
   const router = useRouter()
   const [allowed, setAllowed] = useState<boolean | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -36,28 +35,27 @@ export default function CanteenPage() {
       <InfoBoardIdleGuard />
       <StatusBar />
 
-      {/* Header – hidden when a category detail is open */}
-      {!detailOpen && (
-        <div className="shrink-0 px-4 py-3 md:px-6"
-          style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}>
-          <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
-              style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Tilbage
-            </Link>
-            <div className="min-w-0 flex-1 text-right">
-              <h1 className="truncate text-base font-bold md:text-lg" style={{ color: "var(--foreground)" }}>Kantine</h1>
-              <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>Vælg en kategori herunder</p>
-            </div>
+      <div
+        className="shrink-0 px-4 py-3 md:px-6"
+        style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}
+      >
+        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
+            style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Tilbage
+          </Link>
+          <div className="min-w-0 flex-1 text-right">
+            <h1 className="truncate text-base font-bold md:text-lg" style={{ color: "var(--foreground)" }}>Kantine</h1>
+            <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>Vælg en kategori herunder</p>
           </div>
         </div>
-      )}
+      </div>
 
-      <CanteenPanel onSelectionChange={setDetailOpen} />
+      <CanteenGrid />
     </div>
   )
 }

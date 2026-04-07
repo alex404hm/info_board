@@ -43,7 +43,7 @@ const ROLES = [
   },
   {
     value: "admin",
-    label: "Admin",
+    label: "Administrator",
     icon: Shield,
     color: "text-violet-400",
     bg: "bg-violet-500/10",
@@ -105,9 +105,10 @@ function RoleDropdown({
         const RIcon = role.icon
         const isActive = role.value === value
         return (
-          <button
+          <Button
             key={role.value}
             type="button"
+            variant="ghost"
             onClick={() => {
               setOpen(false)
               if (role.value !== value) onChange(role.value)
@@ -124,7 +125,7 @@ function RoleDropdown({
             {isActive && (
               <CheckCircle className={cn("ml-auto h-3 w-3", role.color)} />
             )}
-          </button>
+          </Button>
         )
       })}
     </div>
@@ -132,9 +133,10 @@ function RoleDropdown({
 
   return (
     <div ref={wrapperRef} className="relative">
-      <button
+      <Button
         ref={buttonRef}
         type="button"
+        variant="ghost"
         disabled={disabled}
         onClick={handleToggle}
         className={cn(
@@ -152,7 +154,7 @@ function RoleDropdown({
         )}
         {current.label}
         <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform", open && "rotate-180")} />
-      </button>
+      </Button>
 
       {typeof window !== "undefined" && menu ? createPortal(menu, document.body) : null}
     </div>
@@ -216,7 +218,7 @@ export default function UsersPage() {
       const data = await res.json()
       setUsers(data.users)
     } catch {
-      toast("error", "Failed to load users")
+      toast("error", "Kunne ikke hente brugere")
     }
     setLoading(false)
   }, [toast])
@@ -234,7 +236,7 @@ export default function UsersPage() {
   async function handleInvite() {
     setInviteError("")
     if (!inviteEmail.trim() || !inviteEmail.includes("@")) {
-      setInviteError("Please enter a valid email address.")
+      setInviteError("Indtast venligst en gyldig e-mailadresse.")
       return
     }
     setInviting(true)
@@ -245,7 +247,7 @@ export default function UsersPage() {
     })
     const data = await res.json()
     if (!res.ok) {
-      setInviteError(data.error ?? "Failed to send invite.")
+      setInviteError(data.error ?? "Kunne ikke sende invitation.")
     } else {
       setInviteSent(true)
       void loadUsers()
@@ -262,9 +264,9 @@ export default function UsersPage() {
     })
     const data = await res.json()
     if (!res.ok) {
-      toast("error", data.error ?? "Failed to resend invite.")
+      toast("error", data.error ?? "Kunne ikke gensende invitation.")
     } else {
-      toast("success", `Invite resent to ${email}`)
+      toast("success", `Invitation gensendt til ${email}`)
     }
     setResendingEmail(null)
   }
@@ -278,9 +280,9 @@ export default function UsersPage() {
     })
     const data = await res.json()
     if (!res.ok) {
-      toast("error", data.error ?? "Failed to update role.")
+      toast("error", data.error ?? "Kunne ikke opdatere rolle.")
     } else {
-      toast("success", "Role updated")
+      toast("success", "Rolle opdateret")
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)))
     }
     setUpdatingRole(null)
@@ -292,9 +294,9 @@ export default function UsersPage() {
     const res = await fetch(`/api/admin/users/${deleteId}`, { method: "DELETE" })
     const data = await res.json()
     if (!res.ok) {
-      toast("error", data.error ?? "Failed to delete user.")
+      toast("error", data.error ?? "Kunne ikke slette bruger.")
     } else {
-      toast("success", "User deleted")
+      toast("success", "Bruger slettet")
       setUsers((prev) => prev.filter((u) => u.id !== deleteId))
     }
     setDeleteId(null)
@@ -325,20 +327,20 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+          <h1 className="text-2xl font-bold text-foreground">Brugerstyring</h1>
           <p className="mt-1 text-sm text-muted">
-            Administrer Instruktør- og administrator-konti
+            Administrer instruktør- og administrator-konti
             {pendingCount > 0 && (
               <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400">
                 <Clock className="h-3 w-3" />
-                {pendingCount} pending
+                {pendingCount} afventer
               </span>
             )}
           </p>
         </div>
         <Button onClick={openInvite}>
           <Plus className="h-4 w-4" />
-          Invite User
+          Inviter bruger
         </Button>
       </div>
 
@@ -346,14 +348,14 @@ export default function UsersPage() {
       <div className="admin-panel overflow-hidden">
         <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
           <h2 className="font-semibold text-foreground">
-            All Users
+            Alle brugere
             {!loading && (
               <span className="ml-2 text-sm font-normal text-muted">({users.length})</span>
             )}
           </h2>
           <Button variant="outline" size="sm" onClick={loadUsers} disabled={loading}>
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-            Refresh
+            Opdater
           </Button>
         </div>
 
@@ -366,7 +368,7 @@ export default function UsersPage() {
         ) : users.length === 0 ? (
           <div className="p-12 text-center">
             <Users className="mx-auto mb-3 h-8 w-8 text-muted opacity-50" />
-            <p className="text-muted">No users yet. Invite someone to get started.</p>
+            <p className="text-muted">Ingen brugere endnu. Inviter nogen for at komme i gang.</p>
           </div>
         ) : (
           <div className="divide-y divide-border/40">
@@ -400,13 +402,13 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-medium text-foreground">
                         {u.name ?? (
-                          <span className="italic text-muted">Pending setup</span>
+                          <span className="italic text-muted">Afventer opsætning</span>
                         )}
                       </p>
                       {isPending && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400 shrink-0">
                           <Clock className="h-2.5 w-2.5" />
-                          Pending
+                          Afventer
                         </span>
                       )}
                     </div>
@@ -431,7 +433,7 @@ export default function UsersPage() {
                         size="sm"
                         onClick={() => handleResendInvite(u.email)}
                         disabled={resendingEmail === u.email}
-                        title="Resend invitation email"
+                        title="Gensend invitationsmail"
                         className="border-amber-500/20 bg-amber-500/[0.08] text-amber-400 hover:bg-amber-500/20 hover:text-amber-400"
                       >
                         {resendingEmail === u.email ? (
@@ -439,7 +441,7 @@ export default function UsersPage() {
                         ) : (
                           <Send className="h-3.5 w-3.5" />
                         )}
-                        <span className="hidden sm:inline">Resend</span>
+                        <span className="hidden sm:inline">Gensend</span>
                       </Button>
                     )}
 
@@ -447,7 +449,7 @@ export default function UsersPage() {
                       variant="destructive"
                       size="icon-sm"
                       onClick={() => setDeleteId(u.id)}
-                      title="Delete user"
+                      title="Slet bruger"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -467,10 +469,10 @@ export default function UsersPage() {
               <div>
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
                   <Mail className="h-4 w-4 text-emerald-400" />
-                  Invite User
+                  Inviter bruger
                 </h3>
                 <p className="text-xs text-muted mt-0.5">
-                  They'll receive a link to set up their account.
+                  De modtager et link til at oprette deres konto.
                 </p>
               </div>
               <Button variant="ghost" size="icon-sm" onClick={() => setShowInvite(false)}>
@@ -482,7 +484,7 @@ export default function UsersPage() {
               <div className="space-y-4">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-foreground">
-                    Email address
+                    E-mailadresse
                   </label>
                   <input
                     autoFocus
@@ -496,15 +498,16 @@ export default function UsersPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-foreground">Role</label>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Rolle</label>
                   <div className="grid grid-cols-2 gap-2">
                     {ROLES.map((role) => {
                       const RIcon = role.icon
                       const isSelected = inviteRole === role.value
                       return (
-                        <button
+                        <Button
                           key={role.value}
                           type="button"
+                          variant="ghost"
                           onClick={() => setInviteRole(role.value)}
                           className={cn(
                             "flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
@@ -515,7 +518,7 @@ export default function UsersPage() {
                         >
                           <RIcon className={cn("h-4 w-4", isSelected ? role.color : "")} />
                           {role.label}
-                        </button>
+                        </Button>
                       )
                     })}
                   </div>
@@ -535,10 +538,10 @@ export default function UsersPage() {
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
-                    {inviting ? "Sending…" : "Send Invite"}
+                    {inviting ? "Sender…" : "Send invitation"}
                   </Button>
                   <Button variant="outline" onClick={() => setShowInvite(false)}>
-                    Cancel
+                    Annuller
                   </Button>
                 </div>
               </div>
@@ -549,14 +552,14 @@ export default function UsersPage() {
                     <CheckCircle className="h-5 w-5 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-emerald-400">Invitation sent!</p>
+                    <p className="text-sm font-semibold text-emerald-400">Invitation sendt!</p>
                     <p className="mt-0.5 text-xs text-emerald-400/70">
-                      An email was sent to <strong>{inviteEmail}</strong>
+                      En e-mail er sendt til <strong>{inviteEmail}</strong>
                     </p>
                   </div>
                 </div>
                 <Button variant="outline" className="w-full" onClick={() => setShowInvite(false)}>
-                  Done
+                  Færdig
                 </Button>
               </div>
             )}
@@ -571,9 +574,9 @@ export default function UsersPage() {
             <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10">
               <Trash2 className="h-5 w-5 text-red-400" />
             </div>
-            <h3 className="mb-1 font-semibold text-foreground">Delete user?</h3>
+            <h3 className="mb-1 font-semibold text-foreground">Slet bruger?</h3>
             <p className="mb-5 text-sm text-muted">
-              This will permanently delete the user and all their sessions. This cannot be undone.
+              Dette vil permanent slette brugeren og alle deres sessioner. Dette kan ikke fortrydes.
             </p>
             <div className="flex gap-3">
               <Button
@@ -587,10 +590,10 @@ export default function UsersPage() {
                 ) : (
                   <Trash2 className="h-4 w-4" />
                 )}
-                {deleting ? "Deleting…" : "Delete"}
+                {deleting ? "Sletter…" : "Slet"}
               </Button>
               <Button variant="outline" onClick={() => setDeleteId(null)} className="flex-1">
-                Cancel
+                Annuller
               </Button>
             </div>
           </div>

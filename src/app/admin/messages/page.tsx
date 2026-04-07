@@ -7,7 +7,7 @@ import {
   RefreshCw, Pin, PinOff,
 } from "lucide-react"
 import { format } from "date-fns"
-import { CalendarIcon, CalendarRange } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
@@ -63,7 +63,6 @@ type MessageFormSnapshot = {
   title: string
   content: string
   priority: string
-  intervalEnabled: boolean
   activeFromValue: string
   expiresAtValue: string
   repeatEnabled: boolean
@@ -74,11 +73,27 @@ const EMPTY_FORM_SNAPSHOT: MessageFormSnapshot = {
   title: "",
   content: "",
   priority: "normal",
-  intervalEnabled: false,
   activeFromValue: "",
   expiresAtValue: "",
   repeatEnabled: false,
   repeatDaysKey: "",
+}
+
+const MESSAGES_DRAFT_KEY = "admin:messages:draft:v1"
+
+type MessagesDraft = {
+  version: 1
+  editingId: string | null
+  title: string
+  content: string
+  priority: string
+  activeFromDate: string | null
+  activeFromTime: string
+  expiresDate: string | null
+  expiresTime: string
+  repeatEnabled: boolean
+  repeatDays: number[]
+  baseline: MessageFormSnapshot
 }
 
 function repeatDaysKey(days: number[]) {
@@ -90,6 +105,7 @@ function isSameSnapshot(a: MessageFormSnapshot, b: MessageFormSnapshot) {
     a.title === b.title &&
     a.content === b.content &&
     a.priority === b.priority &&
+    a.activeFromValue === b.activeFromValue &&
     a.expiresAtValue === b.expiresAtValue &&
     a.repeatEnabled === b.repeatEnabled &&
     a.repeatDaysKey === b.repeatDaysKey
@@ -130,7 +146,7 @@ function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdi
   const tags = (
     <div style={{ display: "flex", gap: 5, marginBottom: 6, position: "relative", zIndex: 2, flexWrap: "wrap" }}>
       {msg.pinned && (
-        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "#7c3aed", color: "#fff", borderRadius: 3, padding: "1px 6px", display: "flex", alignItems: "center", gap: 3 }}>
+        <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", background: "#7c3aed", color: "#fff", borderRadius: 3, padding: "1px 6px" }}>
           📌 Fastgjort
         </span>
       )}
@@ -180,7 +196,7 @@ function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdi
         opacity: !msg.active ? 0.6 : 1,
       }}
     >
-      <button onClick={() => onPin(msg.id, msg.pinned)} title={msg.pinned ? "Frigør" : "Fastgør besked"} className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: msg.pinned ? "#7c3aed" : "#1a1a5e", outline: "none" }}>
+      <button onClick={() => onPin(msg.id, msg.pinned)} title={msg.pinned ? "Frigør" : "Fastgør besked"} className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: "#1a1a5e", outline: "none" }}>
         {msg.pinned ? <PinOff size={13} /> : <Pin size={13} />}
       </button>
       <button onClick={() => onEdit(msg)} title="Rediger" className="rounded-md p-1.5 transition-colors hover:bg-white/60" style={{ color: "#1a1a5e" }}>
@@ -251,18 +267,7 @@ function StickyNote({ msg, index, selectionMode, selected, onToggleSelect, onEdi
           bodyClassName="sticky-y-body sticky-y-body-full"
           headerSlot={tags}
           footerSlot={selectionMode ? null : actions}
-          outlineColor={
-            selectionMode && selected
-              ? "#2563eb"
-              : msg.pinned
-              ? "#7c3aed"
-              : undefined
-          }
-          outlineGlow={
-            msg.pinned && !selectionMode
-              ? "0 0 0 4px rgba(124,58,237,0.15), 6px 12px 36px rgba(0,0,0,0.32), 2px 4px 10px rgba(0,0,0,0.18)"
-              : undefined
-          }
+          outlineColor={selectionMode && selected ? "#2563eb" : undefined}
         />
       </div>
     </div>
@@ -335,9 +340,20 @@ function PriorityPicker({ value, onChange }: { value: string; onChange: (v: stri
               {/* Priority badge */}
               {badge ? (
                 <span style={{
-                  fontSize: 7, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.06em",
-                  background: badge.color, color: "#fff", borderRadius: 2, padding: "1px 4px",
-                  alignSelf: "flex-start", position: "relative", zIndex: 2,
+                  fontSize: 7,
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  background: badge.color,
+                  color: "#fff",
+                  borderRadius: 2,
+                  padding: "1px 4px",
+                  alignSelf: "stretch",
+                  width: "100%",
+                  textAlign: "center",
+                  display: "block",
+                  position: "relative",
+                  zIndex: 2,
                 }}>
                   {badge.label}
                 </span>
@@ -418,7 +434,6 @@ export default function MessagesPage() {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [priority, setPriority] = useState<string>("normal")
-  const [intervalEnabled, setIntervalEnabled] = useState(false)
   const [activeFromDate, setActiveFromDate] = useState<Date | undefined>(undefined)
   const [activeFromTime, setActiveFromTime] = useState("")
   const [expiresDate, setExpiresDate] = useState<Date | undefined>(undefined)
@@ -464,32 +479,87 @@ export default function MessagesPage() {
     title,
     content,
     priority,
-    intervalEnabled,
     activeFromValue,
     expiresAtValue,
     repeatEnabled,
     repeatDaysKey: repeatDaysKey(repeatDays),
-  }), [title, content, priority, intervalEnabled, activeFromValue, expiresAtValue, repeatEnabled, repeatDays])
+  }), [title, content, priority, activeFromValue, expiresAtValue, repeatEnabled, repeatDays])
 
   const hasUnsavedChanges = showForm && !isSameSnapshot(currentFormSnapshot, formBaseline)
-  const dirtyFields = [
-    currentFormSnapshot.title !== formBaseline.title ? "titel" : null,
-    currentFormSnapshot.content !== formBaseline.content ? "indhold" : null,
-    currentFormSnapshot.priority !== formBaseline.priority ? "prioritet" : null,
-    currentFormSnapshot.expiresAtValue !== formBaseline.expiresAtValue ? "udløbsdato" : null,
-    currentFormSnapshot.repeatEnabled !== formBaseline.repeatEnabled ? "gentagelse" : null,
-    currentFormSnapshot.repeatDaysKey !== formBaseline.repeatDaysKey ? "ugedage" : null,
-  ].filter(Boolean).join(", ")
 
   useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
-    title: editingId ? "Du har ikke-gemte ændringer i beskeden" : "Du har en ikke-gemt besked",
-    description: dirtyFields
-      ? `Ikke-gemte felter: ${dirtyFields}. Hvis du forlader siden nu, mister du disse ændringer.`
-      : "Hvis du forlader siden nu, mister du de ændringer, du har lavet i beskedformularen.",
+    title: "Er du sikker på, at du vil forlade siden?",
+    description: "Hvis du forlader siden nu, mister du dine ændringer.",
     confirmText: "Forlad uden at gemme",
-    cancelText: "Bliv og gem",
+    cancelText: "Annullere",
+    onConfirmLeave: () => {
+      localStorage.removeItem(MESSAGES_DRAFT_KEY)
+    },
   })
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MESSAGES_DRAFT_KEY)
+      if (!raw) return
+      const draft = JSON.parse(raw) as MessagesDraft
+      if (!draft || draft.version !== 1) return
+
+      setEditingId(draft.editingId)
+      setTitle(draft.title)
+      setContent(draft.content)
+      setPriority(draft.priority)
+      setActiveFromDate(draft.activeFromDate ? new Date(draft.activeFromDate) : undefined)
+      setActiveFromTime(draft.activeFromTime)
+      setExpiresDate(draft.expiresDate ? new Date(draft.expiresDate) : undefined)
+      setExpiresTime(draft.expiresTime)
+      setRepeatEnabled(draft.repeatEnabled)
+      setRepeatDays(Array.isArray(draft.repeatDays) ? draft.repeatDays : [])
+      setFormBaseline(draft.baseline ?? EMPTY_FORM_SNAPSHOT)
+      setShowForm(true)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    } catch {
+      localStorage.removeItem(MESSAGES_DRAFT_KEY)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showForm || !hasUnsavedChanges) {
+      localStorage.removeItem(MESSAGES_DRAFT_KEY)
+      return
+    }
+
+    const draft: MessagesDraft = {
+      version: 1,
+      editingId,
+      title,
+      content,
+      priority,
+      activeFromDate: activeFromDate ? activeFromDate.toISOString() : null,
+      activeFromTime,
+      expiresDate: expiresDate ? expiresDate.toISOString() : null,
+      expiresTime,
+      repeatEnabled,
+      repeatDays,
+      baseline: formBaseline,
+    }
+
+    localStorage.setItem(MESSAGES_DRAFT_KEY, JSON.stringify(draft))
+  }, [
+    showForm,
+    hasUnsavedChanges,
+    editingId,
+    title,
+    content,
+    priority,
+    activeFromDate,
+    activeFromTime,
+    expiresDate,
+    expiresTime,
+    repeatEnabled,
+    repeatDays,
+    formBaseline,
+  ])
 
   function showToast(type: "success" | "error", text: string) {
     setToast({ type, text })
@@ -498,10 +568,11 @@ export default function MessagesPage() {
 
   function resetForm() {
     setTitle(""); setContent(""); setPriority("normal")
-    setIntervalEnabled(false); setActiveFromDate(undefined); setActiveFromTime("")
+    setActiveFromDate(undefined); setActiveFromTime("")
     setExpiresDate(undefined); setExpiresTime("")
     setRepeatEnabled(false); setRepeatDays([]); setEditingId(null); setShowForm(false)
     setFormBaseline(EMPTY_FORM_SNAPSHOT)
+    localStorage.removeItem(MESSAGES_DRAFT_KEY)
   }
 
   function exitSelectionMode() {
@@ -548,7 +619,7 @@ export default function MessagesPage() {
           title,
           content,
           priority,
-          activeFrom: intervalEnabled ? (activeFromValue || null) : null,
+          activeFrom: activeFromValue || null,
           expiresAt: expiresAtValue || null,
           repeatDays: repeatEnabled ? repeatDays : [],
         }),
@@ -584,7 +655,6 @@ export default function MessagesPage() {
       title: msg.title,
       content: msg.content,
       priority: msg.priority,
-      intervalEnabled: hasInterval,
       activeFromValue: initialActiveFrom,
       expiresAtValue: initialExpires,
       repeatEnabled: initialRepeatDays.length > 0,
@@ -593,7 +663,6 @@ export default function MessagesPage() {
 
     setEditingId(msg.id); setTitle(msg.title); setContent(msg.content)
     setPriority(msg.priority)
-    setIntervalEnabled(hasInterval)
     if (af) {
       setActiveFromDate(af)
       setActiveFromTime(af.toTimeString().slice(0, 5))
@@ -811,9 +880,9 @@ export default function MessagesPage() {
 
       {/* ── Form ── */}
       {showForm && (
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-6 shadow-xl">
-          <h2 className="mb-5 text-base font-bold text-foreground">{editingId ? "Rediger besked" : "Ny besked"}</h2>
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="rounded-2xl border border-border/50 bg-card/40 p-7 shadow-xl md:p-8">
+          <h2 className="mb-6 text-lg font-bold text-foreground">{editingId ? "Rediger besked" : "Ny besked"}</h2>
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between">
                 <label className="text-sm font-medium text-foreground">Titel</label>
@@ -841,7 +910,7 @@ export default function MessagesPage() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Beskedens indhold vises på infoskærmen…"
                 required
-                rows={4}
+                rows={5}
                 maxLength={MAX_BODY}
                 className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2.5 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
@@ -854,101 +923,43 @@ export default function MessagesPage() {
 
             {/* Date / interval section */}
             <div className="space-y-4 rounded-xl border border-border/50 bg-card/30 p-4">
-              {/* Interval toggle */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CalendarRange className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Vis i bestemt tidsrum</span>
-                  <span className="text-xs text-muted-foreground">(interval)</span>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={intervalEnabled}
-                  onClick={() => {
-                    setIntervalEnabled((v) => !v)
-                    if (intervalEnabled) { setActiveFromDate(undefined); setActiveFromTime("") }
-                  }}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${intervalEnabled ? "bg-primary" : "bg-input"}`}
-                >
-                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${intervalEnabled ? "translate-x-[18px]" : "translate-x-0.5"}`} />
-                </button>
-              </div>
-
-              {intervalEnabled && (
-                <div className="space-y-3">
-                  {/* Active from */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Aktiv fra</label>
-                    <div className="flex gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex-1 justify-start text-left font-normal" style={!activeFromDate ? { color: "var(--muted-foreground)" } : {}}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {activeFromDate ? format(activeFromDate, "d. MMM yyyy") : "Vælg startdato"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={activeFromDate} onSelect={(d) => setActiveFromDate(d ?? undefined)} initialFocus />
-                          {activeFromDate && (
-                            <div className="border-t p-3">
-                              <div className="flex items-center gap-2">
-                                <label className="text-xs text-muted-foreground">Tidspunkt</label>
-                                <input type="time" value={activeFromTime} onChange={(e) => setActiveFromTime(e.target.value)} className="h-8 rounded border border-input bg-transparent px-2 text-sm outline-none focus:border-primary/60" />
-                              </div>
-                            </div>
-                          )}
-                        </PopoverContent>
-                      </Popover>
-                      {activeFromDate && (
-                        <Button type="button" variant="outline" onClick={() => { setActiveFromDate(undefined); setActiveFromTime("") }} className="px-3">✕</Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Expires at (within interval) */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Udløber</label>
-                    <div className="flex gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex-1 justify-start text-left font-normal" style={!expiresDate ? { color: "var(--muted-foreground)" } : {}}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {expiresDate ? format(expiresDate, "d. MMM yyyy") : "Vælg slutdato"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={expiresDate} onSelect={(d) => setExpiresDate(d ?? undefined)} initialFocus />
-                          {expiresDate && (
-                            <div className="border-t p-3">
-                              <div className="flex items-center gap-2">
-                                <label className="text-xs text-muted-foreground">Tidspunkt</label>
-                                <input type="time" value={expiresTime} onChange={(e) => setExpiresTime(e.target.value)} className="h-8 rounded border border-input bg-transparent px-2 text-sm outline-none focus:border-primary/60" />
-                              </div>
-                            </div>
-                          )}
-                        </PopoverContent>
-                      </Popover>
-                      {expiresDate && (
-                        <Button type="button" variant="outline" onClick={() => { setExpiresDate(undefined); setExpiresTime("") }} className="px-3">✕</Button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Beskeden vises kun i det valgte tidsrum på infoskærmen</p>
-                </div>
-              )}
-
-              {!intervalEnabled && (
+              <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Udløber automatisk <span className="font-normal">(valgfrit)</span>
-                  </label>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Aktiv fra</label>
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="flex-1 justify-start text-left font-normal" style={!activeFromDate ? { color: "var(--muted-foreground)" } : {}}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {activeFromDate ? format(activeFromDate, "d. MMM yyyy") : "Vælg startdato"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={activeFromDate} onSelect={(d) => setActiveFromDate(d ?? undefined)} initialFocus />
+                        {activeFromDate && (
+                          <div className="border-t p-3">
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs text-muted-foreground">Tidspunkt</label>
+                              <input type="time" value={activeFromTime} onChange={(e) => setActiveFromTime(e.target.value)} className="h-8 rounded border border-input bg-transparent px-2 text-sm outline-none focus:border-primary/60" />
+                            </div>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                    {activeFromDate && (
+                      <Button type="button" variant="outline" onClick={() => { setActiveFromDate(undefined); setActiveFromTime("") }} className="px-3">✕</Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Udløber</label>
                   <div className="flex gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="flex-1 justify-start text-left font-normal" style={!expiresDate ? { color: "var(--muted-foreground)" } : {}}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {expiresDate ? format(expiresDate, "d. MMM yyyy") : "Vælg dato"}
+                          {expiresDate ? format(expiresDate, "d. MMM yyyy") : "Vælg slutdato"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -967,9 +978,9 @@ export default function MessagesPage() {
                       <Button type="button" variant="outline" onClick={() => { setExpiresDate(undefined); setExpiresTime("") }} className="px-3">✕</Button>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">Lad stå tom for at beholde beskeden på ubestemt tid</p>
                 </div>
-              )}
+                <p className="text-xs text-muted-foreground">Lad felterne stå tomme for visning uden tidsstyring</p>
+              </div>
             </div>
 
             {/* Repeat / recurrence */}
@@ -1016,8 +1027,12 @@ export default function MessagesPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-border/50 pt-4">
-              <button type="button" onClick={resetForm} className="rounded-xl px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <div className="flex items-center justify-end gap-3 border-t border-border/50 pt-5">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-card/40 px-6 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:text-foreground"
+              >
                 Annuller
               </button>
               {editingId ? (

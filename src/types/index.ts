@@ -39,6 +39,7 @@ export type WeatherApiResponse = {
   updatedAt: string
   temperatureC: number | null
   humidityPct: number | null
+  windMs: number | null
   windKmh: number | null
   condition: string
   symbolCode?: string | null

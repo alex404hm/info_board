@@ -14,7 +14,7 @@ async function requireAdmin() {
 
 export async function GET() {
   if (!(await requireAdmin())) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    return NextResponse.json({ error: "Forbudt" }, { status: 403 })
   }
 
   const users = await db
@@ -34,24 +34,24 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   if (!(await requireAdmin())) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    return NextResponse.json({ error: "Forbudt" }, { status: 403 })
   }
 
   const { email, name, password, role } = await req.json()
 
   if (!email || !name || !password) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    return NextResponse.json({ error: "Manglende påkrævede felter" }, { status: 400 })
   }
   if (!["teacher", "admin"].includes(role)) {
-    return NextResponse.json({ error: "Invalid role" }, { status: 400 })
+    return NextResponse.json({ error: "Ugyldig rolle" }, { status: 400 })
   }
   if (password.length < 10) {
-    return NextResponse.json({ error: "Password must be at least 10 characters" }, { status: 400 })
+    return NextResponse.json({ error: "Adgangskoden skal være mindst 10 tegn" }, { status: 400 })
   }
 
   const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, email.toLowerCase()))
   if (existing.length > 0) {
-    return NextResponse.json({ error: "Email already in use" }, { status: 409 })
+    return NextResponse.json({ error: "E-mail er allerede i brug" }, { status: 409 })
   }
 
   const { hashPassword } = await import("better-auth/crypto")

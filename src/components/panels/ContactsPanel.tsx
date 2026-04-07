@@ -55,23 +55,14 @@ function Avatar({ contact, className }: { contact: Contact; className?: string }
 function ContactCard({ contact }: { contact: Contact }) {
   return (
     <article
-      className="relative flex flex-col rounded-2xl overflow-hidden transition-all hover:-translate-y-0.5"
+      className="flex flex-col rounded-2xl transition-all hover:-translate-y-0.5"
       style={{
         background: "var(--surface)",
         border: "1px solid var(--surface-border)",
         boxShadow: "0 4px 24px rgba(0,0,0,0.28)",
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 45%, color-mix(in srgb, var(--accent) 10%, transparent) 100%)",
-          opacity: 0.65,
-        }}
-      />
-
-      <div className="relative flex flex-col gap-5 p-5">
+      <div className="flex flex-col gap-5 p-5">
         <div className="flex items-center gap-4">
           <Avatar contact={contact} className="h-16 w-16 shrink-0 text-xl" />
           <div className="min-w-0">
@@ -100,7 +91,7 @@ function ContactCard({ contact }: { contact: Contact }) {
               style={{ background: "var(--surface-soft)", color: "var(--foreground-soft)", opacity: 0.5 }}
             >
               <Mail className="h-4 w-4 shrink-0" />
-              <span>Ingen email</span>
+              <span>Ingen e-mail</span>
             </div>
           )}
           {contact.phone ? (

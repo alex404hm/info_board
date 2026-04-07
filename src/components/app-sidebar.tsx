@@ -2,15 +2,14 @@
 
 import * as React from "react"
 import { PanelLeft, PanelLeftClose } from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
 import {
   LayoutDashboard,
   MessageSquare,
   CalendarDays,
   LayoutGrid,
-  Settings,
   Users,
   Coffee,
-  Wallet,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -29,15 +28,8 @@ const adminSections = [
   {
     label: "Administration",
     items: [
-      { title: "Dashboard",   url: "/admin/dashboard", icon: LayoutDashboard },
+      { title: "Oversigt",    url: "/admin/dashboard", icon: LayoutDashboard },
       { title: "Brugere",     url: "/admin/users",    icon: Users },
-    ],
-  },
-  {
-    label: "Konto",
-    items: [
-      { title: "Min konto", url: "/admin/settings", icon: Settings },
-      // Removed 2FA page, now in settings
     ],
   },
 ]
@@ -47,18 +39,11 @@ function buildInstructorSections() {
     {
       label: "Administrer",
       items: [
-        { title: "Dashboard",        url: "/admin/dashboard",  icon: LayoutDashboard },
+        { title: "Oversigt",         url: "/admin/dashboard",  icon: LayoutDashboard },
         { title: "Beskeder",         url: "/admin/messages",   icon: MessageSquare },
         { title: "Kalender",         url: "/admin/calendar",   icon: CalendarDays },
-        { title: "Display & Layout", url: "/admin/display",    icon: LayoutGrid },
+        { title: "Visning og layout", url: "/admin/display",   icon: LayoutGrid },
         { title: "Køkkenvagt",       url: "/admin/kokkenvagt", icon: Coffee },
-      ],
-    },
-    {
-      label: "Konto",
-      items: [
-        { title: "Min konto", url: "/admin/settings", icon: Settings },
-
       ],
     },
   ]
@@ -90,17 +75,50 @@ function SidebarLogo({ role }: { role: string }) {
 
   return (
     <div className="flex w-full items-center justify-between px-2 py-2.5">
-      {!collapsed && <TecLogo />}
+      <AnimatePresence mode="wait" initial={false}>
+        {!collapsed && (
+          <motion.div
+            key="sidebar-logo"
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <TecLogo />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <button
         onClick={toggleSidebar}
-        aria-label="Toggle Sidebar"
+        aria-label="Skift sidepanel"
         className={`inline-flex size-5 shrink-0 items-center justify-center rounded-[min(var(--radius-md),12px)] border border-transparent text-muted-foreground transition-all hover:bg-muted hover:text-foreground${collapsed ? " mx-auto" : ""}`}
       >
-        {collapsed
-          ? <PanelLeft className="size-5" aria-hidden="true" />
-          : <PanelLeftClose className="size-5" aria-hidden="true" />
-        }
-        <span className="sr-only">Toggle Sidebar</span>
+        <AnimatePresence mode="wait" initial={false}>
+          {collapsed ? (
+            <motion.span
+              key="open-icon"
+              initial={{ opacity: 0, scale: 0.8, rotate: -15 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.8, rotate: 15 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="inline-flex"
+            >
+              <PanelLeft className="size-5" aria-hidden="true" />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="close-icon"
+              initial={{ opacity: 0, scale: 0.8, rotate: 15 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.8, rotate: -15 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="inline-flex"
+            >
+              <PanelLeftClose className="size-5" aria-hidden="true" />
+            </motion.span>
+          )}
+        </AnimatePresence>
+        <span className="sr-only">Skift sidepanel</span>
       </button>
     </div>
   )

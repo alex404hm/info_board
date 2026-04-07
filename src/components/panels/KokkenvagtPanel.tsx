@@ -394,17 +394,6 @@ function MobileGuideSheet({
             />
           ))}
 
-          <div className="flex gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 mt-1">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Info className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Husk!</p>
-              <p className="mt-1 text-sm leading-relaxed text-foreground/70">
-                Et rent køkken giver gladere kolleger. Tak for din indsats!
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -636,17 +625,6 @@ export function KokkenvagtPanel() {
             />
           ))}
 
-          <div className="flex gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Info className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Husk!</p>
-              <p className="mt-1 text-sm leading-relaxed text-foreground/70">
-                Et rent køkken giver gladere kolleger. Tak for din indsats!
-              </p>
-            </div>
-          </div>
         </div>
 
       </div>

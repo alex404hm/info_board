@@ -10,6 +10,8 @@ import {
   CheckCircle,
   RefreshCw,
   Monitor,
+  Moon,
+  Sun,
   Globe,
   Smartphone,
   Trash2,
@@ -28,11 +30,12 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { useAdminTheme } from "../../_components/AdminThemeProvider"
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function parseBrowser(ua: string | null | undefined) {
-  if (!ua) return { browser: "Unknown browser", os: "Unknown OS" }
+  if (!ua) return { browser: "Ukendt browser", os: "Ukendt operativsystem" }
   const browser = ua.includes("Edg")
     ? "Edge"
     : ua.includes("Chrome")
@@ -52,7 +55,7 @@ function parseBrowser(ua: string | null | undefined) {
     ? "Android"
     : ua.includes("iPhone") || ua.includes("iPad")
     ? "iOS"
-    : "Unknown OS"
+    : "Ukendt operativsystem"
   return { browser, os }
 }
 
@@ -178,7 +181,9 @@ function SaveBtn({
   savedLabel?: string
 }) {
   return (
-    <button
+    <Button
+      type="button"
+      variant="ghost"
       onClick={onClick}
       disabled={loading || disabled}
       className={cn(
@@ -196,7 +201,7 @@ function SaveBtn({
       ) : (
         <><Save className="h-4 w-4" /> {label}</>
       )}
-    </button>
+    </Button>
   )
 }
 
@@ -220,6 +225,8 @@ type InitialUser = {
 // ── main component ─────────────────────────────────────────────────────────────
 
 export default function SettingsClient({ initialUser }: { initialUser: InitialUser }) {
+  const { theme, resolvedTheme, setTheme } = useAdminTheme()
+
   // Only used to detect which session is "current" in the sessions list
   const { data: sessionData } = useSession()
 
@@ -394,21 +401,23 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
 
   useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
-    title: "Du har ikke-gemte ændringer",
-    description: `Du har ikke-gemte ændringer. Hvis du forlader siden nu, går ændringerne tabt.`,
-    confirmText: "Forlad uden at gemme",
+    title: "Er du sikker på, at du vil forlade siden?",
+    description: "Hvis du forlader siden nu, mister du dine ændringer.",
+    confirmText: "Forlad",
     cancelText: "Bliv og gem",
   })
 
   const eyeBtn = (show: boolean, toggle: () => void) => (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon-xs"
       tabIndex={-1}
       onClick={toggle}
-      className="flex h-6 w-6 items-center justify-center text-muted hover:text-foreground transition-colors"
+      className="text-muted hover:text-foreground transition-colors"
     >
       {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-    </button>
+    </Button>
   )
 
   const otherSessions = sessions.filter((s) => !s.current)
@@ -447,25 +456,43 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
               className={cn(
-                "group relative block rounded-full transition-transform focus:outline-none focus:ring-2 focus:ring-ring/60 focus:ring-offset-2 focus:ring-offset-background",
-                avatarLoading && "cursor-wait opacity-80",
+                "group relative block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                avatarLoading ? "cursor-wait" : "cursor-pointer",
               )}
               aria-label="Upload profilbillede"
             >
-              <Avatar className="h-20 w-20 rounded-full">
+              <Avatar className="h-24 w-24 ring-2 ring-border/50 transition-all group-hover:ring-emerald-500/50">
                 {avatarPreview && (
                   <AvatarImage
                     src={avatarPreview}
                     alt="Profilbillede"
-                    className="rounded-full object-cover"
+                    className="object-cover"
                   />
                 )}
-                <AvatarFallback className="rounded-full bg-emerald-600 text-white text-xl font-bold">
+                <AvatarFallback className="bg-emerald-600 text-white text-2xl font-bold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-white transition-colors group-hover:bg-black/35 group-focus-visible:bg-black/35">
-                <Camera className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+
+              {/* Hover overlay */}
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full bg-black/0 transition-colors group-hover:bg-black/35 flex items-center justify-center"
+              >
+                <Camera className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+              </span>
+
+              {/* Camera badge – bottom right */}
+              <span className={cn(
+                "absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full",
+                "border-2 border-background bg-emerald-600 text-white shadow-lg",
+                "transition-transform group-hover:scale-110",
+              )}>
+                {avatarLoading ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5" />
+                )}
               </span>
             </button>
           </div>
@@ -473,7 +500,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
           <div className="min-w-0">
             <p className="font-semibold text-foreground truncate">{initialUser.name || "Bruger"}</p>
             <p className="text-sm text-muted truncate">{initialUser.email}</p>
-            <p className="mt-1 text-xs text-muted">Klik direkte pa billedet for at vaelge et nyt profilbillede.</p>
+            <p className="mt-1 text-xs text-muted">Klik på billedet for at vælge et nyt profilbillede.</p>
             {avatarSaved && (
               <span className="mt-1.5 flex items-center gap-1 text-xs text-emerald-400">
                 <CheckCircle className="h-3.5 w-3.5" /> Billede gemt
@@ -518,6 +545,47 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
             disabled={!name.trim() || name === initialUser.name}
           />
         </div>
+      </Card>
+
+      <Card>
+        <CardHeader
+          icon={Monitor}
+          iconColor="text-blue-400"
+          iconBg="bg-blue-400/10"
+          title="Udseende"
+          subtitle="Vælg tema for admin-panelet"
+        />
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant={theme === "light" ? "default" : "outline"}
+            onClick={() => setTheme("light")}
+            className="gap-2"
+          >
+            <Sun className="h-4 w-4" /> Lyst
+          </Button>
+          <Button
+            type="button"
+            variant={theme === "dark" ? "default" : "outline"}
+            onClick={() => setTheme("dark")}
+            className="gap-2"
+          >
+            <Moon className="h-4 w-4" /> Mørkt
+          </Button>
+          <Button
+            type="button"
+            variant={theme === "system" ? "default" : "outline"}
+            onClick={() => setTheme("system")}
+            className="gap-2"
+          >
+            <Monitor className="h-4 w-4" /> Systemtema
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted" suppressHydrationWarning>
+          Aktivt tema lige nu: {resolvedTheme === "dark" ? "Mørkt" : "Lyst"}
+          {theme === "system" ? " (styres af din enheds indstilling)." : "."}
+        </p>
       </Card>
 
       {/* ── Password ─────────────────────────────────────────────────── */}
@@ -611,7 +679,9 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
             </div>
           </div>
           {otherSessions.length > 0 && (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={handleRevokeAll}
               disabled={revoking === "__all__"}
               className={cn(
@@ -626,7 +696,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
                 <LogOut className="h-3.5 w-3.5" />
               )}
               Log ud alle andre
-            </button>
+            </Button>
           )}
         </div>
 
@@ -693,12 +763,15 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
                   </div>
 
                   {!s.current && (
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleRevoke(s.token)}
                       disabled={isRevoking}
                       title="Log ud denne session"
                       className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-all",
+                        "shrink-0 rounded-lg border transition-all",
                         "border-red-500/25 text-red-400 hover:bg-red-500/10",
                         isRevoking && "cursor-not-allowed opacity-40",
                       )}
@@ -707,7 +780,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
                         ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                         : <Trash2 className="h-3.5 w-3.5" />
                       }
-                    </button>
+                    </Button>
                   )}
                 </div>
               )

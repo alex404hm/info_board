@@ -24,9 +24,7 @@ export default function InfoBoardHome() {
           style={{
             position: "absolute",
             right: "1.5rem",
-            left: "unset",
-            bottom: 720,
-            top: "unset",
+            top: "1.25rem",
             zIndex: 10,
           }}
         >

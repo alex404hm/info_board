@@ -400,7 +400,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15 shrink-0">
               <Image src="/logo/dsb.svg" alt="DSB" width={20} height={20} className="h-full w-full rounded-[3px] object-fill" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Transport</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Afgange</p>
           </div>
           <div className="flex-1 space-y-1">
             {departures.length > 0 ? (
@@ -739,7 +739,7 @@ export function TopCarousel() {
             onClick={goToPrevious}
             className="absolute -left-20 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.10] active:scale-90"
             style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 6px 20px rgba(0,0,0,0.50)" }}
-            aria-label="Previous slide"
+            aria-label="Forrige slide"
           >
             <ChevronLeft className="h-6 w-6" style={{ color: C2 }} />
           </button>
@@ -777,7 +777,7 @@ export function TopCarousel() {
             onClick={goToNext}
             className="absolute -right-20 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.10] active:scale-90"
             style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 6px 20px rgba(0,0,0,0.50)" }}
-            aria-label="Next slide"
+            aria-label="Næste slide"
           >
             <ChevronRight className="h-6 w-6" style={{ color: C2 }} />
           </button>
@@ -796,7 +796,7 @@ export function TopCarousel() {
                 borderRadius: "9999px",
                 background: i === realIdx ? C1 : "rgba(255,255,255,0.2)",
               }}
-              aria-label={`Go to slide ${i + 1}`}
+              aria-label={`Gå til slide ${i + 1}`}
             />
           ))}
         </div>

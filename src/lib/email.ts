@@ -154,16 +154,16 @@ export async function sendInviteEmail(
   await transporter.sendMail({
     from: FROM,
     to,
-    subject: "You've been invited to TEC Info Board",
+    subject: "Du er blevet inviteret til TEC Info Board",
     html: emailLayout({
-      headerText: "You've been invited",
-      bodyText: `Click the button below to set up your account as a <strong>${roleLabel}</strong> on TEC Info Board.<br/>This invitation expires in 7 days.`,
-      linkText: "Accept Invitation",
+      headerText: "Du er inviteret",
+      bodyText: `Klik på knappen nedenfor for at oprette din konto som <strong>${roleLabel}</strong> på TEC Info Board.<br/>Denne invitation udløber om 7 dage.`,
+      linkText: "Accepter invitation",
       linkHref: link,
       primaryColor: "#10b981",
-      infoText: `Confirming this request will securely create your account using ${to}`,
+      infoText: `Bekræftelse af denne anmodning vil oprette din konto sikkert med ${to}`,
       highlightEmail: to,
-      footerText: "If you didn't expect this invitation, you can safely ignore this email.",
+      footerText: "Hvis du ikke forventede denne invitation, kan du roligt ignorere denne e-mail.",
     }),
   })
 
@@ -176,16 +176,16 @@ export async function sendResetPasswordEmail(to: string, url: string): Promise<v
   await transporter.sendMail({
     from: FROM,
     to,
-    subject: "Reset your TEC Info Board password",
+    subject: "Nulstil din TEC Info Board adgangskode",
     html: emailLayout({
-      headerText: "Reset your password",
-      bodyText: `Click the button below to reset your password.<br/>This link expires in 1 hour.`,
-      linkText: "Reset Password",
+      headerText: "Nulstil din adgangskode",
+      bodyText: `Klik på knappen nedenfor for at nulstille din adgangskode.<br/>Dette link udløber om 1 time.`,
+      linkText: "Nulstil adgangskode",
       linkHref: url,
       primaryColor: "#6366f1",
-      infoText: `This request was made for ${to}`,
+      infoText: `Denne anmodning blev foretaget for ${to}`,
       highlightEmail: to,
-      footerText: "If you didn't request a password reset, you can safely ignore this email.",
+      footerText: "Hvis du ikke har anmodet om en adgangskoderemsætning, kan du roligt ignorere denne e-mail.",
     }),
   })
 }

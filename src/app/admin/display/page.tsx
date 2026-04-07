@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 import {
   TILE_DEFINITIONS,
   DEFAULT_TILE_CONFIG,
@@ -81,7 +82,7 @@ function TilePreview({ config }: { config: TileConfig[] }) {
   if (count === 0) {
     return (
       <p className="py-6 text-center text-sm text-muted">
-        No tiles visible — enable at least one above.
+        Ingen paneler synlige — aktiver mindst ét ovenfor.
       </p>
     )
   }
@@ -156,16 +157,13 @@ export default function DisplayPage() {
     void load()
   }, [])
 
-  // Warn before leaving with unsaved changes
-  useEffect(() => {
-    if (!dirty) return
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-      e.returnValue = ""
-    }
-    window.addEventListener("beforeunload", handler)
-    return () => window.removeEventListener("beforeunload", handler)
-  }, [dirty])
+  useUnsavedChangesGuard({
+    enabled: dirty,
+    title: "Er du sikker på, at du vil forlade siden?",
+    description: "Hvis du forlader siden nu, mister du dine ændringer.",
+    confirmText: "Forlad",
+    cancelText: "Bliv og gem",
+  })
 
   function update(id: TileId, patch: Partial<TileConfig>) {
     setConfig((prev) =>
@@ -252,16 +250,16 @@ export default function DisplayPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Display &amp; Layout</h1>
+          <h1 className="text-2xl font-bold text-foreground">Visning og layout</h1>
           <p className="text-muted text-sm mt-1">
-            Control which navigation tiles appear on the info board and customise their labels and order.
+            Styr hvilke navigationsfelter der vises på infoskærmen, og tilpas deres navne og rækkefølge.
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <Button variant="outline" onClick={resetToDefaults}>
             <RotateCcw className="w-4 h-4" />
-            Reset
+            Nulstil
           </Button>
 
           <Button
@@ -273,17 +271,17 @@ export default function DisplayPage() {
             {saved ? (
               <>
                 <CheckCircle className="w-4 h-4" />
-                Saved
+                Gemt
               </>
             ) : saving ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Saving…
+                Gemmer…
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Save Changes
+                Gem ændringer
               </>
             )}
           </Button>
@@ -297,9 +295,9 @@ export default function DisplayPage() {
             <LayoutGrid className="w-4.5 h-4.5 text-violet-400" />
           </div>
           <div>
-            <h2 className="text-foreground font-semibold">Navigation Tiles</h2>
+            <h2 className="text-foreground font-semibold">Navigationsfelter</h2>
             <p className="text-muted text-xs mt-0.5">
-              {visibleCount} of {config.length} tiles visible · drag rows to reorder
+              {visibleCount} af {config.length} felter synlige · træk rækker for at ændre rækkefølge
             </p>
           </div>
         </div>
@@ -391,12 +389,12 @@ export default function DisplayPage() {
                     {cfg.visible ? (
                       <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
                         <Eye className="w-3.5 h-3.5" />
-                        Visible
+                        Synlig
                       </span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
                         <EyeOff className="w-3.5 h-3.5" />
-                        Hidden
+                        Skjult
                       </span>
                     )}
                     <Toggle

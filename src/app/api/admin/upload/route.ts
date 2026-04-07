@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const role = getUserRole(session)
 
   if (!session || !["admin", "teacher"].includes(role || "")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Ikke autoriseret" }, { status: 401 })
   }
 
   try {
@@ -31,19 +31,19 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File | null
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+      return NextResponse.json({ error: "Ingen fil angivet" }, { status: 400 })
     }
 
     if (!ALLOWED_TYPES.has(file.type)) {
       return NextResponse.json(
-        { error: "File type not allowed. Only images and PDFs are accepted." },
+        { error: "Filtypen er ikke tilladt. Kun billeder og PDF-filer accepteres." },
         { status: 400 }
       )
     }
 
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 10 MB." },
+        { error: "Filen er for stor. Maksimal størrelse er 10 MB." },
         { status: 400 }
       )
     }
@@ -62,6 +62,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: `/uploads/${filename}`, name: file.name })
   } catch (error) {
     console.error("Upload failed:", error)
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    return NextResponse.json({ error: "Upload mislykkedes" }, { status: 500 })
   }
 }
