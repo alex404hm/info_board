@@ -65,7 +65,7 @@ function emailLayout(opts: {
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td align="center" style="background:#0f1c30;padding:28px 32px;">
-                <img src="https://info.alexander-holm.com/logo.svg" alt="TEC" width="72" height="25" style="display:block;" />
+                <img src="https://info.alexander-holm.com/logo.svg" alt="TEC" width="72" height="25" style="display:block;filter:brightness(0) invert(1);" />
               </td>
             </tr>
           </table>

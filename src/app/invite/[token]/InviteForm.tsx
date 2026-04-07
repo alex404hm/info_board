@@ -115,9 +115,9 @@ export default function InviteForm({ token, email, role }: Props) {
         <Image
           src="/logo.svg"
           alt="TEC"
-          width={72}
-          height={26}
-          className="h-auto w-auto"
+          width={56}
+          height={20}
+          className="brightness-0 invert"
           priority
         />
       </div>

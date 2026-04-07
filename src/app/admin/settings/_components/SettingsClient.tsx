@@ -189,8 +189,8 @@ function SaveBtn({
       className={cn(
         "mt-4 flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all",
         saved
-          ? "bg-emerald-600/20 border border-emerald-600/40 text-emerald-400"
-          : "bg-emerald-600 hover:bg-emerald-500 text-white",
+          ? "bg-muted border border-border text-foreground"
+          : "bg-primary text-primary-foreground hover:bg-primary/85 hover:text-white",
         (loading || disabled) && "cursor-not-allowed opacity-50",
       )}
     >
@@ -293,6 +293,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
 
   // ── profile ──
   const [name, setName] = useState(initialUser.name ?? "")
+  const [committedName, setCommittedName] = useState(initialUser.name ?? "")
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
   const [profileError, setProfileError] = useState("")
@@ -305,6 +306,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
     if (error) {
       setProfileError(error.message ?? "Kunne ikke opdatere profil.")
     } else {
+      setCommittedName(name)
       setProfileSaved(true)
       setTimeout(() => setProfileSaved(false), 2500)
     }
@@ -395,7 +397,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
   }
 
   // ── unsaved guard ──
-  const profileDirty = name.trim() !== (initialUser.name ?? "").trim()
+  const profileDirty = name.trim() !== committedName.trim()
   const passwordDirty = Boolean(currentPw || newPw || confirmPw)
   const hasUnsavedChanges = profileDirty || passwordDirty
 
@@ -542,7 +544,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
             onClick={handleSaveProfile}
             loading={profileLoading}
             saved={profileSaved}
-            disabled={!name.trim() || name === initialUser.name}
+            disabled={!name.trim() || name.trim() === committedName.trim()}
           />
         </div>
       </Card>

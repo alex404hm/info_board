@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { PanelLeft, PanelLeftClose } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
 import {
   LayoutDashboard,
   MessageSquare,
@@ -23,6 +23,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+
+type AppSidebarUser = {
+  id: string
+  name: string | null
+  email: string
+  image?: string | null
+  role: string | null
+}
 
 const adminSections = [
   {
@@ -49,11 +57,8 @@ function buildInstructorSections() {
   ]
 }
 
-function SidebarLogo({ role }: { role: string }) {
-  const { state, toggleSidebar } = useSidebar()
-  const collapsed = state === "collapsed"
-
-  const TecLogo = () => (
+function TecLogo() {
+  return (
     <svg viewBox="0 0 98 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="TEC" className="h-5 w-auto shrink-0">
       <g clipPath="url(#clip0_sidebar)">
         <path d="M37.4531 33.1214H37.4831V33.2298H64.3249V30.3762H40.2834V3.37987H64.3291V0.527344H37.4883L37.4531 33.1214Z" fill="currentColor" />
@@ -72,67 +77,73 @@ function SidebarLogo({ role }: { role: string }) {
       </defs>
     </svg>
   )
+}
+
+function SidebarLogo() {
+  const { state, toggleSidebar } = useSidebar()
+  const collapsed = state === "collapsed"
 
   return (
-    <div className="flex w-full items-center justify-between px-2 py-2.5">
-      <AnimatePresence mode="wait" initial={false}>
+    <div className={`flex w-full items-center px-2 py-2.5 ${collapsed ? "justify-center" : "justify-between"}`}>
+      <AnimatePresence initial={false}>
         {!collapsed && (
           <motion.div
-            key="sidebar-logo"
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            key="tec-logo"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
+            className="overflow-hidden"
           >
             <TecLogo />
           </motion.div>
         )}
       </AnimatePresence>
-      <button
+      <motion.button
         onClick={toggleSidebar}
         aria-label="Skift sidepanel"
-        className={`inline-flex size-5 shrink-0 items-center justify-center rounded-[min(var(--radius-md),12px)] border border-transparent text-muted-foreground transition-all hover:bg-muted hover:text-foreground${collapsed ? " mx-auto" : ""}`}
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        whileTap={{ scale: 0.88 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
       >
         <AnimatePresence mode="wait" initial={false}>
           {collapsed ? (
             <motion.span
               key="open-icon"
-              initial={{ opacity: 0, scale: 0.8, rotate: -15 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.8, rotate: 15 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex"
+              initial={{ opacity: 0, rotate: -15 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              exit={{ opacity: 0, rotate: 15 }}
+              transition={{ duration: 0.15 }}
             >
-              <PanelLeft className="size-5" aria-hidden="true" />
+              <PanelLeft className="size-4" aria-hidden="true" />
             </motion.span>
           ) : (
             <motion.span
               key="close-icon"
-              initial={{ opacity: 0, scale: 0.8, rotate: 15 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.8, rotate: -15 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex"
+              initial={{ opacity: 0, rotate: 15 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              exit={{ opacity: 0, rotate: -15 }}
+              transition={{ duration: 0.15 }}
             >
-              <PanelLeftClose className="size-5" aria-hidden="true" />
+              <PanelLeftClose className="size-4" aria-hidden="true" />
             </motion.span>
           )}
         </AnimatePresence>
         <span className="sr-only">Skift sidepanel</span>
-      </button>
+      </motion.button>
     </div>
   )
 }
 
-export function AppSidebar({ user, ...props }: { user: any } & React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user, ...props }: { user: AppSidebarUser } & React.ComponentProps<typeof Sidebar>) {
   const sections = user.role === "admin" ? adminSections : buildInstructorSections()
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" className="border-r border-border/60" {...props}>
+    <Sidebar collapsible="icon" variant="sidebar" className="overflow-hidden" {...props}>
       <SidebarHeader className="h-16 border-b border-border/60 justify-center">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarLogo role={user.role} />
+            <SidebarLogo />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

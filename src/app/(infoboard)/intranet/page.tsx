@@ -1,6 +1,5 @@
 import { SectionPageShell } from "@/components/SectionPageShell"
-import { IntranetPanel } from "@/components/panels/IntranetPanel"
-import { INTRANET_SECTIONS } from "@/lib/intranet-static"
+import { IntranetOnePage } from "@/components/panels/IntranetOnePage"
 
 export default function IntranetPage() {
   return (
@@ -8,7 +7,7 @@ export default function IntranetPage() {
       title="Intranet"
       subtitle="Løn, befordring, læreplads og rettigheder for lærlinge"
     >
-      <IntranetPanel sections={INTRANET_SECTIONS} />
+      <IntranetOnePage />
     </SectionPageShell>
   )
 }

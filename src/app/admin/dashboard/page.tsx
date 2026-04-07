@@ -6,7 +6,6 @@ import { getUserRole } from "@/lib/session-role"
 import { headers } from "next/headers"
 import {
   MessageSquare, Users, ArrowRight,
-  Settings, LayoutGrid,
   ShieldCheck, TrendingUp, TrendingDown, Minus,
 } from "lucide-react"
 import { ChartBarInteractive } from "@/components/chart-bar-interactive"
@@ -149,18 +148,16 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8 w-full">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {greeting}, {name.split(" ")[0]}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isAdmin ? "Administrator" : "Instruktør"} · Infoskærm kontrolpanel
-          </p>
-        </div>
+      <div className="flex flex-col items-center text-center gap-1">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          {greeting}, {name.split(" ")[0]}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isAdmin ? "Administrator" : "Instruktør"} · Infoskærm kontrolpanel
+        </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-3">
+      <div className="grid w-full gap-3 md:grid-cols-3">
         <StatCard
           label="Aktive beskeder"
           value={activeMessages?.count ?? 0}
@@ -168,7 +165,7 @@ export default async function AdminDashboardPage() {
           iconColor="text-blue-400"
           iconBg="bg-blue-400/10"
           delta={<Delta thisWeek={msgThisWeek} lastWeek={msgLastWeek} />}
-          className="flex-1 min-w-[200px] max-w-[280px]"
+          className="w-full"
         />
         <StatCard
           label="Beskeder i alt"
@@ -177,7 +174,7 @@ export default async function AdminDashboardPage() {
           iconColor="text-sky-400"
           iconBg="bg-sky-400/10"
           sub="oprettede beskeder"
-          className="flex-1 min-w-[200px] max-w-[280px]"
+          className="w-full"
         />
         {isAdmin ? (
           <StatCard
@@ -187,7 +184,7 @@ export default async function AdminDashboardPage() {
             iconColor="text-violet-400"
             iconBg="bg-violet-400/10"
             sub="registrerede konti"
-            className="flex-1 min-w-[200px] max-w-[280px]"
+            className="w-full"
           />
         ) : (
           <StatCard
@@ -197,43 +194,13 @@ export default async function AdminDashboardPage() {
             iconColor="text-blue-400"
             iconBg="bg-blue-400/10"
             sub="Begrænset adgang"
-            className="flex-1 min-w-[200px] max-w-[280px]"
+            className="w-full"
           />
         )}
       </div>
 
       <ChartBarInteractive days={30} />
 
-      {isAdmin && (
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Administration
-          </h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <NavCard
-              href="/admin/users"
-              icon={Users}
-              label="Brugere"
-              description="Inviter og administrer brugere"
-              accent="#a78bfa"
-            />
-            <NavCard
-              href="/admin/display"
-              icon={LayoutGrid}
-              label="Display & Layout"
-              description="Konfigurer paneler og navigation"
-              accent="#38bdf8"
-            />
-            <NavCard
-              href="/admin/settings"
-              icon={Settings}
-              label="Min konto"
-              description="Profil, adgangskode og sessioner"
-              accent="#94a3b8"
-            />
-          </div>
-        </section>
-      )}
     </div>
   )
 }

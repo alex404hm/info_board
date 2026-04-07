@@ -15,6 +15,17 @@ import { YellowStickyNote } from "@/components/YellowStickyNote"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import { AdminCreateButton } from "../_components/AdminCreateButton"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 interface Message {
@@ -451,6 +462,8 @@ export default function MessagesPage() {
   const [showBulkExtend, setShowBulkExtend] = useState(false)
   const bulkExtendRef = useRef<HTMLDivElement>(null)
   const confirmDialog = useConfirmDialog()
+  const [deleteMessage, setDeleteMessage] = useState<Message | null>(null)
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!showBulkExtend) return
@@ -699,23 +712,26 @@ export default function MessagesPage() {
     } catch { showToast("error", "Netværksfejl — prøv igen") }
   }
 
-  async function handleDelete(id: string) {
-    const ok = await confirmDialog({
-      title: "Slet besked?",
-      description: "Denne handling kan ikke fortrydes.",
-      confirmText: "Slet besked",
-      cancelText: "Annuller",
-      tone: "danger",
-    })
-    if (!ok) return
+  function handleDelete(id: string) {
+    setDeleteMessage(messages.find((m) => m.id === id) ?? null)
+  }
+
+  async function doDeleteMessage() {
+    if (!deleteMessage) return
+    const id = deleteMessage.id
+    setDeletingMessageId(id)
     try {
       const res = await fetch(`/api/messages/${id}`, { method: "DELETE" })
       if (res.ok) {
         showToast("success", "Besked slettet")
+        setDeleteMessage(null)
         broadcastUpdate()
         void fetchMessages()
+      } else {
+        showToast("error", "Fejl ved sletning")
       }
     } catch { showToast("error", "Netværksfejl — prøv igen") }
+    setDeletingMessageId(null)
   }
 
   async function handleExtendExpiry(id: string, days: number) {
@@ -859,7 +875,7 @@ export default function MessagesPage() {
               <Button
                 variant="outline"
                 onClick={resetForm}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold"
               >
                 <X className="h-4 w-4" />
                 Annuller
@@ -1031,7 +1047,7 @@ export default function MessagesPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-card/40 px-6 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:text-foreground"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-6 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:text-foreground"
               >
                 Annuller
               </button>
@@ -1229,6 +1245,30 @@ export default function MessagesPage() {
           </button>
         </div>
       )}
+
+      <AlertDialog open={!!deleteMessage} onOpenChange={(open) => !open && setDeleteMessage(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogMedia className="mx-auto bg-destructive/10 text-destructive">
+              <Trash2 className="h-5 w-5" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Slet besked?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Er du sikker på, at du vil slette beskeden <strong className="font-semibold text-foreground">{deleteMessage?.title}</strong>? Handlingen kan ikke fortrydes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingMessageId === deleteMessage?.id}>Annuller</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deletingMessageId === deleteMessage?.id}
+              onClick={() => { void doDeleteMessage() }}
+            >
+              {deletingMessageId === deleteMessage?.id ? "Sletter..." : "Slet"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -508,6 +508,14 @@
     box-shadow: none;
   }
 
+  /* ── Remove sidebar/content seam on admin pages (all admin themes) ── */
+  .admin-theme [data-slot="sidebar-container"][data-side="left"] {
+    border-right: none;
+  }
+  .admin-theme [data-slot="sidebar-container"][data-side="right"] {
+    border-left: none;
+  }
+
   /* ── Admin system theme fallback (pre-hydration, no flash) ── */
   @media (prefers-color-scheme: light) {
     .admin-theme:not(.light):not(.dark) [data-slot="sidebar-container"][data-side="left"] {
@@ -1001,6 +1009,60 @@
     background: lab(95% 0 0) !important;
   }
 
+  /* ── Admin alert dialogs: remove visible white seams/lines ── */
+  body:has(.admin-theme) [data-slot="alert-dialog-content"] {
+    --tw-ring-color: transparent;
+    border-color: transparent;
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-overlay"] {
+    background: rgba(0, 0, 0, 0.55);
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-content"] {
+    background: oklch(0.24 0 0);
+    color: oklch(0.985 0 0);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-title"] {
+    color: oklch(0.985 0 0);
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-media"] {
+    background: oklch(0.34 0.06 24 / 0.42);
+    border: 1px solid oklch(0.58 0.18 25 / 0.42);
+    color: oklch(0.78 0.18 25);
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-description"] {
+    color: oklch(0.78 0 0);
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-description"] strong {
+    color: oklch(0.985 0 0);
+  }
+  body:has(.admin-theme) [data-slot="alert-dialog-footer"] {
+    border-top: none;
+    background: transparent;
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-cancel"] {
+    border-color: oklch(1 0 0 / 14%);
+    background: oklch(0.29 0 0);
+    color: oklch(0.985 0 0);
+  }
+  body:has(.admin-theme:not(.light)) [data-slot="alert-dialog-cancel"]:hover {
+    background: oklch(0.33 0 0);
+    color: oklch(0.985 0 0);
+  }
+  body:has(.admin-theme) [data-slot="alert-dialog-action"][data-variant="destructive"] {
+    border-color: transparent !important;
+    background: oklch(0.637 0.237 25.331) !important;
+    color: #fff !important;
+  }
+  body:has(.admin-theme) [data-slot="alert-dialog-action"][data-variant="destructive"]:hover {
+    background: oklch(0.577 0.245 27.325) !important;
+    color: #fff !important;
+  }
+  body:has(.admin-theme) .confirm-dialog-footer {
+    border-top: none;
+    background: transparent;
+  }
+
   /* ── react-phone-number-input overrides ─────────────────────────────── */
   .PhoneInput {
     display: contents;
@@ -1114,11 +1176,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --chart-1: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);

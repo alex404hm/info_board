@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { createPortal } from "react-dom"
+import { useState, useEffect, useCallback } from "react"
 import {
   Users,
   Plus,
@@ -16,9 +15,16 @@ import {
   ChevronDown,
   Send,
   Clock,
+  Check,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type User = {
   id: string
@@ -36,19 +42,11 @@ const ROLES = [
     value: "teacher",
     label: "Instruktør",
     icon: BookOpen,
-    color: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
-    activeBg: "bg-blue-500/15",
   },
   {
     value: "admin",
     label: "Administrator",
     icon: Shield,
-    color: "text-violet-400",
-    bg: "bg-violet-500/10",
-    border: "border-violet-500/20",
-    activeBg: "bg-violet-500/15",
   },
 ]
 
@@ -61,103 +59,48 @@ function RoleDropdown({
   disabled: boolean
   onChange: (role: string) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-
   const current = ROLES.find((r) => r.value === value) ?? ROLES[0]
   const Icon = current.icon
 
-  function handleToggle() {
-    if (!open && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setMenuStyle({
-        position: "fixed",
-        top: rect.bottom + 6,
-        right: window.innerWidth - rect.right,
-      })
-    }
-    setOpen((o) => !o)
-  }
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node) &&
-        !(e.target as Element).closest("[data-role-menu]")
-      ) {
-        setOpen(false)
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [open])
-
-  const menu = open ? (
-    <div
-      data-role-menu
-      style={menuStyle}
-      className="z-[9999] w-36 overflow-hidden rounded-xl border border-border/60 bg-[color:var(--surface)] shadow-xl"
-    >
-      {ROLES.map((role) => {
-        const RIcon = role.icon
-        const isActive = role.value === value
-        return (
-          <Button
-            key={role.value}
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setOpen(false)
-              if (role.value !== value) onChange(role.value)
-            }}
-            className={cn(
-              "flex w-full items-center gap-2 px-3 py-2.5 text-xs font-medium transition-colors",
-              isActive
-                ? cn(role.activeBg, role.color)
-                : "text-muted hover:bg-[color:var(--surface-soft)] hover:text-foreground"
-            )}
-          >
-            <RIcon className={cn("h-3.5 w-3.5", isActive ? role.color : "")} />
-            {role.label}
-            {isActive && (
-              <CheckCircle className={cn("ml-auto h-3 w-3", role.color)} />
-            )}
-          </Button>
-        )
-      })}
-    </div>
-  ) : null
-
   return (
-    <div ref={wrapperRef} className="relative">
-      <Button
-        ref={buttonRef}
-        type="button"
-        variant="ghost"
-        disabled={disabled}
-        onClick={handleToggle}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all",
-          current.bg, current.border, current.color,
-          "hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-transparent",
-          open && "ring-2",
-          disabled && "opacity-50 cursor-not-allowed pointer-events-none"
-        )}
-      >
-        {disabled ? (
-          <RefreshCw className="h-3 w-3 animate-spin" />
-        ) : (
-          <Icon className="h-3 w-3" />
-        )}
-        {current.label}
-        <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform", open && "rotate-180")} />
-      </Button>
-
-      {typeof window !== "undefined" && menu ? createPortal(menu, document.body) : null}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={disabled}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary text-secondary-foreground px-2.5 py-1.5 text-xs font-semibold transition-all hover:bg-secondary/70",
+            disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+          )}
+        >
+          {disabled ? (
+            <RefreshCw className="h-3 w-3 animate-spin" />
+          ) : (
+            <Icon className="h-3 w-3" />
+          )}
+          {current.label}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        {ROLES.map((role) => {
+          const RIcon = role.icon
+          const isActive = role.value === value
+          return (
+            <DropdownMenuItem
+              key={role.value}
+              onClick={() => { if (role.value !== value) onChange(role.value) }}
+              className="flex items-center gap-2 text-xs font-medium cursor-pointer"
+            >
+              <RIcon className="h-3.5 w-3.5" />
+              {role.label}
+              {isActive && <Check className="ml-auto h-3 w-3" />}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -571,11 +514,13 @@ export default function UsersPage() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="admin-panel mx-4 w-full max-w-sm p-6">
-            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10">
-              <Trash2 className="h-5 w-5 text-red-400" />
+            <div className="mb-4 flex flex-col items-center gap-3 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10">
+                <Trash2 className="h-6 w-6 text-red-400" />
+              </div>
             </div>
-            <h3 className="mb-1 font-semibold text-foreground">Slet bruger?</h3>
-            <p className="mb-5 text-sm text-muted">
+            <h3 className="mb-1 text-center font-semibold text-foreground">Slet bruger?</h3>
+            <p className="mb-5 text-center text-sm text-muted">
               Dette vil permanent slette brugeren og alle deres sessioner. Dette kan ikke fortrydes.
             </p>
             <div className="flex gap-3">

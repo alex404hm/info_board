@@ -48,7 +48,7 @@ export const auth = betterAuth({
     max: 10,
     storage: "memory",
     customRules: {
-      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-in/email": { window: 1800, max: 5 },
     },
   },
   plugins: [admin()],
