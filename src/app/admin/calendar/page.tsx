@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
-  Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon, Plus,
+  Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon, Plus, Loader2,
 } from "lucide-react"
 import { format } from "date-fns"
 import { da } from "date-fns/locale"
@@ -137,28 +137,89 @@ export default function CalendarAdminPage() {
   const [formBaseline, setFormBaseline] = useState<FormSnapshot>(EMPTY_FORM)
 
   // Address autocomplete
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
+  const [locationApiSuggestions, setLocationApiSuggestions] = useState<string[]>([])
   const [locationOpen, setLocationOpen] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const locationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const locationRequestRef = useRef(0)
   const locationWrapperRef = useRef<HTMLDivElement>(null)
+  const locationInputRef = useRef<HTMLInputElement>(null)
+
+  const recentLocationSuggestions = useMemo(() => {
+    const uniq = new Set<string>()
+    for (const entry of entries) {
+      const item = entry.location?.trim()
+      if (item) uniq.add(item)
+      if (uniq.size >= 8) break
+    }
+    return Array.from(uniq)
+  }, [entries])
+
+  // Recent suggestions filtered by current input
+  const filteredRecent = useMemo(() => {
+    const q = location.toLowerCase().trim()
+    if (!q) return recentLocationSuggestions
+    return recentLocationSuggestions.filter((s) => s.toLowerCase().includes(q))
+  }, [location, recentLocationSuggestions])
+
+  // API results that don't duplicate recent
+  const apiNotInRecent = useMemo(
+    () => locationApiSuggestions.filter((s) => !filteredRecent.includes(s)),
+    [locationApiSuggestions, filteredRecent],
+  )
+
+  // Flat list for keyboard navigation
+  const allSuggestions = useMemo(
+    () => [...filteredRecent, ...apiNotInRecent],
+    [filteredRecent, apiNotInRecent],
+  )
+
+  const loadLocationSuggestions = useCallback(async (query: string) => {
+    const q = query.trim()
+
+    if (q.length < 2) {
+      setLocationLoading(false)
+      setLocationApiSuggestions([])
+      return
+    }
+
+    const reqId = ++locationRequestRef.current
+    setLocationLoading(true)
+
+    try {
+      const res = await fetch(
+        `https://api.dataforsyningen.dk/autocomplete?type=adresse&stormodtagerpostnumre=true&supplerendebynavn=true&fuzzy=true&q=${encodeURIComponent(q)}&startfra=vejnavn`
+      )
+      if (!res.ok || reqId !== locationRequestRef.current) return
+      const data = (await res.json()) as { tekst: string }[]
+      if (reqId === locationRequestRef.current) {
+        setLocationApiSuggestions(data.slice(0, 6).map((d) => d.tekst))
+        setActiveSuggestionIndex(-1)
+      }
+    } catch {
+      if (reqId === locationRequestRef.current) setLocationApiSuggestions([])
+    } finally {
+      if (reqId === locationRequestRef.current) setLocationLoading(false)
+    }
+  }, [])
+
+  const selectLocationSuggestion = useCallback((value: string) => {
+    setLocation(value)
+    setLocationOpen(false)
+    setLocationApiSuggestions([])
+    setActiveSuggestionIndex(-1)
+  }, [])
 
   useEffect(() => {
     if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current)
-    const q = location.trim()
-    if (q.length < 2) { setLocationSuggestions([]); setLocationOpen(false); return }
+
     locationDebounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://api.dataforsyningen.dk/autocomplete?type=adresse&stormodtagerpostnumre=true&supplerendebynavn=true&fuzzy=true&q=${encodeURIComponent(q)}&startfra=vejnavn`
-        )
-        if (!res.ok) return
-        const data = (await res.json()) as { tekst: string }[]
-        setLocationSuggestions(data.slice(0, 8).map((d) => d.tekst))
-        setLocationOpen(true)
-      } catch { /* ignore */ }
+      await loadLocationSuggestions(location)
     }, 250)
+
     return () => { if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current) }
-  }, [location])
+  }, [location, loadLocationSuggestions])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -244,6 +305,10 @@ export default function CalendarAdminPage() {
     setEndTime("10:00")
     setLocation("")
     setDescription("")
+    setLocationApiSuggestions([])
+    setLocationOpen(false)
+    setLocationLoading(false)
+    setActiveSuggestionIndex(-1)
     setEditingId(null)
     setShowForm(false)
     setFormBaseline(EMPTY_FORM)
@@ -277,6 +342,10 @@ export default function CalendarAdminPage() {
     setEndTime(et)
     setLocation(entry.location ?? "")
     setDescription(entry.description ?? "")
+    setLocationApiSuggestions([])
+    setLocationOpen(false)
+    setLocationLoading(false)
+    setActiveSuggestionIndex(-1)
     setEditingId(entry.id)
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -432,7 +501,7 @@ export default function CalendarAdminPage() {
           <Button
             variant="outline"
             onClick={resetForm}
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold"
           >
             <X className="h-4 w-4" />
             Annuller
@@ -580,7 +649,7 @@ export default function CalendarAdminPage() {
             </div>
 
             {/* Dates + Times */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <CalendarDays className="h-3 w-3" /> Startdato <span className="text-destructive">*</span>
@@ -679,36 +748,127 @@ export default function CalendarAdminPage() {
               </label>
               <div ref={locationWrapperRef} className="relative">
                 <input
+                  ref={locationInputRef}
                   type="text"
                   value={location}
-                  onChange={(e) => { setLocation(e.target.value); setLocationOpen(true) }}
-                  onFocus={() => { if (locationSuggestions.length > 0) setLocationOpen(true) }}
-                  placeholder="Fx lokale, adresse…"
-                  className="h-10 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30"
+                  onChange={(e) => {
+                    setLocation(e.target.value)
+                    setLocationOpen(true)
+                    setActiveSuggestionIndex(-1)
+                  }}
+                  onFocus={() => {
+                    setLocationOpen(true)
+                    void loadLocationSuggestions(location)
+                  }}
+                  onKeyDown={(e) => {
+                    if (!locationOpen || allSuggestions.length === 0) return
+
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault()
+                      setActiveSuggestionIndex((prev) => (prev + 1) % allSuggestions.length)
+                      return
+                    }
+
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault()
+                      setActiveSuggestionIndex((prev) =>
+                        prev <= 0 ? allSuggestions.length - 1 : prev - 1
+                      )
+                      return
+                    }
+
+                    if (e.key === "Enter" && activeSuggestionIndex >= 0) {
+                      e.preventDefault()
+                      selectLocationSuggestion(allSuggestions[activeSuggestionIndex])
+                      return
+                    }
+
+                    if (e.key === "Escape") {
+                      setLocationOpen(false)
+                    }
+                  }}
+                  placeholder="Fx lokale eller adresse…"
+                  className={`h-10 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30 ${location ? "pr-8" : ""}`}
                   autoComplete="off"
                 />
-                {locationOpen && locationSuggestions.length > 0 && (
+                {/* Clear button */}
+                {location && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      setLocation("")
+                      setLocationApiSuggestions([])
+                      setLocationOpen(true)
+                      locationInputRef.current?.focus()
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    title="Ryd"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {locationOpen && (locationLoading || filteredRecent.length > 0 || apiNotInRecent.length > 0) && (
                   <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-xl border border-border bg-popover py-1 shadow-lg">
-                    {locationSuggestions.map((s) => (
-                      <li key={s}>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-sm transition-colors hover:bg-muted/60"
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            setLocation(s)
-                            setLocationOpen(false)
-                            setLocationSuggestions([])
-                          }}
-                        >
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          {s}
-                        </button>
+                    {/* Recent locations section */}
+                    {filteredRecent.length > 0 && (
+                      <>
+                        <li className="px-3.5 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                          Seneste
+                        </li>
+                        {filteredRecent.map((s, i) => (
+                          <li key={`recent-${s}`}>
+                            <button
+                              type="button"
+                              className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-sm transition-colors hover:bg-muted/60 ${i === activeSuggestionIndex ? "bg-muted/60" : ""}`}
+                              onMouseDown={(e) => { e.preventDefault(); selectLocationSuggestion(s) }}
+                            >
+                              <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+                              {s}
+                            </button>
+                          </li>
+                        ))}
+                      </>
+                    )}
+                    {/* Separator */}
+                    {filteredRecent.length > 0 && apiNotInRecent.length > 0 && (
+                      <li className="my-1 border-t border-border/40" />
+                    )}
+                    {/* API address section */}
+                    {apiNotInRecent.length > 0 && (
+                      <>
+                        <li className="px-3.5 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                          Adresser
+                        </li>
+                        {apiNotInRecent.map((s, j) => (
+                          <li key={`api-${s}`}>
+                            <button
+                              type="button"
+                              className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-sm transition-colors hover:bg-muted/60 ${filteredRecent.length + j === activeSuggestionIndex ? "bg-muted/60" : ""}`}
+                              onMouseDown={(e) => { e.preventDefault(); selectLocationSuggestion(s) }}
+                            >
+                              <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              {s}
+                            </button>
+                          </li>
+                        ))}
+                      </>
+                    )}
+                    {/* Loading indicator */}
+                    {locationLoading && (
+                      <li className="px-3.5 py-2 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Søger adresser...
+                        </span>
                       </li>
-                    ))}
+                    )}
                   </ul>
                 )}
               </div>
+              <p className="text-[11px] text-muted-foreground/70">
+                Tip: Du kan vælge en adresse fra listen eller skrive et lokale, fx &ldquo;B-204&rdquo;.
+              </p>
             </div>
 
             {/* Description */}
@@ -847,21 +1007,20 @@ export default function CalendarAdminPage() {
       )}
 
       <AlertDialog open={!!deleteEntry} onOpenChange={(open) => !open && setDeleteEntry(null)}>
-        <AlertDialogContent size="sm" className="border-border/60 bg-popover text-foreground dark:bg-[lab(7.78201%_-.0000149012_0)]">
+        <AlertDialogContent size="sm">
           <AlertDialogHeader className="text-center">
-            <AlertDialogMedia className="mx-auto bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+            <AlertDialogMedia className="mx-auto bg-destructive/10 text-destructive">
               <Trash2 className="h-5 w-5" />
             </AlertDialogMedia>
-            <AlertDialogTitle className="text-foreground">Slet begivenhed?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
+            <AlertDialogTitle>Slet begivenhed?</AlertDialogTitle>
+            <AlertDialogDescription>
               Er du sikker på, at du vil slette begivenheden <strong className="font-semibold text-foreground">{deleteEntry?.title}</strong>? Handlingen kan ikke fortrydes.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="grid grid-cols-2 gap-2.5 bg-transparent pt-2">
-            <AlertDialogCancel variant="outline" className="h-10 rounded-lg border-border/70 bg-muted/50 text-foreground hover:bg-muted" disabled={deletingEntryId === deleteEntry?.id}>Annuller</AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingEntryId === deleteEntry?.id}>Annuller</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              className="h-10 rounded-lg font-semibold text-destructive-foreground"
               disabled={deletingEntryId === deleteEntry?.id}
               onClick={() => { void confirmDeleteEntry() }}
             >

@@ -94,7 +94,7 @@ export function CanteenGrid() {
               key={cat.slug}
               onClick={() => router.push(`/kantine/${cat.slug}`)}
               className="group flex flex-col overflow-hidden rounded-2xl text-left transition-all duration-200 ease-out active:scale-[0.97]"
-              style={{ background: "var(--surface)", border: "1px solid var(--surface-border)" }}
+              style={{ background: "var(--surface)", border: "1px solid transparent" }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement
                 el.style.background = "var(--surface-soft)"
@@ -104,7 +104,7 @@ export function CanteenGrid() {
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLElement
                 el.style.background = "var(--surface)"
-                el.style.borderColor = "var(--surface-border)"
+                el.style.borderColor = "transparent"
                 el.style.boxShadow = "none"
               }}
             >
@@ -121,7 +121,7 @@ export function CanteenGrid() {
                   style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(8,12,22,0.6) 100%)" }}
                 />
               </div>
-              <div className="px-4 py-3.5" style={{ borderTop: "1px solid var(--surface-border)" }}>
+              <div className="px-4 py-3.5">
                 <p className="truncate text-base font-bold" style={{ color: "var(--foreground)" }}>{cat.label}</p>
                 {countFor[cat.slug] != null && (
                   <p className="mt-0.5 text-xs" style={{ color: "var(--foreground-muted)" }}>{countFor[cat.slug]} varer</p>
@@ -146,10 +146,10 @@ export function CanteenDetail({ slug }: { slug: string }) {
 
   const visibleItems = useMemo(() => {
     if (!data?.items || !cat) return []
-    const defined = new Set(CANTEEN_CATEGORIES.map(c => c.key))
+    const defined = new Set<string>(CANTEEN_CATEGORIES.map(c => c.key))
     let list = cat.slug === "diverse"
       ? data.items.filter(i => !defined.has(i.category) || i.category === "Diverse")
-      : data.items.filter(i => i.category === cat.key)
+      : data.items.filter(i => i.category === (cat.key as string))
     if (sortDir === "asc")  list = [...list].sort((a, b) => parsePrice(a.price) - parsePrice(b.price))
     if (sortDir === "desc") list = [...list].sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
     return list
@@ -188,7 +188,8 @@ export function CanteenDetail({ slug }: { slug: string }) {
         <div className="absolute inset-x-0 top-0 px-5 pt-4">
           <button
             onClick={() => router.push("/kantine")}
-            className="flex items-center gap-1.5 rounded-xl border border-white/25 bg-black/40 px-3.5 py-2 text-xs font-semibold text-white backdrop-blur-md transition-colors hover:bg-black/55 active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors active:scale-95"
+            style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Tilbage
@@ -206,12 +207,9 @@ export function CanteenDetail({ slug }: { slug: string }) {
 
       {/* Sort bar */}
       <div
-        className="flex shrink-0 items-center justify-between px-5 py-3 md:px-10"
-        style={{ borderBottom: "1px solid var(--surface-border)", background: "var(--surface-muted)" }}
+        className="flex shrink-0 items-center justify-end px-5 py-3 md:px-10"
+        style={{ background: "var(--surface-muted)" }}
       >
-        <p className="text-xs font-medium" style={{ color: "var(--foreground-muted)" }}>
-          {visibleItems.length === 0 ? "Ingen varer" : `${visibleItems.length} varer`}
-        </p>
         <button
           onClick={() => setSortDir(d => d === null ? "asc" : d === "asc" ? "desc" : null)}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors active:scale-95"
@@ -234,9 +232,15 @@ export function CanteenDetail({ slug }: { slug: string }) {
               <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>Ingen varer i dag</p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+            <div>
               {visibleItems.map((item, idx) => (
-                <div key={`${item.name}-${idx}`} className="flex items-center gap-4 py-3.5">
+                <div
+                  key={`${item.name}-${idx}`}
+                  className="flex items-center gap-4 py-3.5"
+                  style={{
+                    borderBottom: idx < visibleItems.length - 1 ? "1px solid var(--divider)" : "none",
+                  }}
+                >
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: PRICE_COLOR }} />
                   <span className="flex-1 text-sm font-medium leading-snug" style={{ color: "var(--foreground)" }}>
                     {item.name}

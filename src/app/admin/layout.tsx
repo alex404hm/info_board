@@ -32,23 +32,27 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const cookieStore = await cookies()
+
   const themeCookie = cookieStore.get("admin-theme")?.value
   const initialTheme =
     themeCookie === "light" || themeCookie === "dark" || themeCookie === "system"
       ? themeCookie
       : "system"
 
+  const sidebarCookie = cookieStore.get("sidebar_state")?.value
+  const defaultSidebarOpen = sidebarCookie !== "false"
+
   return (
     <>
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={defaultSidebarOpen}>
         <AdminThemeProvider initialTheme={initialTheme}>
           <AppSidebar user={user} />
-          <SidebarInset className="bg-background h-svh overflow-hidden">
+          <SidebarInset className="h-svh min-w-0 bg-background overflow-x-hidden">
             <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-card px-4">
   <AdminHeader user={user} />
             </header>
-            <main className="flex-1 overflow-auto px-4 py-8 sm:px-8 lg:px-12 scroll-smooth">
-              <div className="mx-auto w-full max-w-5xl">{children}</div>
+            <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto px-4 py-8 scroll-smooth sm:px-8 lg:px-12">
+              <div className="mx-auto min-w-0 w-full max-w-5xl">{children}</div>
             </main>
           </SidebarInset>
         </AdminThemeProvider>

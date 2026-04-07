@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Lock, ShieldAlert } from "lucide-react"
 import Image from "next/image"
 
 import { signIn, authClient } from "@/lib/auth-client"
@@ -10,12 +10,79 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+const MAX_ATTEMPTS = 5
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000 // 30 minutes
+
+function AdaptiveLogo() {
+  // Default false = black logo (safe for light backgrounds; admin login is always light)
+  const [isDark, setIsDark] = React.useState(false)
+
+  React.useEffect(() => {
+    const update = () => {
+      const html = document.documentElement
+      // Explicit theme class takes priority
+      if (html.classList.contains("dark")) { setIsDark(true); return }
+      if (html.classList.contains("light")) { setIsDark(false); return }
+      // Fall back to system preference
+      setIsDark(window.matchMedia("(prefers-color-scheme: dark)").matches)
+    }
+
+    update()
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    media.addEventListener("change", update)
+
+    // Watch for class changes on <html> (e.g. theme script applies dark class)
+    const observer = new MutationObserver(update)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+
+    return () => {
+      media.removeEventListener("change", update)
+      observer.disconnect()
+    }
+  }, [])
+
+  return (
+    <Image
+      src="/logo.svg"
+      alt="Logo"
+      width={96}
+      height={33}
+      priority
+      className={isDark ? "brightness-0 invert" : "brightness-0"}
+    />
+  )
+}
+
 /* ─── Shared page shell ──────────────────────────────────────────────────── */
 function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
       <div className="w-full max-w-sm">{children}</div>
     </div>
+  )
+}
+
+/* ─── Countdown display ──────────────────────────────────────────────────── */
+function Countdown({ unlockAt }: { unlockAt: number }) {
+  const [remaining, setRemaining] = useState(Math.max(0, unlockAt - Date.now()))
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const left = Math.max(0, unlockAt - Date.now())
+      setRemaining(left)
+      if (left === 0) clearInterval(interval)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [unlockAt])
+
+  const minutes = Math.floor(remaining / 60000)
+  const seconds = Math.floor((remaining % 60000) / 1000)
+
+  return (
+    <span className="font-mono font-semibold">
+      {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+    </span>
   )
 }
 
@@ -29,8 +96,37 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // Rate-limiting state
   const [attempts, setAttempts] = useState(0)
-  const tooManyAttempts = attempts >= 5
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
+  const [unlockCountdown, setUnlockCountdown] = useState(0)
+
+  // Progressive delay between attempts (ms): 0, 2s, 4s, 8s…
+  const attemptDelay = useRef(0)
+
+  const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil
+
+  // Unlock when countdown expires
+  useEffect(() => {
+    if (!lockoutUntil) return
+    const timeout = setTimeout(() => {
+      setLockoutUntil(null)
+      setAttempts(0)
+      attemptDelay.current = 0
+      setError("")
+    }, Math.max(0, lockoutUntil - Date.now()))
+    return () => clearTimeout(timeout)
+  }, [lockoutUntil])
+
+  // Keep countdown value in sync (so the button label updates)
+  useEffect(() => {
+    if (!lockoutUntil) return
+    const interval = setInterval(() => {
+      setUnlockCountdown(Math.max(0, lockoutUntil - Date.now()))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [lockoutUntil])
 
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotLoading, setForgotLoading] = useState(false)
@@ -38,9 +134,16 @@ export default function AdminLogin() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (tooManyAttempts) return
+    if (isLockedOut) return
+
     setError("")
     setLoading(true)
+
+    // Progressive delay
+    if (attemptDelay.current > 0) {
+      await new Promise((r) => setTimeout(r, attemptDelay.current))
+    }
+
     try {
       await signIn.email(
         { email: email.trim().toLowerCase(), password },
@@ -50,18 +153,38 @@ export default function AdminLogin() {
             router.refresh()
           },
           onError: (ctx) => {
-            setAttempts((n) => n + 1)
-            setError(
-              ctx.error.status === 429
-                ? "For mange forsøg. Vent venligst et øjeblik."
-                : "Ugyldig e-mail eller adgangskode.",
-            )
+            const newAttempts = attempts + 1
+            setAttempts(newAttempts)
+            setPassword("")
+
+            // Double delay each time: 0 → 2s → 4s → 8s → 16s
+            attemptDelay.current = attemptDelay.current === 0 ? 2000 : attemptDelay.current * 2
+
+            if (ctx.error.status === 429 || newAttempts >= MAX_ATTEMPTS) {
+              setLockoutUntil(Date.now() + LOCKOUT_DURATION_MS)
+              setError("")
+            } else {
+              const left = MAX_ATTEMPTS - newAttempts
+              setError(
+                left === 1
+                  ? "Forkert e-mail eller adgangskode. 1 forsøg tilbage."
+                  : `Forkert e-mail eller adgangskode. ${left} forsøg tilbage.`,
+              )
+            }
           },
         },
       )
     } catch {
-      setAttempts((n) => n + 1)
-      setError("Ugyldig e-mail eller adgangskode.")
+      const newAttempts = attempts + 1
+      setAttempts(newAttempts)
+      setPassword("")
+      attemptDelay.current = attemptDelay.current === 0 ? 2000 : attemptDelay.current * 2
+
+      if (newAttempts >= MAX_ATTEMPTS) {
+        setLockoutUntil(Date.now() + LOCKOUT_DURATION_MS)
+      } else {
+        setError(`Forkert e-mail eller adgangskode. ${MAX_ATTEMPTS - newAttempts} forsøg tilbage.`)
+      }
     } finally {
       setLoading(false)
     }
@@ -88,7 +211,7 @@ export default function AdminLogin() {
     return (
       <Layout>
         <div className="flex flex-col items-center gap-6 text-center">
-          <Image src="/logo.svg" alt="Logo" width={96} height={33} priority className="brightness-0 invert" />
+          <AdaptiveLogo />
           <div className="flex h-14 w-14 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10">
             <CheckCircle className="h-7 w-7 text-emerald-500" />
           </div>
@@ -118,7 +241,7 @@ export default function AdminLogin() {
       <Layout>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
-            <Image src="/logo.svg" alt="Logo" width={96} height={33} priority className="brightness-0 invert" />
+            <AdaptiveLogo />
             <h1 className="text-xl font-bold">Glemt adgangskode?</h1>
             <p className="text-sm text-muted-foreground">
               Indtast din e-mail, så sender vi dig et nulstillingslink.
@@ -182,14 +305,7 @@ export default function AdminLogin() {
           <div className="flex flex-col gap-6">
             {/* Logo + heading */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <Image
-                src="/logo.svg"
-                alt="Logo"
-                width={96}
-                height={33}
-                priority
-                className="brightness-0 invert"
-              />
+              <AdaptiveLogo />
               <h1 className="text-xl font-bold">Velkommen tilbage</h1>
               <p className="text-sm text-muted-foreground">
                 Log ind for at tilgå administrationspanelet.
@@ -209,7 +325,7 @@ export default function AdminLogin() {
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading || tooManyAttempts}
+                  disabled={loading || isLockedOut}
                   className="h-11 pl-9"
                 />
               </div>
@@ -239,7 +355,7 @@ export default function AdminLogin() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading || tooManyAttempts}
+                  disabled={loading || isLockedOut}
                   className="h-11 pl-9 pr-11"
                 />
                 <Button
@@ -255,22 +371,38 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            {/* Error */}
-            {(error || tooManyAttempts) && (
+            {/* Lockout banner */}
+            {isLockedOut && lockoutUntil && (
+              <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/8 px-3 py-3 text-sm text-destructive">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold">Kontoen er midlertidigt låst</p>
+                  <p className="text-xs text-destructive/80">
+                    For mange fejlede forsøg. Prøv igen om{" "}
+                    <Countdown unlockAt={lockoutUntil} />.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Per-attempt error */}
+            {!isLockedOut && error && (
               <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                {tooManyAttempts
-                  ? "For mange fejlede forsøg. Genindlæs siden for at prøve igen."
-                  : error}
+                {error}
               </p>
             )}
 
             <Button
               type="submit"
-              disabled={loading || tooManyAttempts}
+              disabled={loading || isLockedOut}
               size="lg"
               className="w-full"
             >
-              {loading ? "Logger ind…" : "Log ind"}
+              {loading
+                ? "Logger ind…"
+                : isLockedOut && lockoutUntil
+                  ? `Låst — ${Math.ceil(unlockCountdown / 60000)} min tilbage`
+                  : "Log ind"}
             </Button>
           </div>
         </form>

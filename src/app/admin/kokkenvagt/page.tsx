@@ -381,7 +381,7 @@ export default function KokkenvagtAdminPage() {
           <Button
             variant="outline"
             onClick={resetForm}
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold"
           >
             <X className="h-4 w-4" />
             Annuller

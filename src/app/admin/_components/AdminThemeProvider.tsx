@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react"
 
 type AdminTheme = "dark" | "light" | "system"
 type ResolvedAdminTheme = "dark" | "light"
@@ -12,7 +12,7 @@ const AdminThemeContext = createContext<{
   resolvedTheme: ResolvedAdminTheme
   setTheme: (nextTheme: AdminTheme) => void
   toggle: () => void
-}>({ theme: "dark", resolvedTheme: "dark", setTheme: () => {}, toggle: () => {} })
+}>({ theme: "system", resolvedTheme: "dark", setTheme: () => {}, toggle: () => {} })
 
 export function useAdminTheme() {
   return useContext(AdminThemeContext)
@@ -25,8 +25,11 @@ export function AdminThemeProvider({
   children: React.ReactNode
   initialTheme?: AdminTheme
 }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
 
   const [theme, setTheme] = useState<AdminTheme>(initialTheme)
   const [systemTheme, setSystemTheme] = useState<ResolvedAdminTheme>(() => {
@@ -49,27 +52,39 @@ export function AdminThemeProvider({
     return () => media.removeEventListener("change", apply)
   }, [])
 
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) {
+      try {
+        localStorage.setItem(STORAGE_KEY, "system")
+        document.cookie = `${STORAGE_KEY}=system;path=/;max-age=31536000;samesite=lax`
+      } catch {}
+    }
+  }, [])
+
   const resolvedTheme: ResolvedAdminTheme = theme === "system" ? systemTheme : theme
 
-  const persistTheme = (nextTheme: AdminTheme) => {
+  const persistTheme = useCallback((nextTheme: AdminTheme) => {
     try {
       localStorage.setItem(STORAGE_KEY, nextTheme)
       document.cookie = `${STORAGE_KEY}=${nextTheme};path=/;max-age=31536000;samesite=lax`
     } catch {}
-  }
+  }, [])
 
-  const setThemeAndPersist = (nextTheme: AdminTheme) => {
+  const setThemeAndPersist = useCallback((nextTheme: AdminTheme) => {
     setTheme(nextTheme)
     persistTheme(nextTheme)
-  }
+  }, [persistTheme])
 
-  const toggle = () => {
+  const toggle = useCallback(() => {
     setTheme(prev => {
       const next: AdminTheme = prev === "dark" ? "light" : "dark"
       persistTheme(next)
       return next
     })
-  }
+  }, [persistTheme])
 
   const contextValue = useMemo(
     () => ({
@@ -78,16 +93,25 @@ export function AdminThemeProvider({
       setTheme: setThemeAndPersist,
       toggle,
     }),
-    [theme, resolvedTheme],
+    [theme, resolvedTheme, setThemeAndPersist, toggle],
   )
 
   const themeClass = useMemo(() => {
-    if (!mounted) {
-      if (initialTheme === "system") return "" // Avoid mismatch on first render
+    if (!isHydrated) {
+      if (initialTheme === "system") {
+        // The init script set data-admin-theme on <html> before paint.
+        // Use it to avoid flash; fall back to empty string if unavailable (SSR).
+        if (typeof document !== "undefined") {
+          const pre = document.documentElement.getAttribute("data-admin-theme")
+          if (pre === "light") return " light"
+          if (pre === "dark") return " dark"
+        }
+        return "" // SSR: CSS @media handles system theme, no flash
+      }
       return initialTheme === "light" ? " light" : " dark"
     }
     return resolvedTheme === "light" ? " light" : " dark"
-  }, [mounted, initialTheme, resolvedTheme])
+  }, [isHydrated, initialTheme, resolvedTheme])
 
   return (
     <AdminThemeContext.Provider value={contextValue}>
