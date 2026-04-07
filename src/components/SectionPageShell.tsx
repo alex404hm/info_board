@@ -27,9 +27,11 @@ type ShellProps = {
   subtitle?: string
   children: React.ReactNode
   noHeader?: boolean
+  fullWidth?: boolean
+  backHref?: string
 }
 
-export function SectionPageShell({ title, subtitle, children, noHeader }: ShellProps) {
+export function SectionPageShell({ title, subtitle, children, noHeader, fullWidth = false, backHref = "/" }: ShellProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const mainRef  = useRef<HTMLElement>(null)
@@ -74,7 +76,7 @@ export function SectionPageShell({ title, subtitle, children, noHeader }: ShellP
           style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}>
           <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
             <Link
-              href="/"
+              href={backHref}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
               style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
             >
@@ -93,7 +95,7 @@ export function SectionPageShell({ title, subtitle, children, noHeader }: ShellP
 
       {/* Main content */}
       <main ref={mainRef} className="flex-1 overflow-y-auto custom-scrollbar relative">
-        <div className="mx-auto w-full max-w-[1400px] px-3 pb-10 pt-4 sm:px-4 sm:pt-6 md:px-10 md:pt-8 md:pb-12">
+        <div className={`${fullWidth ? "w-full px-4 pb-10 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 md:pb-12" : "mx-auto w-full max-w-[1400px] px-3 pb-10 pt-4 sm:px-4 sm:pt-6 md:px-10 md:pt-8 md:pb-12"}`}>
           {children}
         </div>
 

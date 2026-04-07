@@ -1,7 +1,9 @@
 "use client"
 
-import { ChevronDown, Mail, Phone } from "lucide-react"
-import { useState, type ReactNode } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { ArrowUp, ChevronDown } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useEffect, useState, type ReactNode } from "react"
 
 type AccordionItem = {
   id: string
@@ -27,9 +29,9 @@ const ITEMS: AccordionItem[] = [
           {" "}
           <a href="tel:38177000" className="font-semibold text-[var(--accent-strong)] underline underline-offset-4">38 17 70 00</a>.
         </p>
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+        <p>
           Personfølsomme oplysninger til studieadministrationen, som f.eks. en mulighedserklæring, skal sendes til sikkerpost.sop@tec.dk.
-        </div>
+        </p>
       </div>
     ),
   },
@@ -277,31 +279,30 @@ const ITEMS: AccordionItem[] = [
           <table className="min-w-full border-collapse overflow-hidden rounded-2xl border border-white/10 text-left text-sm">
             <thead>
               <tr className="bg-white/8 text-[var(--foreground)]">
-                <th className="border border-white/10 px-4 py-3 font-semibold">Elever under 18 år</th>
-                <th className="border border-white/10 px-4 py-3 font-semibold">Elever over 18 år</th>
+                <th className="border border-white/10 px-4 py-3 font-semibold">Sats i 2026</th>
                 <th className="border border-white/10 px-4 py-3 font-semibold">Beløb pr. måned</th>
               </tr>
             </thead>
             <tbody className="text-[var(--foreground-muted)]">
               <tr>
-                <td className="border border-white/10 px-4 py-3">3.813 kr. pr. måned (uanset trin)</td>
-                <td className="border border-white/10 px-4 py-3">Trin 01 1. år</td>
-                <td className="border border-white/10 px-4 py-3">9.126 kr.</td>
+                <td className="border border-white/10 px-4 py-3">Elever under 18 år</td>
+                <td className="border border-white/10 px-4 py-3">kr. 4.294,-</td>
               </tr>
               <tr>
-                <td className="border border-white/10 px-4 py-3"></td>
-                <td className="border border-white/10 px-4 py-3">Trin 02 2. år</td>
-                <td className="border border-white/10 px-4 py-3">10.045 kr.</td>
+                <td className="border border-white/10 px-4 py-3">Elever på 1. år af hovedforløbet</td>
+                <td className="border border-white/10 px-4 py-3">kr. 10.287,-</td>
               </tr>
               <tr>
-                <td className="border border-white/10 px-4 py-3"></td>
-                <td className="border border-white/10 px-4 py-3">Trin 03 3. år</td>
-                <td className="border border-white/10 px-4 py-3">11.111 kr.</td>
+                <td className="border border-white/10 px-4 py-3">Elever på 2. år af hovedforløbet</td>
+                <td className="border border-white/10 px-4 py-3">kr. 11.317,-</td>
               </tr>
               <tr>
-                <td className="border border-white/10 px-4 py-3"></td>
-                <td className="border border-white/10 px-4 py-3">Trin 04 4. år</td>
-                <td className="border border-white/10 px-4 py-3">13.078 kr.</td>
+                <td className="border border-white/10 px-4 py-3">Elever på 3. år af hovedforløbet</td>
+                <td className="border border-white/10 px-4 py-3">kr. 12.519,-</td>
+              </tr>
+              <tr>
+                <td className="border border-white/10 px-4 py-3">Elever på 4. år og derover på hovedforløbet</td>
+                <td className="border border-white/10 px-4 py-3">kr. 14.738,-</td>
               </tr>
             </tbody>
           </table>
@@ -355,94 +356,148 @@ const ITEMS: AccordionItem[] = [
 ]
 
 export function IntranetOnePage() {
-  const [openId, setOpenId] = useState<string>(ITEMS[0]?.id ?? "")
+  const router = useRouter()
+  const [openId, setOpenId] = useState<string>("")
+  const [showJumpTop, setShowJumpTop] = useState(false)
+
+  useEffect(() => {
+    const scrollEl = document.querySelector("main.custom-scrollbar") as HTMLElement | null
+
+    const onScroll = () => {
+      const y = scrollEl ? scrollEl.scrollTop : window.scrollY
+      setShowJumpTop(y > 220)
+    }
+
+    onScroll()
+    if (scrollEl) {
+      scrollEl.addEventListener("scroll", onScroll, { passive: true })
+      return () => scrollEl.removeEventListener("scroll", onScroll)
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <section
-        className="rounded-[2rem] px-6 py-7 md:px-8"
-        style={{
-          background: "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
-          border: "1px solid var(--surface-border)",
-          boxShadow: "var(--panel-shadow-soft)",
-        }}
-      >
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: "var(--accent-strong)" }}>
-              Praktisk information
-            </p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-[var(--foreground)] md:text-4xl">
-              Alt samlet på én side
+    <>
+      <section className="w-full py-4 md:py-6">
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(320px,0.78fr)_minmax(0,1.22fr)] lg:gap-16 xl:gap-20">
+        <div className="lg:sticky lg:top-8 lg:self-start lg:pl-8 xl:pl-12">
+          <div className="max-w-[32rem]">
+            <h2
+              className="leading-[0.95] tracking-[-0.045em] text-[var(--foreground)]"
+              style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "71.12px", fontWeight: 700 }}
+            >
+              PRAKTISK INFORMATION
             </h2>
-            <p className="mt-3 text-sm leading-7 text-[var(--foreground-muted)] md:text-base">
-              Her er god viden til dig, der skal starte i skoleoplæringen. Du kan åbne hvert afsnit herunder og læse alt direkte på `/intranet` i stedet for at gå ind i separate bokse.
-            </p>
+            <span
+              className="mt-6 block max-w-[30rem] leading-[1.3] tracking-[-0.02em] text-[var(--foreground)]"
+              style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "40.27px", fontWeight: 400 }}
+            >
+              Her er god viden til dig, der skal starte i skoleoplæringen.
+            </span>
           </div>
 
-          <div className="flex flex-wrap gap-3 text-xs text-[var(--foreground-muted)]">
-            <a
-              href="mailto:sikkerpost.sop@tec.dk"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 transition-colors hover:bg-white/8"
-            >
-              <Mail className="h-3.5 w-3.5" />
-              sikkerpost.sop@tec.dk
-            </a>
-            <a
-              href="tel:38177000"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 transition-colors hover:bg-white/8"
-            >
-              <Phone className="h-3.5 w-3.5" />
-              38 17 70 00
-            </a>
+          </div>
+
+          <div
+            className="flex flex-col overflow-hidden rounded-[1.25rem]"
+            style={{ borderTop: "1px solid var(--divider)", borderBottom: "1px solid var(--divider)" }}
+          >
+            {ITEMS.map((item, index) => {
+              const isOpen = openId === item.id
+
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    background: "transparent",
+                    borderTop: index === 0 ? "none" : "1px solid var(--divider)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenId((current) => current === item.id ? "" : item.id)}
+                    className="flex w-full items-center justify-between gap-4 px-4 py-5 text-left transition-colors hover:bg-white/4 md:px-6 lg:px-8"
+                  >
+                    <span className="text-lg font-semibold tracking-[-0.02em] md:text-[1.95rem]" style={{ color: "var(--foreground)" }}>
+                      {item.title}
+                    </span>
+                    <ChevronDown
+                      className={`h-5 w-5 shrink-0 transition-transform duration-200 md:h-6 md:w-6 ${isOpen ? "rotate-180" : ""}`}
+                      style={{ color: "var(--foreground-muted)" }}
+                    />
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key={`${item.id}-content`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <motion.div
+                          initial={{ y: -8 }}
+                          animate={{ y: 0 }}
+                          exit={{ y: -8 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          className="px-4 pb-6 md:px-6 md:pb-8 lg:px-8 [&_a]:font-semibold [&_a]:text-[var(--accent-strong)] [&_a]:underline [&_a]:decoration-[1.5px] [&_a]:underline-offset-4 hover:[&_a]:opacity-90"
+                          style={{
+                            color: "var(--foreground)",
+                            fontFamily: '"Sans", sans-serif',
+                          }}
+                          onClickCapture={(event) => {
+                            const target = event.target as HTMLElement | null
+                            const anchor = target?.closest("a") as HTMLAnchorElement | null
+                            const href = anchor?.getAttribute("href")
+
+                            if (!anchor || !href) return
+                            if (href.startsWith("mailto:") || href.startsWith("tel:")) return
+
+                            event.preventDefault()
+                            router.push(`/intranet/web-view?url=${encodeURIComponent(anchor.href)}`)
+                          }}
+                        >
+                          {item.content}
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      <section className="flex flex-col overflow-hidden rounded-[2rem]" style={{ border: "1px solid var(--surface-border)", boxShadow: "var(--panel-shadow-soft)" }}>
-        {ITEMS.map((item, index) => {
-          const isOpen = openId === item.id
-
-          return (
-            <div
-              key={item.id}
-              style={{
-                background: isOpen ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
-                borderTop: index === 0 ? "none" : "1px solid var(--divider)",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setOpenId((current) => current === item.id ? "" : item.id)}
-                className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-colors hover:bg-white/4 md:px-8"
-              >
-                <span className="text-base font-semibold md:text-lg" style={{ color: "var(--foreground)" }}>
-                  {item.title}
-                </span>
-                <ChevronDown
-                  className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                  style={{ color: "var(--foreground-muted)" }}
-                />
-              </button>
-
-              {isOpen && (
-                <div className="px-6 pb-6 md:px-8 md:pb-8">
-                  <div
-                    className="rounded-[1.5rem] px-5 py-5 text-sm leading-7 md:px-6 md:py-6 md:text-[15px]"
-                    style={{
-                      background: "var(--surface-soft)",
-                      color: "var(--foreground-muted)",
-                      border: "1px solid rgba(255,255,255,0.07)",
-                    }}
-                  >
-                    {item.content}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </section>
-    </div>
+      <button
+        type="button"
+        onClick={() => {
+          const scrollEl = document.querySelector("main.custom-scrollbar") as HTMLElement | null
+          if (scrollEl) {
+            scrollEl.scrollTo({ top: 0, behavior: "smooth" })
+            return
+          }
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        }}
+        aria-label="Til toppen"
+        className={`fixed bottom-6 right-6 z-[80] inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${
+          showJumpTop
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-2 opacity-0"
+        }`}
+        style={{
+          background: "var(--surface)",
+          borderColor: "var(--surface-border)",
+          color: "var(--foreground-muted)",
+          boxShadow: "0 8px 22px rgba(0,0,0,0.30)",
+        }}
+      >
+        <ArrowUp className="h-4 w-4" />
+      </button>
+    </>
   )
 }
