@@ -24,6 +24,11 @@
 .DS_Store
 *.pem
 
+# environment variables and secrets
+.env
+.env.*
+!.env.example
+
 .claude/
 skills-lock.json
 

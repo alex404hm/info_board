@@ -21,6 +21,20 @@ export async function PATCH(
   const now = new Date()
 
   try {
+    const existing = await db
+      .select({ authorId: calendarEvent.authorId })
+      .from(calendarEvent)
+      .where(eq(calendarEvent.id, id))
+      .limit(1)
+
+    if (!existing.length) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
+
+    if (role !== "admin" && existing[0].authorId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const updated = await db
       .update(calendarEvent)
       .set({
@@ -60,14 +74,24 @@ export async function DELETE(
   const { id } = await params
 
   try {
-    const deleted = await db
+    const existing = await db
+      .select({ authorId: calendarEvent.authorId })
+      .from(calendarEvent)
+      .where(eq(calendarEvent.id, id))
+      .limit(1)
+
+    if (!existing.length) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
+
+    if (role !== "admin" && existing[0].authorId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    await db
       .delete(calendarEvent)
       .where(eq(calendarEvent.id, id))
       .returning()
-
-    if (!deleted.length) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 })
-    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
