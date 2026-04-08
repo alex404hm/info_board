@@ -131,6 +131,27 @@
   }
   * {
     @apply border-border outline-ring/50;
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 16%, transparent) transparent;
+  }
+  /* Webkit — Chrome, Edge, Safari */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--foreground) 16%, transparent);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--foreground) 30%, transparent);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
   body {
     @apply antialiased bg-background text-foreground;
@@ -1108,9 +1129,29 @@
   .tiptap-admin-content .tiptap.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin: 0.875rem 0 0.375rem; }
   .tiptap-admin-content .tiptap.ProseMirror h4 { font-size: 1.125rem; font-weight: 600; margin: 0.75rem 0 0.25rem; }
   .tiptap-admin-content .tiptap.ProseMirror p { line-height: 1.6; }
-  .tiptap-admin-content .tiptap.ProseMirror ul,
-  .tiptap-admin-content .tiptap.ProseMirror ol { padding-left: 1.5rem; }
+  .tiptap-admin-content .tiptap.ProseMirror ul { padding-left: 1.5rem; list-style: disc; }
+  .tiptap-admin-content .tiptap.ProseMirror ol { padding-left: 1.5rem; list-style: decimal; }
   .tiptap-admin-content .tiptap.ProseMirror li { margin: 0.25rem 0; }
+  .tiptap-admin-content .tiptap.ProseMirror table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    table-layout: fixed;
+  }
+  .tiptap-admin-content .tiptap.ProseMirror th,
+  .tiptap-admin-content .tiptap.ProseMirror td {
+    border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+    padding: 0.55rem 0.65rem;
+    vertical-align: top;
+    min-width: 5rem;
+  }
+  .tiptap-admin-content .tiptap.ProseMirror th {
+    background: color-mix(in oklab, var(--muted) 70%, transparent);
+    font-weight: 600;
+  }
+  .tiptap-admin-content .tiptap.ProseMirror .selectedCell {
+    background: color-mix(in oklab, var(--accent) 18%, transparent);
+  }
 
   /* ── Rich content display (infoboard viewer) ── */
   .rich-content {

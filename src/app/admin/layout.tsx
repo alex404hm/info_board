@@ -6,6 +6,7 @@ import { AdminThemeProvider } from "./_components/AdminThemeProvider"
 import { AppSidebar } from "@/components/app-sidebar"
 import AdminLogin from "./_components/AdminLogin"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export const metadata = {
   title: "Admin - TEC Info Board",
@@ -28,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     name: session.user.name,
     email: session.user.email,
     image: session.user.image ?? null,
-    role: getUserRole(session),
+    role: getUserRole(session) ?? null,
   }
 
   const cookieStore = await cookies()
@@ -51,9 +52,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-card px-4">
   <AdminHeader user={user} />
             </header>
-            <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto px-4 py-8 scroll-smooth sm:px-8 lg:px-12">
+            <ScrollArea className="flex-1 min-w-0 px-4 py-8 scroll-smooth sm:px-8 lg:px-12">
               <div className="mx-auto min-w-0 w-full max-w-5xl">{children}</div>
-            </main>
+            </ScrollArea>
           </SidebarInset>
         </AdminThemeProvider>
       </SidebarProvider>

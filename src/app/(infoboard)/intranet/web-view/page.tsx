@@ -1,4 +1,5 @@
-import { SectionPageShell } from "@/components/SectionPageShell"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 
 type WebViewPageProps = {
   searchParams?: Promise<{
@@ -34,24 +35,54 @@ export default async function IntranetWebViewPage({ searchParams }: WebViewPageP
 
   if (!safeUrl) {
     return (
-      <SectionPageShell title="Webvisning" subtitle="Ugyldigt link" backHref="/intranet" fullWidth>
-        <div className="mx-auto flex min-h-[60vh] w-full max-w-3xl items-center justify-center px-4">
+      <div className="flex min-h-screen flex-col bg-background text-foreground">
+        <div
+          className="sticky top-0 z-20 shrink-0 px-4 py-3 md:px-6"
+          style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}
+        >
+          <div className="flex items-center">
+            <Link
+              href="/intranet"
+              className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
+              style={{ color: "var(--foreground)" }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Tilbage
+            </Link>
+          </div>
+        </div>
+        <div className="flex flex-1 items-center justify-center px-4">
           <p className="text-sm text-[var(--foreground-muted)]">Linket kunne ikke vises.</p>
         </div>
-      </SectionPageShell>
+      </div>
     )
   }
 
   return (
-    <SectionPageShell title={getTitle(safeUrl)} subtitle={safeUrl} backHref="/intranet" fullWidth>
-      <div className="h-[calc(100vh-10.5rem)] w-full overflow-hidden rounded-[1.25rem] border border-[color:var(--surface-border)] bg-[color:var(--surface)]">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <div
+        className="sticky top-0 z-20 shrink-0 px-4 py-3 md:px-6"
+        style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}
+      >
+        <div className="flex items-center">
+          <Link
+            href="/intranet"
+            className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
+            style={{ color: "var(--foreground)" }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Tilbage
+          </Link>
+        </div>
+      </div>
+      <div className="flex-1">
         <iframe
           src={safeUrl}
           title={getTitle(safeUrl)}
-          className="h-full w-full border-0"
+          className="h-[calc(100vh-3.8125rem)] w-full border-0"
           referrerPolicy="strict-origin-when-cross-origin"
         />
       </div>
-    </SectionPageShell>
+    </div>
   )
 }

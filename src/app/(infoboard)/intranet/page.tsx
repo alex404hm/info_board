@@ -5,8 +5,8 @@ export default function IntranetPage() {
   return (
     <SectionPageShell
       title="Intranet"
-      fullWidth
       subtitle="Løn, befordring, læreplads og rettigheder for lærlinge"
+      fullWidth
     >
       <IntranetOnePage />
     </SectionPageShell>

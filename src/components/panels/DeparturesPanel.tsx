@@ -22,15 +22,11 @@ export function DeparturesPanel() {
   return (
     <div className="space-y-4">
       <DeparturesBox
-        title={stop1?.title ?? "Tættest mod skolen"}
-        sourceStopName={stop1?.sourceStopName ?? "Ukendt stoppested"}
-        sourceStopId={stop1?.sourceStopId ?? "-"}
+        title={stop1?.sourceStopName ?? stop1?.title ?? "Ukendt stoppested"}
         departures={stop1?.departures ?? []}
       />
       <DeparturesBox
-        title={stop2?.title ?? "Alternativt stoppested"}
-        sourceStopName={stop2?.sourceStopName ?? "Ukendt stoppested"}
-        sourceStopId={stop2?.sourceStopId ?? "-"}
+        title={stop2?.sourceStopName ?? stop2?.title ?? "Ukendt stoppested"}
         departures={stop2?.departures ?? []}
       />
     </div>
@@ -39,13 +35,9 @@ export function DeparturesPanel() {
 
 function DeparturesBox({
   title,
-  sourceStopName,
-  sourceStopId,
   departures,
 }: {
   title: string
-  sourceStopName: string
-  sourceStopId: string
   departures: Departure[]
 }) {
   return (
@@ -58,8 +50,6 @@ function DeparturesBox({
             <Image src="/logo/dsb.svg" alt="DSB" width={22} height={22} className="h-full w-full rounded-[4px] object-fill" />
           </div>
         </div>
-        <p className="mt-1 text-sm font-semibold text-foreground-strong">{sourceStopName}</p>
-        <p className="text-[11px] text-subtle">Stop ID: {sourceStopId}</p>
       </div>
 
       {departures.length === 0 ? (

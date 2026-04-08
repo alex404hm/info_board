@@ -35,18 +35,33 @@ type User = {
   createdAt: string
 }
 
+type RoleOption = {
+  value: string
+  label: string
+  icon: typeof BookOpen
+  activeBg: string
+  border: string
+  color: string
+}
+
 // ── Role dropdown ──────────────────────────────────────────────────────────────
 
-const ROLES = [
+const ROLES: RoleOption[] = [
   {
     value: "teacher",
     label: "Instruktør",
     icon: BookOpen,
+    activeBg: "bg-sky-500/10",
+    border: "border-sky-500/25",
+    color: "text-sky-400",
   },
   {
     value: "admin",
     label: "Administrator",
     icon: Shield,
+    activeBg: "bg-amber-500/10",
+    border: "border-amber-500/25",
+    color: "text-amber-400",
   },
 ]
 
@@ -305,7 +320,7 @@ export default function UsersPage() {
         {loading ? (
           <div className="space-y-3 p-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 animate-pulse rounded-lg bg-[color:var(--surface-soft)]" />
+              <div key={i} className="h-16 animate-pulse rounded-lg bg-(--surface-soft)" />
             ))}
           </div>
         ) : users.length === 0 ? (
@@ -320,7 +335,7 @@ export default function UsersPage() {
               return (
                 <div
                   key={u.id}
-                  className="flex items-center gap-4 px-6 py-4 hover:bg-[color:var(--surface-soft)] transition-colors"
+                  className="flex items-center gap-4 px-6 py-4 hover:bg-(--surface-soft) transition-colors"
                 >
                   {/* Avatar */}
                   {u.image ? (
@@ -377,7 +392,7 @@ export default function UsersPage() {
                         onClick={() => handleResendInvite(u.email)}
                         disabled={resendingEmail === u.email}
                         title="Gensend invitationsmail"
-                        className="border-amber-500/20 bg-amber-500/[0.08] text-amber-400 hover:bg-amber-500/20 hover:text-amber-400"
+                        className="border-amber-500/20 bg-amber-500/8 text-amber-400 hover:bg-amber-500/20 hover:text-amber-400"
                       >
                         {resendingEmail === u.email ? (
                           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -456,7 +471,7 @@ export default function UsersPage() {
                             "flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
                             isSelected
                               ? cn(role.activeBg, role.border, role.color, "ring-1 ring-inset", role.border)
-                              : "border-border/60 bg-[color:var(--surface-soft)] text-muted hover:text-foreground hover:border-border"
+                              : "border-border/60 bg-(--surface-soft) text-muted hover:text-foreground hover:border-border"
                           )}
                         >
                           <RIcon className={cn("h-4 w-4", isSelected ? role.color : "")} />

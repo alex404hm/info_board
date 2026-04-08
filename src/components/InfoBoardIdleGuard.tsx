@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { X, AlertCircle, LogOut } from "lucide-react"
+import { AlertCircle, LogOut } from "lucide-react"
 
 const DEFAULT_IDLE_S = 30
 const DEFAULT_COUNTDOWN_S = 10
@@ -99,20 +99,6 @@ export function InfoBoardIdleGuard({
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-8">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-8 right-8 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
-          style={{
-            background: "rgba(255, 255, 255, 0.06)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            color: "rgba(255, 255, 255, 0.8)",
-          }}
-          aria-label="Luk"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-
         {/* Icon container */}
         <div className="mb-8">
           <div

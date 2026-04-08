@@ -24,7 +24,6 @@ type GuideSection = {
   icon: React.ElementType
   title: string
   time?: string
-  accent: string
   items: string[]
 }
 
@@ -32,8 +31,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     icon: Coffee,
     title: "Kaffemaskine – Rens",
-    time: "Fredag kl. 13:30",
-    accent: "#f59e0b",
+    time: "Fredag kl. 13.30",
     items: [
       "Tryk øverst på displayet og vælg rensningsprogram",
       "Følg instruktionerne på skærmen",
@@ -46,15 +44,13 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     icon: Utensils,
     title: "Tøm opvaskemaskinen",
-    time: "Kl. 07:30 dagligt",
-    accent: "#3b82f6",
+    time: "Kl. 07.30 dagligt",
     items: ["Tøm opvaskemaskinen"],
   },
   {
     icon: Coffee,
     title: "Kaffemaskine – Skyl",
-    time: "Kl. 14:00 (man–tor) / 13:30 (fre)",
-    accent: "#8b5cf6",
+    time: "Kl. 14.00 (man–tor) / 13.30 (fre)",
     items: [
       "Sæt en spand under hanen",
       "Hold toppen af display inde i 3 sekunder",
@@ -67,7 +63,6 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     icon: ShoppingBag,
     title: "Pant",
-    accent: "#10b981",
     items: [
       "Tjek om pantposen er ved at være fuld",
       "Hvis den er fuld: bind knude og sæt den på depotet",
@@ -77,19 +72,16 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     icon: Wind,
     title: "Overflader",
-    accent: "#06b6d4",
     items: ["Aftør alle køkkenoverflader"],
   },
   {
     icon: Utensils,
     title: "Service i huset",
-    accent: "#ec4899",
     items: ["Tjek borde for kaffekopper og andet service"],
   },
   {
     icon: Trash2,
     title: "Opvask",
-    accent: "#f43f5e",
     items: [
       "Sæt service i opvaskemaskinen",
       "Start program 4 med opvasketablet",
@@ -151,8 +143,16 @@ function initials(name: string): string {
 
 function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
   const sz = size === "sm" ? "h-6 w-6 text-[9px]" : "h-8 w-8 text-[11px]"
+  const sizeClass = size === "sm" ? "h-6 w-6 text-[9px]" : "h-8 w-8 text-[11px]"
   return (
-    <div className={`flex shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 font-black text-primary ${sz}`}>
+    <div 
+      className={`flex shrink-0 items-center justify-center rounded-full font-black ${sizeClass}`}
+      style={{
+        background: "var(--accent-soft)",
+        border: "1px solid var(--accent-border)",
+        color: "var(--accent)",
+      }}
+    >
       {initials(name)}
     </div>
   )
@@ -200,45 +200,49 @@ function GuideSectionCard({
   si,
   checked,
   toggle,
-  defaultOpen = false,
+  isOpen,
+  onToggle,
 }: {
   section: GuideSection
   si: number
   checked: Record<string, boolean>
   toggle: (si: number, ii: number) => void
-  defaultOpen?: boolean
+  isOpen: boolean
+  onToggle: () => void
 }) {
-  const [open, setOpen] = useState(defaultOpen)
   const Icon = section.icon
   const sectionDone = section.items.filter((_, ii) => checked[itemKey(si, ii)]).length
   const allDone = sectionDone === section.items.length
 
   return (
     <div
-      className={[
-        "rounded-2xl border overflow-hidden transition-all",
-        allDone
-          ? "border-green-500/30 bg-green-500/5"
-          : "border-border/40 bg-card/30 backdrop-blur-sm",
-      ].join(" ")}
+      className={["rounded-2xl border overflow-hidden transition-all", allDone ? "" : ""].join(" ")}
+      style={{
+        background: allDone ? "var(--surface-soft)" : "var(--surface-soft)",
+        border: "1px solid var(--surface-border)",
+      }}
     >
       {/* Header – tap to expand */}
       <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:opacity-80 transition-opacity"
       >
         <div
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-          style={{ background: `${section.accent}18`, border: `1px solid ${section.accent}30` }}
+          style={{
+            background: "var(--accent-soft)",
+            border: "1px solid var(--accent-border)",
+          }}
         >
-          <Icon className="h-3.5 w-3.5" style={{ color: section.accent }} />
+          <Icon className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
         </div>
         <div className="min-w-0 flex-1">
           <p className={`text-sm font-semibold leading-tight ${allDone ? "line-through text-muted-foreground" : "text-foreground"}`}>
             {section.title}
           </p>
           {section.time && (
-            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-foreground/80">
               <Clock className="h-3 w-3" />
               {section.time}
             </p>
@@ -248,13 +252,14 @@ function GuideSectionCard({
         <span
           className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums"
           style={{
-            background: allDone ? "#22c55e18" : `${section.accent}18`,
-            color: allDone ? "#22c55e" : section.accent,
+            background: allDone ? "transparent" : "var(--accent-soft)",
+            color: allDone ? "var(--foreground-muted)" : "var(--accent)",
+            border: allDone ? "1px solid var(--surface-border)" : "none",
           }}
         >
           {sectionDone}/{section.items.length}
         </span>
-        {open ? (
+        {isOpen ? (
           <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
         ) : (
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -262,29 +267,41 @@ function GuideSectionCard({
       </button>
 
       {/* Steps */}
-      {open && (
-        <div className="border-t border-border/30 px-4 py-3 space-y-1">
-          {section.items.map((item, ii) => {
-            const done = !!checked[itemKey(si, ii)]
-            return (
-              <button
-                key={ii}
-                onClick={() => toggle(si, ii)}
-                className="flex w-full items-start gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-white/5 active:bg-white/10"
-              >
-                {done ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
-                ) : (
-                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" style={{ color: section.accent + "80" }} />
-                )}
-                <p className={`text-sm leading-snug ${done ? "line-through text-muted-foreground/50" : "text-foreground/80"}`}>
-                  {item}
-                </p>
-              </button>
-            )
-          })}
+      <div className={`grid transition-all duration-300 ease-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+        <div className="overflow-hidden">
+          <div className="border-t px-4 py-3 space-y-1" style={{ borderColor: "var(--surface-border)" }}>
+            {section.items.map((item, ii) => {
+              const done = !!checked[itemKey(si, ii)]
+              return (
+                <button
+                  key={ii}
+                  onClick={() => toggle(si, ii)}
+                  className="flex w-full items-start gap-2.5 rounded-xl px-2 py-2 text-left transition-colors"
+                  style={{
+                    background: done ? "transparent" : "transparent",
+                    color: done ? "var(--foreground-muted)" : "var(--foreground)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!done) (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)"
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "transparent"
+                  }}
+                >
+                  {done ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+                  ) : (
+                    <Circle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--accent-border)" }} />
+                  )}
+                  <p className={`text-sm leading-snug ${done ? "line-through" : ""}`} style={{ opacity: done ? 0.72 : 1 }}>
+                    {item}
+                  </p>
+                </button>
+              )
+            })}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -294,6 +311,8 @@ function GuideSectionCard({
 function MobileGuideSheet({
   open,
   onClose,
+  openSection,
+  onSectionToggle,
   checked,
   toggle,
   reset,
@@ -301,6 +320,8 @@ function MobileGuideSheet({
 }: {
   open: boolean
   onClose: () => void
+  openSection: number | null
+  onSectionToggle: (sectionIndex: number) => void
   checked: Record<string, boolean>
   toggle: (si: number, ii: number) => void
   reset: () => void
@@ -332,31 +353,49 @@ function MobileGuideSheet({
       />
 
       {/* Sheet */}
-      <div className="relative flex max-h-[92dvh] flex-col rounded-t-3xl border-t border-border/40 bg-background shadow-2xl">
+      <div className="relative flex max-h-[92dvh] flex-col rounded-t-3xl border-t shadow-2xl" style={{ borderColor: "var(--surface-border)", background: "var(--background)" }}>
 
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-border/60" />
+          <div className="h-1 w-10 rounded-full" style={{ background: "var(--surface-border)" }} />
         </div>
 
         {/* Sheet header */}
-        <div className="flex items-center gap-3 border-b border-border/30 px-5 pb-4 pt-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex items-center gap-3 border-b px-5 pb-4 pt-2" style={{ borderColor: "var(--surface-border)" }}>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
             <ListChecks className="h-4.5 w-4.5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-foreground">Køkken Guide</h2>
-            <p className="text-xs text-muted-foreground">{doneCount} af {TOTAL_ITEMS} opgaver udført</p>
+            <h2 className="text-base font-bold" style={{ color: "var(--foreground)" }}>Køkken Guide</h2>
+            <p className="text-xs" style={{ color: "var(--foreground)" }}>{doneCount} af {TOTAL_ITEMS} opgaver udført</p>
           </div>
           <button
             onClick={() => { if (window.confirm("Nulstil alle opgaver?")) reset() }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+            style={{ color: "var(--foreground-muted)" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)"
+              ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "transparent"
+              ;(e.currentTarget as HTMLElement).style.color = "var(--foreground-muted)"
+            }}
           >
             <RotateCcw className="h-4 w-4" />
           </button>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+            style={{ color: "var(--foreground-muted)" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)"
+              ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "transparent"
+              ;(e.currentTarget as HTMLElement).style.color = "var(--foreground-muted)"
+            }}
           >
             <X className="h-4 w-4" />
           </button>
@@ -365,17 +404,17 @@ function MobileGuideSheet({
         {/* Progress bar */}
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fremgang</span>
-            <span className={`text-xs font-bold tabular-nums ${allDone ? "text-green-500" : "text-primary"}`}>{pct}%</span>
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--foreground-muted)" }}>Fremgang</span>
+            <span className={`text-xs font-bold tabular-nums`} style={{ color: "var(--accent)" }}>{pct}%</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-border/40 overflow-hidden">
+          <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--surface-border)" }}>
             <div
-              className={`h-full rounded-full transition-all duration-500 ${allDone ? "bg-green-500" : "bg-primary"}`}
-              style={{ width: `${pct}%` }}
+              className={`h-full rounded-full transition-all duration-500`}
+              style={{ width: `${pct}%`, background: "var(--accent)" }}
             />
           </div>
           {allDone && (
-            <p className="mt-2 text-center text-xs font-semibold text-green-500">
+            <p className="mt-2 text-center text-xs font-semibold" style={{ color: "var(--accent)" }}>
               Alle opgaver er udført!
             </p>
           )}
@@ -390,7 +429,8 @@ function MobileGuideSheet({
               si={si}
               checked={checked}
               toggle={toggle}
-              defaultOpen={false}
+              isOpen={openSection === si}
+              onToggle={() => onSectionToggle(si)}
             />
           ))}
 
@@ -406,12 +446,17 @@ export function KokkenvagtPanel() {
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [openGuideSection, setOpenGuideSection] = useState<number | null>(0)
   const { checked, toggle, reset, doneCount, hydrated } = useChecklist()
 
   const currentWeek = getISOWeek(new Date())
   const currentYear = new Date().getFullYear()
   const pct = Math.round((doneCount / TOTAL_ITEMS) * 100)
   const allDone = doneCount === TOTAL_ITEMS
+
+  const toggleGuideSection = (sectionIndex: number) => {
+    setOpenGuideSection((current) => (current === sectionIndex ? null : sectionIndex))
+  }
 
   useEffect(() => {
     const fetchSchedule = async () => {
@@ -449,40 +494,50 @@ export function KokkenvagtPanel() {
           {hydrated && (
             <button
               onClick={() => setSheetOpen(true)}
-              className="lg:hidden w-full mb-4 flex items-center gap-3 rounded-2xl border border-border/40 bg-card/30 px-4 py-3 backdrop-blur-sm text-left hover:bg-white/5 transition-colors"
+              className="lg:hidden w-full mb-4 flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors"
+              style={{
+                borderColor: "var(--surface-border)",
+                background: "var(--surface-soft)",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "var(--surface-alt)"
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "var(--surface-soft)"
+              }}
             >
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white ${allDone ? "bg-green-500" : "bg-primary"}`}>
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl`} style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
                 <ListChecks className="h-4.5 w-4.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">Køkken Guide</p>
+                <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>Køkken Guide</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <div className="h-1.5 flex-1 rounded-full bg-border/40 overflow-hidden">
+                  <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: "var(--surface-border)" }}>
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${allDone ? "bg-green-500" : "bg-primary"}`}
-                      style={{ width: `${pct}%` }}
+                      className={`h-full rounded-full transition-all duration-500`}
+                      style={{ width: `${pct}%`, background: "var(--accent)" }}
                     />
                   </div>
-                  <span className={`text-xs font-bold tabular-nums shrink-0 ${allDone ? "text-green-500" : "text-primary"}`}>
+                  <span className={`text-xs font-bold tabular-nums shrink-0`} style={{ color: "var(--accent)" }}>
                     {doneCount}/{TOTAL_ITEMS}
                   </span>
                 </div>
               </div>
-              <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground rotate-90" />
+              <ChevronUp className="h-4 w-4 shrink-0" style={{ color: "var(--foreground-muted)", transform: "rotate(90deg)" }} />
             </button>
           )}
 
-          <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm">
+          <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--surface-border)", background: "var(--surface-soft)" }}>
 
             {/* Header */}
-            <div className="border-b border-border/40 px-6 py-5">
+            <div className="border-b px-6 py-5" style={{ borderColor: "var(--surface-border)" }}>
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
                   <Clock className="h-4.5 w-4.5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-foreground">Vagtplan — Køkken</h2>
-                  <p className="text-xs text-muted-foreground">To personer per uge har ansvar for køkkenet</p>
+                  <h2 className="text-base font-bold" style={{ color: "var(--foreground)" }}>Vagtplan — Køkken</h2>
+                  <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>To personer per uge har ansvar for køkkenet</p>
                 </div>
               </div>
             </div>
@@ -491,24 +546,24 @@ export function KokkenvagtPanel() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border/40">
-                    <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Uge</th>
-                    <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Person 1</th>
-                    <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Person 2</th>
-                    <th className="hidden sm:table-cell px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Instruktor</th>
+                  <tr className="border-b" style={{ borderColor: "var(--surface-border)" }}>
+                    <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Uge</th>
+                    <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Person 1</th>
+                    <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Person 2</th>
+                    <th className="hidden sm:table-cell px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Instruktor</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                      <td colSpan={4} className="px-5 py-10 text-center text-sm" style={{ color: "var(--foreground-muted)" }}>
                         Indlæser...
                       </td>
                     </tr>
                   )}
                   {!loading && schedule.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                      <td colSpan={4} className="px-5 py-10 text-center text-sm" style={{ color: "var(--foreground-muted)" }}>
                         Ingen planlagte vagter
                       </td>
                     </tr>
@@ -519,26 +574,27 @@ export function KokkenvagtPanel() {
                     return (
                       <tr
                         key={`${row.year}-${row.week}`}
-                        className={[
-                          "border-b border-border/20 last:border-0 transition-colors",
-                          isCurrent ? "bg-primary/5" : i % 2 === 0 ? "" : "bg-white/[0.015]",
-                        ].join(" ")}
+                        className="last:border-0 transition-colors"
+                        style={{
+                          borderBottom: "1px solid var(--surface-border)",
+                          background: isCurrent ? "var(--accent-soft)" : i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)",
+                        }}
                       >
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold tabular-nums text-foreground">Uge {row.week}</span>
+                              <span className="font-bold tabular-nums" style={{ color: "var(--foreground)" }}>Uge {row.week}</span>
                               {isCurrent && (
-                                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary">
+                                <span className="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider" style={{ borderColor: "var(--accent-border)", background: "var(--accent-soft)", color: "var(--accent)" }}>
                                   Nu
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-[11px]" style={{ color: "var(--foreground-muted)" }}>
                               {fmtDate(start)} – {fmtDate(end)}
                             </span>
                             {row.startTime && row.endTime && (
-                              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--foreground-muted)" }}>
                                 <Clock className="h-3 w-3" />
                                 {row.startTime} – {row.endTime}
                               </span>
@@ -548,23 +604,23 @@ export function KokkenvagtPanel() {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2.5">
                             <Avatar name={row.person1} />
-                            <span className="font-medium text-foreground">{row.person1}</span>
+                            <span className="font-medium" style={{ color: "var(--foreground)" }}>{row.person1}</span>
                           </div>
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2.5">
                             <Avatar name={row.person2} />
-                            <span className="font-medium text-foreground">{row.person2}</span>
+                            <span className="font-medium" style={{ color: "var(--foreground)" }}>{row.person2}</span>
                           </div>
                         </td>
                         <td className="hidden sm:table-cell px-5 py-4">
                           {row.authorName ? (
                             <div className="flex items-center gap-2">
                               <Avatar name={row.authorName} size="sm" />
-                              <span className="text-xs text-muted-foreground">{row.authorName}</span>
+                              <span className="text-xs" style={{ color: "var(--foreground-muted)" }}>{row.authorName}</span>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground/30">—</span>
+                            <span style={{ color: "var(--foreground-muted)", opacity: 0.3 }}>—</span>
                           )}
                         </td>
                       </tr>
@@ -581,17 +637,26 @@ export function KokkenvagtPanel() {
 
           {/* Guide header with progress */}
           <div className="flex items-center gap-2.5 px-1 pb-1">
-            <ListChecks className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-widest text-foreground flex-1">Køkken Guide</h2>
+            <ListChecks className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <h2 className="text-sm font-bold uppercase tracking-widest flex-1" style={{ color: "var(--foreground)" }}>Køkken Guide</h2>
             {hydrated && (
               <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold tabular-nums ${allDone ? "text-green-500" : "text-primary"}`}>
+                <span className={`text-xs font-bold tabular-nums`} style={{ color: "var(--accent)" }}>
                   {doneCount}/{TOTAL_ITEMS}
                 </span>
                 <button
                   onClick={() => { if (window.confirm("Nulstil alle opgaver?")) reset() }}
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+                  className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors"
+                  style={{ color: "var(--foreground-muted)" }}
                   title="Nulstil"
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)"
+                    ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "transparent"
+                    ;(e.currentTarget as HTMLElement).style.color = "var(--foreground-muted)"
+                  }}
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                 </button>
@@ -599,17 +664,21 @@ export function KokkenvagtPanel() {
             )}
           </div>
 
+          <p className="px-1 -mt-1 text-[11px]" style={{ color: "var(--foreground)" }}>
+            Kun én sektion kan være åben ad gangen
+          </p>
+
           {/* Desktop progress bar */}
           {hydrated && (
             <div className="px-1 pb-1">
-              <div className="h-1.5 w-full rounded-full bg-border/40 overflow-hidden">
+              <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "var(--surface-border)" }}>
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${allDone ? "bg-green-500" : "bg-primary"}`}
-                  style={{ width: `${pct}%` }}
+                  className={`h-full rounded-full transition-all duration-500`}
+                  style={{ width: `${pct}%`, background: "var(--accent)" }}
                 />
               </div>
               {allDone && (
-                <p className="mt-1.5 text-center text-xs font-semibold text-green-500">Alle opgaver udført!</p>
+                <p className="mt-1.5 text-center text-xs font-semibold" style={{ color: "var(--accent)" }}>Alle opgaver udført!</p>
               )}
             </div>
           )}
@@ -621,7 +690,8 @@ export function KokkenvagtPanel() {
               si={si}
               checked={checked}
               toggle={toggle}
-              defaultOpen={false}
+              isOpen={openGuideSection === si}
+              onToggle={() => toggleGuideSection(si)}
             />
           ))}
 
@@ -633,6 +703,8 @@ export function KokkenvagtPanel() {
       <MobileGuideSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
+        openSection={openGuideSection}
+        onSectionToggle={toggleGuideSection}
         checked={checked}
         toggle={toggle}
         reset={reset}
