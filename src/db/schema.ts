@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, json, integer } from "drizzle-orm/pg-core"
+import { pgTable, text, boolean, timestamp, json, integer, unique } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 export type WageStep = {
@@ -192,6 +192,101 @@ export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
   messages: many(message),
 }))
+
+// ============================================================================
+// SECURITY & AUDIT TABLES
+// ============================================================================
+
+/**
+ * Tracks login attempts (both failed and successful) for security monitoring
+ * and progressive rate limiting based on failure count
+ */
+export const loginAttempt = pgTable("login_attempt", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  ipAddress: text("ipAddress").notNull(),
+  userAgent: text("userAgent"),
+  deviceFingerprint: text("deviceFingerprint"),
+  success: boolean("success").notNull(),
+  reason: text("reason"), // e.g., "invalid_password", "account_locked", "rate_limited"
+  attemptCount: integer("attemptCount").notNull().default(1), // cumulative failures for this user at attempt time
+  createdAt: timestamp("createdAt").notNull(),
+})
+
+/**
+ * Tracks account lockout events for security and customer support
+ */
+export const accountLockout = pgTable("account_lockout", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(), // "max_login_attempts", "manual_admin"
+  lockedAt: timestamp("lockedAt").notNull(),
+  lockedUntil: timestamp("lockedUntil").notNull(),
+  unlockedAt: timestamp("unlockedAt"),
+  ipAddress: text("ipAddress"),
+  userAgent: text("userAgent"),
+  notificationSentAt: timestamp("notificationSentAt"),
+})
+
+/**
+ * Stores rolling rate-limit counters and temporary blocks for IPs and device fingerprints
+ */
+export const authRateLimit = pgTable(
+  "auth_rate_limit",
+  {
+    id: text("id").primaryKey(),
+    keyType: text("keyType").notNull(), // "ip" | "deviceFingerprint"
+    keyValue: text("keyValue").notNull(),
+    attemptCount: integer("attemptCount").notNull().default(0),
+    windowStartedAt: timestamp("windowStartedAt").notNull(),
+    lastAttemptAt: timestamp("lastAttemptAt").notNull(),
+    blockedUntil: timestamp("blockedUntil"),
+    createdAt: timestamp("createdAt").notNull(),
+    updatedAt: timestamp("updatedAt").notNull(),
+  },
+  (table) => ({
+    authRateLimitKeyUnique: unique("auth_rate_limit_key_unique").on(
+      table.keyType,
+      table.keyValue
+    ),
+  })
+)
+
+/**
+ * Tracks unique devices by IP + User-Agent hash for suspicious login detection
+ */
+export const deviceFingerprint = pgTable("device_fingerprint", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  fingerprint: text("fingerprint").notNull().unique(),
+  ipAddress: text("ipAddress").notNull(),
+  userAgent: text("userAgent").notNull(),
+  deviceName: text("deviceName"),
+  isFirstSeen: boolean("isFirstSeen").notNull().default(true),
+  lastSeenAt: timestamp("lastSeenAt").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+})
+
+/**
+ * Comprehensive security audit log for compliance and forensics
+ */
+export const securityAuditLog = pgTable("security_audit_log", {
+  id: text("id").primaryKey(),
+  userId: text("userId").references(() => user.id, { onDelete: "cascade" }),
+  eventType: text("eventType").notNull(), // "login_attempt", "account_locked", "session_created", "suspicious_activity", etc.
+  severity: text("severity").notNull(), // "info", "warning", "critical"
+  ipAddress: text("ipAddress"),
+  userAgent: text("userAgent"),
+  details: json("details").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("createdAt").notNull(),
+})
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] }),

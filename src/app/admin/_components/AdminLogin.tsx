@@ -5,13 +5,10 @@ import { useRouter } from "next/navigation"
 import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Lock, ShieldAlert } from "lucide-react"
 import Image from "next/image"
 
-import { signIn, authClient } from "@/lib/auth-client"
+import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-const MAX_ATTEMPTS = 5
-const LOCKOUT_DURATION_MS = 30 * 60 * 1000 // 30 minutes
 
 function AdaptiveLogo() {
   // Default false = black logo (safe for light backgrounds; admin login is always light)
@@ -102,7 +99,6 @@ export default function AdminLogin() {
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
   const [unlockCountdown, setUnlockCountdown] = useState(0)
 
-  // Progressive delay between attempts (ms): 0, 2s, 4s, 8s…
   const attemptDelay = useRef(0)
 
   const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil
@@ -139,52 +135,62 @@ export default function AdminLogin() {
     setError("")
     setLoading(true)
 
-    // Progressive delay
+    // Small local delay to avoid immediate repeated submissions while server is processing
     if (attemptDelay.current > 0) {
       await new Promise((r) => setTimeout(r, attemptDelay.current))
     }
 
     try {
-      await signIn.email(
-        { email: email.trim().toLowerCase(), password },
-        {
-          onSuccess: () => {
-            router.push("/admin/dashboard")
-            router.refresh()
-          },
-          onError: (ctx) => {
-            const newAttempts = attempts + 1
-            setAttempts(newAttempts)
-            setPassword("")
-
-            // Double delay each time: 0 → 2s → 4s → 8s → 16s
-            attemptDelay.current = attemptDelay.current === 0 ? 2000 : attemptDelay.current * 2
-
-            if (ctx.error.status === 429 || newAttempts >= MAX_ATTEMPTS) {
-              setLockoutUntil(Date.now() + LOCKOUT_DURATION_MS)
-              setError("")
-            } else {
-              const left = MAX_ATTEMPTS - newAttempts
-              setError(
-                left === 1
-                  ? "Forkert e-mail eller adgangskode. 1 forsøg tilbage."
-                  : `Forkert e-mail eller adgangskode. ${left} forsøg tilbage.`,
-              )
-            }
-          },
+      const response = await fetch("/api/sign-in", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      )
-    } catch {
-      const newAttempts = attempts + 1
-      setAttempts(newAttempts)
-      setPassword("")
-      attemptDelay.current = attemptDelay.current === 0 ? 2000 : attemptDelay.current * 2
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      })
 
-      if (newAttempts >= MAX_ATTEMPTS) {
-        setLockoutUntil(Date.now() + LOCKOUT_DURATION_MS)
-      } else {
-        setError(`Forkert e-mail eller adgangskode. ${MAX_ATTEMPTS - newAttempts} forsøg tilbage.`)
+      const result = (await response.json().catch(() => null)) as
+        | {
+            success?: boolean
+            message?: string
+            attemptCount?: number
+            delayMs?: number
+            reason?: string
+            lockedUntil?: string
+          }
+        | null
+
+      if (response.ok && result?.success) {
+        setAttempts(0)
+        attemptDelay.current = 0
+        router.push("/admin/dashboard")
+        router.refresh()
+        return
       }
+
+      setPassword("")
+
+      if (response.status === 423 && result?.lockedUntil) {
+        setLockoutUntil(new Date(result.lockedUntil).getTime())
+        setError("")
+        return
+      }
+
+      const nextAttempts = result?.attemptCount ?? attempts + 1
+      setAttempts(nextAttempts)
+      attemptDelay.current = Math.max(result?.delayMs ?? 0, 150)
+
+      if (result?.message) {
+        setError(result.message)
+      } else {
+        setError("Forkert e-mail eller adgangskode.")
+      }
+    } catch {
+      setPassword("")
+      setError("Login fejlede. Prøv igen om et øjeblik.")
     } finally {
       setLoading(false)
     }
