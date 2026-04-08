@@ -51,18 +51,27 @@ export function IntranetOnePage() {
   return (
     <>
       <section className="w-full py-4 md:py-6">
+        {/* Mobile intro — visible only below lg; the large sidebar is hidden on small screens */}
+        <p
+          className="mb-5 text-sm lg:hidden"
+          style={{ color: "var(--foreground-muted)", lineHeight: "1.75" }}
+        >
+          Her er god viden til dig, der skal starte i skoleoplæringen.
+        </p>
+
         <div className="grid items-start gap-10 lg:grid-cols-[minmax(320px,0.78fr)_minmax(0,1.22fr)] lg:gap-16 xl:gap-20">
-          <div className="lg:sticky lg:top-8 lg:self-start lg:pl-8 xl:pl-12">
+          {/* Decorative sidebar — hidden on mobile, sticky on desktop */}
+          <div className="hidden lg:sticky lg:top-8 lg:block lg:self-start lg:pl-8 xl:pl-12">
             <div className="max-w-[32rem]">
               <h2
                 className="leading-[0.95] tracking-[-0.045em] text-[var(--foreground)]"
-                style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "71.12px", fontWeight: 700 }}
+                style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "clamp(2.5rem, 5.5vw, 71.12px)", fontWeight: 700 }}
               >
                 PRAKTISK INFORMATION
               </h2>
               <span
                 className="mt-6 block max-w-[30rem] leading-[1.3] tracking-[-0.02em] text-[var(--foreground)]"
-                style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "40.27px", fontWeight: 400 }}
+                style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "clamp(1.4rem, 3vw, 40.27px)", fontWeight: 400 }}
               >
                 Her er god viden til dig, der skal starte i skoleoplæringen.
               </span>
@@ -190,12 +199,13 @@ export function IntranetOnePage() {
           window.scrollTo({ top: 0, behavior: "smooth" })
         }}
         aria-label="Til toppen"
-        className={`fixed bottom-6 right-6 z-[80] inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${
+        className={`fixed right-4 z-[80] inline-flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-200 sm:right-6 sm:h-11 sm:w-11 ${
           showJumpTop
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none translate-y-2 opacity-0"
         }`}
         style={{
+          bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
           background: "var(--surface)",
           borderColor: "var(--surface-border)",
           color: "var(--foreground-muted)",

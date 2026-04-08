@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Kalam, Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmDialogProvider } from "@/components/confirm-dialog-provider";
@@ -28,6 +28,12 @@ const kalam = Kalam({
 export const metadata: Metadata = {
   title: "TEC Infotavle",
   description: "Teknisk Erhvervsskole Center - Infotavle",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
