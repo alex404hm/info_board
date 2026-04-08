@@ -37,7 +37,8 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() })
-    if (!session || getUserRole(session) !== "teacher") {
+    const role = getUserRole(session)
+    if (!session || !["teacher", "admin"].includes(role ?? "")) {
       return NextResponse.json({ error: "Ikke autoriseret" }, { status: 401 })
     }
 

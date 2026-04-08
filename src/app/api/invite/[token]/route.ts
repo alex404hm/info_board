@@ -5,6 +5,15 @@ import { NextRequest, NextResponse } from "next/server"
 
 type Params = { params: Promise<{ token: string }> }
 
+type InviteAcceptPayload = {
+  name?: unknown
+  password?: unknown
+  phoneNumber?: unknown
+  image?: unknown
+}
+
+const PHONE_REGEX = /^[0-9+()\-\s]{6,32}$/
+
 export async function GET(_req: NextRequest, { params }: Params) {
   const { token } = await params
 
@@ -34,10 +43,27 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { token } = await params
-  const { name, password, phoneNumber, image } = await req.json()
 
-  if (!name?.trim() || !password || password.length < 10) {
+  if (!req.headers.get("content-type")?.includes("application/json")) {
+    return NextResponse.json({ error: "Ugyldig content-type" }, { status: 415 })
+  }
+
+  const payload = (await req.json()) as InviteAcceptPayload
+  const name = typeof payload.name === "string" ? payload.name.trim() : ""
+  const password = typeof payload.password === "string" ? payload.password : ""
+  const phoneNumber = typeof payload.phoneNumber === "string" ? payload.phoneNumber.trim() : ""
+  const image = typeof payload.image === "string" ? payload.image.trim() : null
+
+  if (!name || name.length > 120 || !password || password.length < 10) {
     return NextResponse.json({ error: "Ugyldig input" }, { status: 400 })
+  }
+
+  if (phoneNumber && !PHONE_REGEX.test(phoneNumber)) {
+    return NextResponse.json({ error: "Ugyldigt telefonnummer" }, { status: 400 })
+  }
+
+  if (image && !image.startsWith("/uploads/")) {
+    return NextResponse.json({ error: "Ugyldigt billede" }, { status: 400 })
   }
 
   const now = new Date()
@@ -63,10 +89,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   await db
     .update(user)
     .set({
-      name: name.trim(),
+      name,
       emailVerified: true,
-      phoneNumber: typeof phoneNumber === "string" ? phoneNumber.trim() || null : null,
-      image: typeof image === "string" && image.startsWith("data:image/") ? image : null,
+      phoneNumber: phoneNumber || null,
+      image,
       updatedAt: now,
     })
     .where(eq(user.id, inv.userId))
