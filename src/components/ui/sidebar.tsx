@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { motion } from "framer-motion"
+import { motion, type HTMLMotionProps } from "framer-motion"
 import { Slot } from "radix-ui"
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -149,6 +149,15 @@ function SidebarProvider({
   )
 }
 
+type SidebarProps = Omit<
+  React.ComponentProps<"div">,
+  "onDrag" | "onDragCapture" | "onDragEnd" | "onDragStart"
+> & {
+  side?: "left" | "right"
+  variant?: "sidebar" | "floating" | "inset"
+  collapsible?: "offcanvas" | "icon" | "none"
+}
+
 function Sidebar({
   side = "left",
   variant = "sidebar",
@@ -157,11 +166,7 @@ function Sidebar({
   children,
   dir,
   ...props
-}: React.ComponentProps<"div"> & {
-  side?: "left" | "right"
-  variant?: "sidebar" | "floating" | "inset"
-  collapsible?: "offcanvas" | "icon" | "none"
-}) {
+}: SidebarProps) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
   if (collapsible === "none") {
@@ -231,11 +236,10 @@ function Sidebar({
     containerX = "0%"
   }
 
-  const sidebarSpring = {
-    type: "spring" as const,
-    stiffness: 280,
-    damping: 26,
-    mass: 0.8,
+  const sidebarTransition = {
+    type: "tween" as const,
+    duration: 0.3,
+    ease: [0.22, 1, 0.36, 1] as const,
   }
 
   return (
@@ -250,9 +254,9 @@ function Sidebar({
       {/* Spacer that pushes content to the right as the sidebar expands/collapses */}
       <motion.div
         data-slot="sidebar-gap"
-        initial={{ width: gapWidth }}
+        initial={false}
         animate={{ width: gapWidth }}
-        transition={sidebarSpring}
+        transition={sidebarTransition}
         className={cn(
           "relative bg-transparent",
           side === "right" && "rotate-180",
@@ -262,9 +266,9 @@ function Sidebar({
       <motion.div
         data-slot="sidebar-container"
         data-side={side}
-        initial={{ width: containerWidth, x: containerX }}
+        initial={false}
         animate={{ width: containerWidth, x: containerX }}
-        transition={sidebarSpring}
+        transition={sidebarTransition}
         className={cn(
           "fixed inset-y-0 z-10 hidden h-svh overflow-hidden md:flex",
           side === "left" ? "left-0" : "right-0",
@@ -274,7 +278,7 @@ function Sidebar({
           className
         )}
         style={{ willChange: "width, transform" }}
-        {...(props as React.ComponentProps<"div">)}
+        {...(props as Omit<HTMLMotionProps<"div">, "ref">)}
       >
         <div
           data-sidebar="sidebar"
@@ -326,7 +330,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
+        "absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:inset-s-1/2 after:w-0.5 hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",

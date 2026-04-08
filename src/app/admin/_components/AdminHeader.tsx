@@ -6,6 +6,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/dashboard": { title: "Oversigt",         subtitle: "Oversigt over din infoskærm" },
   "/admin/messages": { title: "Beskeder",          subtitle: "Administrer opslag og beskeder" },
   "/admin/calendar": { title: "Kalender",          subtitle: "Outlook-kalenderintegration" },
+  "/admin/intranet": { title: "Intranet",          subtitle: "Redigér FAQ og indhold til intranetsiden" },
   "/admin/display":  { title: "Visning og layout", subtitle: "Konfigurer navigationspaneler" },
   "/admin/settings": { title: "Min konto",        subtitle: "Profil, adgangskode og sessioner" },
   "/admin/kokkenvagt": { title: "Køkkenvagt",        subtitle: "Administrer vagtplanen uge for uge" },
@@ -16,11 +17,11 @@ interface AdminHeaderProps {
     id: string
     name: string | null
     email: string
-    role?: string
+    role?: string | null
   }
 }
 
-export default function AdminHeader({ user: _user }: AdminHeaderProps) {
+export default function AdminHeader({}: AdminHeaderProps) {
   const pathname = usePathname()
 
   // Find the best match by checking if the pathname starts with the key

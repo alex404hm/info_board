@@ -29,19 +29,28 @@ type ShellProps = {
   noHeader?: boolean
   fullWidth?: boolean
   backHref?: string
+  headerAlign?: "contained" | "edge"
 }
 
-export function SectionPageShell({ title, subtitle, children, noHeader, fullWidth = false, backHref = "/" }: ShellProps) {
+export function SectionPageShell({
+  title,
+  subtitle,
+  children,
+  noHeader,
+  fullWidth = false,
+  backHref = "/",
+  headerAlign = "contained",
+}: ShellProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const mainRef  = useRef<HTMLElement>(null)
+  const tileId = PATH_TO_TILE[pathname]
 
   // ── Tile visibility guard ────────────────────────────────────────────────
-  const [allowed, setAllowed] = useState<boolean | null>(null)
+  const [allowed, setAllowed] = useState<boolean | null>(() => (tileId ? null : true))
 
   useEffect(() => {
-    const tileId = PATH_TO_TILE[pathname]
-    if (!tileId) { setAllowed(true); return }
+    if (!tileId) return
 
     let mounted = true
     fetch("/api/tiles-config", { cache: "no-store" })
@@ -58,7 +67,7 @@ export function SectionPageShell({ title, subtitle, children, noHeader, fullWidt
       })
       .catch(() => { if (mounted) setAllowed(true) })
     return () => { mounted = false }
-  }, [pathname, router])
+  }, [tileId, router])
 
   // While checking visibility, show blank screen to prevent flash
   if (allowed === null) {
@@ -74,10 +83,16 @@ export function SectionPageShell({ title, subtitle, children, noHeader, fullWidt
       {!noHeader && (
         <div className="shrink-0 px-4 py-3 md:px-6"
           style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}>
-          <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
+          <div
+            className={
+              headerAlign === "edge"
+                ? "flex w-full items-start justify-between gap-3"
+                : "mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3"
+            }
+          >
             <Link
               href={backHref}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
               style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -94,7 +109,7 @@ export function SectionPageShell({ title, subtitle, children, noHeader, fullWidt
       )}
 
       {/* Main content */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto custom-scrollbar relative">
+      <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none custom-scrollbar relative">
         <div className={`${fullWidth ? "w-full px-4 pb-10 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 md:pb-12" : "mx-auto w-full max-w-[1400px] px-3 pb-10 pt-4 sm:px-4 sm:pt-6 md:px-10 md:pt-8 md:pb-12"}`}>
           {children}
         </div>

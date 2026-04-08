@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Users,
   Coffee,
+  FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -37,6 +38,7 @@ const adminSections = [
     label: "Administration",
     items: [
       { title: "Oversigt",    url: "/admin/dashboard", icon: LayoutDashboard },
+      { title: "Intranet",    url: "/admin/intranet",  icon: FileText },
       { title: "Brugere",     url: "/admin/users",    icon: Users },
     ],
   },
@@ -50,6 +52,7 @@ function buildInstructorSections() {
         { title: "Oversigt",         url: "/admin/dashboard",  icon: LayoutDashboard },
         { title: "Beskeder",         url: "/admin/messages",   icon: MessageSquare },
         { title: "Kalender",         url: "/admin/calendar",   icon: CalendarDays },
+        { title: "Intranet",         url: "/admin/intranet",   icon: FileText },
         { title: "Visning og layout", url: "/admin/display",   icon: LayoutGrid },
         { title: "Køkkenvagt",       url: "/admin/kokkenvagt", icon: Coffee },
       ],
@@ -84,25 +87,25 @@ function SidebarLogo() {
   const collapsed = state === "collapsed"
 
   return (
-    <div className={`flex w-full items-center px-2 py-2.5 ${collapsed ? "justify-center" : "justify-between"}`}>
-      <AnimatePresence initial={false}>
-        {!collapsed && (
-          <motion.div
-            key="tec-logo"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.1 }}
-            className="overflow-hidden"
-          >
-            <TecLogo />
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div
+      className={`relative flex h-10 w-full items-center px-2 py-2.5 ${
+        collapsed ? "justify-center" : "justify-start"
+      }`}
+    >
+      <div
+        className={`overflow-hidden whitespace-nowrap ${
+          collapsed ? "w-0 opacity-0 pointer-events-none" : "w-auto opacity-100"
+        }`}
+        aria-hidden={collapsed}
+      >
+        <TecLogo />
+      </div>
       <motion.button
         onClick={toggleSidebar}
         aria-label="Skift sidepanel"
-        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${
+          collapsed ? "" : "absolute right-2"
+        }`}
         whileTap={{ scale: 0.88 }}
         transition={{ type: "spring", stiffness: 400, damping: 20 }}
       >
