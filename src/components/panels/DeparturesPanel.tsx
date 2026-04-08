@@ -24,13 +24,11 @@ export function DeparturesPanel() {
       <DeparturesBox
         title={stop1?.title ?? "Tættest mod skolen"}
         sourceStopName={stop1?.sourceStopName ?? "Ukendt stoppested"}
-        sourceStopId={stop1?.sourceStopId ?? "-"}
         departures={stop1?.departures ?? []}
       />
       <DeparturesBox
         title={stop2?.title ?? "Alternativt stoppested"}
         sourceStopName={stop2?.sourceStopName ?? "Ukendt stoppested"}
-        sourceStopId={stop2?.sourceStopId ?? "-"}
         departures={stop2?.departures ?? []}
       />
     </div>
@@ -40,12 +38,10 @@ export function DeparturesPanel() {
 function DeparturesBox({
   title,
   sourceStopName,
-  sourceStopId,
   departures,
 }: {
   title: string
   sourceStopName: string
-  sourceStopId: string
   departures: Departure[]
 }) {
   return (
@@ -59,7 +55,6 @@ function DeparturesBox({
           </div>
         </div>
         <p className="mt-1 text-sm font-semibold text-foreground-strong">{sourceStopName}</p>
-        <p className="text-[11px] text-subtle">Stop ID: {sourceStopId}</p>
       </div>
 
       {departures.length === 0 ? (
