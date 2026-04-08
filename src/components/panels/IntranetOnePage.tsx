@@ -50,22 +50,22 @@ export function IntranetOnePage() {
 
   return (
     <>
-      <section className="w-full py-4 md:py-6">
-        <div className="grid items-start gap-10 lg:grid-cols-[minmax(320px,0.78fr)_minmax(0,1.22fr)] lg:gap-16 xl:gap-20">
-          <div className="lg:sticky lg:top-8 lg:self-start lg:pl-8 xl:pl-12">
-            <div className="max-w-[32rem]">
+      <section className="w-full py-2 sm:py-4 md:py-6">
+        <div className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)] lg:gap-14 xl:gap-20">
+          <div className="lg:sticky lg:top-6 lg:self-start lg:pl-4 xl:pl-10">
+            <div className="max-w-lg rounded-2xl p-1">
               <h2
-                className="leading-[0.95] tracking-[-0.045em] text-[var(--foreground)]"
-                style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "71.12px", fontWeight: 700 }}
+                className="text-[clamp(1.45rem,6.5vw,2.1rem)] leading-[0.95] tracking-[-0.045em] text-foreground sm:text-[clamp(1.9rem,9.4vw,4.35rem)]"
+                style={{ fontFamily: '"TEC Sans", sans-serif', fontWeight: 700 }}
               >
                 PRAKTISK INFORMATION
               </h2>
-              <span
-                className="mt-6 block max-w-[30rem] leading-[1.3] tracking-[-0.02em] text-[var(--foreground)]"
-                style={{ fontFamily: '"TEC Sans", sans-serif', fontSize: "40.27px", fontWeight: 400 }}
+              <p
+                className="mt-4 hidden max-w-xl text-[clamp(1.05rem,5.6vw,2.2rem)] leading-[1.2] tracking-[-0.02em] text-foreground sm:block"
+                style={{ fontFamily: '"TEC Sans", sans-serif', fontWeight: 400 }}
               >
                 Her er god viden til dig, der skal starte i skoleoplæringen.
-              </span>
+              </p>
             </div>
           </div>
 
@@ -84,7 +84,7 @@ export function IntranetOnePage() {
                   <button
                     type="button"
                     onClick={() => setOpenId((current) => (current === item.id ? "" : item.id))}
-                    className="group flex w-full items-center justify-between gap-5 px-4 py-5 text-left md:px-6 lg:px-8"
+                    className="group flex w-full items-center justify-between gap-3 px-3 py-4 text-left sm:gap-4 sm:px-4 sm:py-5 md:px-6 lg:px-8"
                   >
                     <div className="min-w-0 flex-1">
                       <motion.span
@@ -94,7 +94,7 @@ export function IntranetOnePage() {
                           color: isOpen ? "var(--accent-strong)" : "var(--foreground)",
                         }}
                         transition={{ duration: 0.42, ease: EASE_SMOOTH }}
-                        className="block text-lg font-semibold tracking-[-0.03em] group-hover:text-[var(--accent-strong)] md:text-[1.95rem]"
+                        className="block text-base font-semibold leading-tight tracking-[-0.03em] group-hover:text-(--accent-strong) sm:text-lg md:text-[1.55rem] lg:text-[1.95rem]"
                       >
                         {item.title}
                       </motion.span>
@@ -113,13 +113,13 @@ export function IntranetOnePage() {
                           : "color-mix(in srgb, var(--foreground-muted) 12%, transparent)",
                       }}
                       transition={{ duration: 0.42, ease: EASE_SMOOTH }}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border backdrop-blur-sm group-hover:border-[var(--accent-strong)] group-hover:text-[var(--accent-strong)]"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border backdrop-blur-sm group-hover:border-(--accent-strong) group-hover:text-(--accent-strong) sm:h-11 sm:w-11"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 40 41"
                         fill="none"
-                        className="h-5 w-5 md:h-6 md:w-6"
+                        className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6"
                         aria-hidden="true"
                       >
                         <path
@@ -161,7 +161,7 @@ export function IntranetOnePage() {
                           animate={{ y: 0, opacity: 1 }}
                           exit={{ y: -6, opacity: 0 }}
                           transition={{ duration: 0.3, ease: EASE_SMOOTH }}
-                          className="px-4 pb-6 md:px-6 md:pb-8 lg:px-8"
+                          className="px-3 pb-5 sm:px-4 sm:pb-6 md:px-6 md:pb-8 lg:px-8"
                           style={{
                             color: "var(--foreground)",
                             fontFamily: '"Sans", sans-serif',
@@ -190,12 +190,14 @@ export function IntranetOnePage() {
           window.scrollTo({ top: 0, behavior: "smooth" })
         }}
         aria-label="Til toppen"
-        className={`fixed bottom-6 right-6 z-[80] inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${
+        className={`fixed bottom-4 right-4 z-80 inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200 sm:bottom-6 sm:right-6 sm:h-11 sm:w-11 ${
           showJumpTop
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none translate-y-2 opacity-0"
         }`}
         style={{
+          bottom: "max(1rem, env(safe-area-inset-bottom))",
+          right: "max(1rem, env(safe-area-inset-right))",
           background: "var(--surface)",
           borderColor: "var(--surface-border)",
           color: "var(--foreground-muted)",
