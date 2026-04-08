@@ -43,6 +43,20 @@
       "when": 1774517544363,
       "tag": "0005_special_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775643110666,
+      "tag": "0006_keen_captain_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775644783167,
+      "tag": "0007_classy_ultron",
+      "breakpoints": true
     }
   ]
 }

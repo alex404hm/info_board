@@ -1,21 +1,28 @@
 import nodemailer from "nodemailer"
 
-if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-  throw new Error("SMTP_USER and SMTP_PASS environment variables are required")
-}
+const hasSmtpCredentials = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST ?? "mail.privateemail.com",
-  port: Number(process.env.SMTP_PORT ?? 465),
-  secure: process.env.SMTP_SECURE !== "false",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+const transporter = hasSmtpCredentials
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST ?? "mail.privateemail.com",
+      port: Number(process.env.SMTP_PORT ?? 465),
+      secure: process.env.SMTP_SECURE !== "false",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    })
+  : null
 
 const FROM = `TEC Info Board <${process.env.SMTP_USER}>`
 const BASE_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
+
+function requireTransporter() {
+  if (!transporter) {
+    throw new Error("SMTP_USER and SMTP_PASS environment variables are required")
+  }
+  return transporter
+}
 
 
 function emailLayout(opts: {
@@ -147,11 +154,12 @@ export async function sendInviteEmail(
   token: string,
   role: string
 ): Promise<string> {
+  const mailer = requireTransporter()
   const link = `${BASE_URL}/invite/${token}`
 
   const roleLabel = role === "admin" ? "Administrator" : "Instruktør"
 
-  await transporter.sendMail({
+  await mailer.sendMail({
     from: FROM,
     to,
     subject: "Du er blevet inviteret til TEC Info Board",
@@ -173,7 +181,9 @@ export async function sendInviteEmail(
 // ── reset password email ───────────────────────────────────────────────────────
 
 export async function sendResetPasswordEmail(to: string, url: string): Promise<void> {
-  await transporter.sendMail({
+  const mailer = requireTransporter()
+
+  await mailer.sendMail({
     from: FROM,
     to,
     subject: "Nulstil din TEC Info Board adgangskode",
@@ -187,5 +197,26 @@ export async function sendResetPasswordEmail(to: string, url: string): Promise<v
       highlightEmail: to,
       footerText: "Hvis du ikke har anmodet om en adgangskoderemsætning, kan du roligt ignorere denne e-mail.",
     }),
+  })
+}
+
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+}: {
+  to: string
+  subject: string
+  html?: string
+  text?: string
+}) {
+  const mailer = requireTransporter()
+  return mailer.sendMail({
+    from: FROM,
+    to,
+    subject,
+    html,
+    text,
   })
 }
