@@ -458,42 +458,42 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
               className={cn(
-                "group relative block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "group relative block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 avatarLoading ? "cursor-wait" : "cursor-pointer",
               )}
               aria-label="Upload profilbillede"
             >
-              <Avatar className="h-24 w-24 ring-2 ring-border/50 transition-all group-hover:ring-emerald-500/50">
-                {avatarPreview && (
-                  <AvatarImage
+              <Avatar className={cn(
+                "h-24 w-24 transition-all duration-300 ease-out",
+                "ring-[3px] ring-border/40",
+                "group-hover:ring-white/20 group-hover:brightness-[0.6] group-hover:scale-[1.03]",
+              )}>
+                {avatarPreview ? (
+                  // Use a plain img to avoid Radix's loading cycle flashing the fallback
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={avatarPreview}
                     alt="Profilbillede"
-                    className="object-cover"
+                    className="h-full w-full rounded-full object-cover"
                   />
+                ) : (
+                  <AvatarFallback className="bg-emerald-600 text-white text-2xl font-bold">
+                    {initials}
+                  </AvatarFallback>
                 )}
-                <AvatarFallback className="bg-emerald-600 text-white text-2xl font-bold">
-                  {initials}
-                </AvatarFallback>
               </Avatar>
 
-              {/* Hover overlay */}
-              <span
-                aria-hidden
-                className="absolute inset-0 rounded-full bg-black/0 transition-colors group-hover:bg-black/35 flex items-center justify-center"
-              >
-                <Camera className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
-              </span>
-
-              {/* Camera badge – bottom right */}
+              {/* Camera badge – always visible, bottom right */}
               <span className={cn(
-                "absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full",
-                "border-2 border-background bg-emerald-600 text-white shadow-lg",
-                "transition-transform group-hover:scale-110",
+                "absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full",
+                "border-2 border-background",
+                "bg-white/90 text-zinc-800",
+                "shadow-[0_2px_10px_rgba(0,0,0,0.25)]",
               )}>
                 {avatarLoading ? (
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  <RefreshCw className="h-3 w-3 animate-spin" />
                 ) : (
-                  <Camera className="h-3.5 w-3.5" />
+                  <Camera className="h-3 w-3" />
                 )}
               </span>
             </button>

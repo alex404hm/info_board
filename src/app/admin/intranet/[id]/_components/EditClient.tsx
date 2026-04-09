@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Save } from "lucide-react"
 import { IntranetMarkdownEditor } from "@/components/intranet/IntranetMarkdownEditor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
 import { normalizeEditorContent } from "@/lib/intranet-content"
 import { type IntranetFaqItem } from "@/lib/intranet-faq"
@@ -22,6 +23,7 @@ function createDraftItem(): IntranetFaqItem {
 export default function AdminIntranetEditPage() {
   const params = useParams()
   const router = useRouter()
+  const confirm = useConfirmDialog()
   const id = params?.id as string
   const isNew = id === "new"
 
@@ -35,6 +37,20 @@ export default function AdminIntranetEditPage() {
 
   const hasUnsavedChanges =
     item !== null && baseline !== null && JSON.stringify(item) !== JSON.stringify(baseline)
+
+  async function goBack() {
+    if (hasUnsavedChanges) {
+      const ok = await confirm({
+        title: "Forlad redigering?",
+        description: "Hvis du forlader siden nu, mister du dine ændringer.",
+        confirmText: "Forlad",
+        cancelText: "Bliv her",
+        tone: "warning",
+      })
+      if (!ok) return
+    }
+    router.push("/admin/intranet")
+  }
 
   useUnsavedChangesGuard({
     enabled: hasUnsavedChanges,
@@ -157,7 +173,7 @@ export default function AdminIntranetEditPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => router.push("/admin/intranet")}>
+          <Button variant="outline" size="sm" onClick={() => void goBack()}>
             <ArrowLeft className="h-4 w-4" />
             Tilbage
           </Button>
