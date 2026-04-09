@@ -50,9 +50,9 @@ export function IntranetOnePage() {
 
   return (
     <>
-      <section className="w-full py-2 sm:py-4 md:py-6">
+      <section className="w-full -mt-3 sm:-mt-6 md:-mt-8 pb-2 sm:pb-4 md:pb-6">
         <div className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)] lg:gap-14 xl:gap-20">
-          <div className="lg:sticky lg:top-6 lg:self-start lg:pl-4 xl:pl-10">
+          <div className="pt-3 sm:pt-6 md:pt-8 lg:sticky lg:top-0 lg:z-10 lg:self-start lg:pl-4 xl:pl-10">
             <div className="max-w-lg rounded-2xl p-1">
               <h2
                 className="text-[clamp(1.45rem,6.5vw,2.1rem)] leading-[0.95] tracking-[-0.045em] text-foreground sm:text-[clamp(1.9rem,9.4vw,4.35rem)]"
@@ -69,7 +69,7 @@ export function IntranetOnePage() {
             </div>
           </div>
 
-          <div className="flex flex-col" style={{ borderTop: "1px solid var(--divider)", borderBottom: "1px solid var(--divider)" }}>
+          <div className="pt-3 sm:pt-6 md:pt-8 flex flex-col" style={{ borderTop: "1px solid var(--divider)", borderBottom: "1px solid var(--divider)" }}>
             {items.map((item, index) => {
               const isOpen = openId === item.id
 

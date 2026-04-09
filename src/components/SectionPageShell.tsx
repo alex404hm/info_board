@@ -75,7 +75,7 @@ export function SectionPageShell({
   }
 
   return (
-    <div className="home-theme flex min-h-dvh flex-col bg-background text-foreground">
+    <div className="home-theme flex h-dvh flex-col bg-background text-foreground">
       <InfoBoardIdleGuard />
       <StatusBar />
 

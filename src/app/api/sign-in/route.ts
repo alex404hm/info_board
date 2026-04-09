@@ -1,132 +1,244 @@
 import { NextRequest, NextResponse } from "next/server"
-import { and, eq, ne } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 
+import { auth } from "@/lib/auth"
 import { db } from "@/db"
 import * as schema from "@/db/schema"
-import {
-  extractIpAddress,
-  extractUserAgent,
-} from "@/lib/auth-security-handler"
-import {
-  LOGIN_SECURITY_CONFIG,
-  checkIpAndDeviceRateLimit,
-  countRecentFailedAttempts,
-  generateDeviceFingerprint,
-  isAccountLocked,
-  lockUserAccount,
-  logSecurityEvent,
-  registerFailedIpAndDeviceAttempt,
-  recordLoginAttempt,
-  resetIpAndDeviceRateLimit,
-  resetFailedAttempts,
-} from "@/lib/login-security"
-import { queueSecurityEmail } from "@/lib/security-email-alerts"
 
-type LoginPayload = {
-  email?: string
-  password?: string
+// ── Config ────────────────────────────────────────────────────────────────────
+const IP_MAX_FAILURES  = 5            // failures before IP block
+const IP_WINDOW_MIN    = 15           // rolling window in minutes
+const IP_BLOCK_MIN     = 15           // how long to block the IP
+const EMAIL_MAX_FAILURES = 5          // per-email max attempts
+const EMAIL_WINDOW_MIN = 1440         // per-email window in minutes (24 hours)
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function normalizeEmail(s: string) {
+  return s.replace(/[\u0000-\u001F\u007F]/g, "").trim().toLowerCase()
 }
 
-const GENERIC_LOGIN_ERROR = "Forkert e-mail eller adgangskode."
-
-function normalizeEmail(email: string): string {
-  return email
-    .replace(/[\u0000-\u001F\u007F]/g, "")
-    .trim()
-    .toLowerCase()
+function isValidEmail(s: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
 }
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+function sanitize(s: string) {
+  return s.replace(/[\u0000-\u001F\u007F]/g, "")
 }
 
-function sanitizePasswordInput(password: string): string {
-  return password.replace(/[\u0000-\u001F\u007F]/g, "")
+/** Best-effort client IP — works behind most proxies. */
+function clientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    "127.0.0.1"
+  )
 }
 
-function isAllowedOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get("origin")
-  if (!origin) {
-    return true
+/**
+ * Forward every Set-Cookie header from the better-auth response to our response.
+ * headers.get("set-cookie") merges multiple cookies with ", " which breaks
+ * cookie parsing — getSetCookie() returns them individually.
+ */
+function forwardCookies(src: Response, dst: NextResponse) {
+  const cookies =
+    (src.headers as Headers & { getSetCookie?(): string[] }).getSetCookie?.() ??
+    (src.headers.get("set-cookie") ? [src.headers.get("set-cookie")!] : [])
+  for (const c of cookies) dst.headers.append("set-cookie", c)
+}
+
+// ── IP rate limiting ──────────────────────────────────────────────────────────
+
+async function getIpBucket(ip: string) {
+  const [row] = await db
+    .select()
+    .from(schema.authRateLimit)
+    .where(and(eq(schema.authRateLimit.keyType, "ip"), eq(schema.authRateLimit.keyValue, ip)))
+    .limit(1)
+  return row ?? null
+}
+
+async function isIpBlocked(ip: string): Promise<{ blocked: boolean; retryAfterSeconds: number; blockedUntil?: Date }> {
+  const bucket = await getIpBucket(ip)
+  if (!bucket) return { blocked: false, retryAfterSeconds: 0 }
+  const now = new Date()
+  if (bucket.blockedUntil && bucket.blockedUntil > now) {
+    return {
+      blocked: true,
+      retryAfterSeconds: Math.ceil((bucket.blockedUntil.getTime() - now.getTime()) / 1000),
+      blockedUntil: bucket.blockedUntil,
+    }
+  }
+  return { blocked: false, retryAfterSeconds: 0 }
+}
+
+async function recordIpFailure(ip: string): Promise<{ nowBlocked: boolean; blockedUntil?: Date }> {
+  const now    = new Date()
+  const cutoff = new Date(now.getTime() - IP_WINDOW_MIN * 60_000)
+  const bucket = await getIpBucket(ip)
+
+  if (!bucket) {
+    await db.insert(schema.authRateLimit).values({
+      id: crypto.randomUUID(),
+      keyType: "ip",
+      keyValue: ip,
+      attemptCount: 1,
+      windowStartedAt: now,
+      lastAttemptAt: now,
+      blockedUntil: null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    return { nowBlocked: false }
   }
 
-  const allowedOrigins = new Set<string>([request.nextUrl.origin])
-  if (process.env.BETTER_AUTH_URL) {
-    allowedOrigins.add(process.env.BETTER_AUTH_URL)
+  // If already blocked, just touch the timestamp
+  if (bucket.blockedUntil && bucket.blockedUntil > now) {
+    await db.update(schema.authRateLimit)
+      .set({ lastAttemptAt: now, updatedAt: now })
+      .where(eq(schema.authRateLimit.id, bucket.id))
+    return { nowBlocked: true, blockedUntil: bucket.blockedUntil }
   }
 
-  return allowedOrigins.has(origin)
+  const windowExpired = bucket.windowStartedAt < cutoff
+  const nextCount     = windowExpired ? 1 : bucket.attemptCount + 1
+  const blockedUntil  = nextCount >= IP_MAX_FAILURES
+    ? new Date(now.getTime() + IP_BLOCK_MIN * 60_000)
+    : null
+
+  await db.update(schema.authRateLimit).set({
+    attemptCount: nextCount,
+    windowStartedAt: windowExpired ? now : bucket.windowStartedAt,
+    lastAttemptAt: now,
+    blockedUntil,
+    updatedAt: now,
+  }).where(eq(schema.authRateLimit.id, bucket.id))
+
+  return { nowBlocked: !!blockedUntil, blockedUntil: blockedUntil ?? undefined }
 }
 
-function getProgressiveDelayMs(failedAttemptCount: number): number {
-  if (failedAttemptCount <= 0) return 0
-  if (failedAttemptCount >= LOGIN_SECURITY_CONFIG.LOCKOUT_THRESHOLD) return 0
-
-  // Attempts 1-6 get lightweight delays to slow brute-force traffic
-  const bounded = Math.min(failedAttemptCount, LOGIN_SECURITY_CONFIG.LOCKOUT_THRESHOLD - 1)
-  return bounded * LOGIN_SECURITY_CONFIG.RATE_LIMIT_DELAY_MS
+async function resetIpFailures(ip: string) {
+  await db.delete(schema.authRateLimit)
+    .where(and(eq(schema.authRateLimit.keyType, "ip"), eq(schema.authRateLimit.keyValue, ip)))
 }
 
-function applyResponseCookies(source: Response, target: NextResponse) {
-  const setCookie = source.headers.get("set-cookie")
-  if (setCookie) {
-    target.headers.set("set-cookie", setCookie)
+// ── Email rate limiting ───────────────────────────────────────────────────────
+
+async function getEmailBucket(email: string) {
+  const [row] = await db
+    .select()
+    .from(schema.authRateLimit)
+    .where(and(eq(schema.authRateLimit.keyType, "email"), eq(schema.authRateLimit.keyValue, email)))
+    .limit(1)
+  return row ?? null
+}
+
+async function isEmailBlocked(email: string): Promise<{ blocked: boolean; attemptsRemaining: number }> {
+  const bucket = await getEmailBucket(email)
+  if (!bucket) return { blocked: false, attemptsRemaining: EMAIL_MAX_FAILURES }
+  const now = new Date()
+  const cutoff = new Date(now.getTime() - EMAIL_WINDOW_MIN * 60_000)
+
+  // If window expired, reset
+  if (bucket.windowStartedAt < cutoff) {
+    return { blocked: false, attemptsRemaining: EMAIL_MAX_FAILURES }
   }
+
+  const attemptsRemaining = Math.max(0, EMAIL_MAX_FAILURES - bucket.attemptCount)
+  return { blocked: bucket.attemptCount >= EMAIL_MAX_FAILURES, attemptsRemaining }
 }
 
-async function forwardToBetterAuthSignIn(
-  request: NextRequest,
-  payload: { email: string; password: string }
-): Promise<Response> {
-  const authUrl = new URL("/api/auth/sign-in/email", request.url)
-  const ipAddress = extractIpAddress(request)
-  const userAgent = extractUserAgent(request)
+async function recordEmailFailure(email: string): Promise<{ blocked: boolean; attemptsRemaining: number }> {
+  const now = new Date()
+  const cutoff = new Date(now.getTime() - EMAIL_WINDOW_MIN * 60_000)
+  const bucket = await getEmailBucket(email)
 
-  return fetch(authUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "user-agent": userAgent,
-      "x-forwarded-for": ipAddress,
-      cookie: request.headers.get("cookie") ?? "",
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  })
+  if (!bucket) {
+    await db.insert(schema.authRateLimit).values({
+      id: crypto.randomUUID(),
+      keyType: "email",
+      keyValue: email,
+      attemptCount: 1,
+      windowStartedAt: now,
+      lastAttemptAt: now,
+      blockedUntil: null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    return { blocked: false, attemptsRemaining: EMAIL_MAX_FAILURES - 1 }
+  }
+
+  // If window expired, reset
+  if (bucket.windowStartedAt < cutoff) {
+    await db.update(schema.authRateLimit)
+      .set({
+        attemptCount: 1,
+        windowStartedAt: now,
+        lastAttemptAt: now,
+        updatedAt: now,
+      })
+      .where(eq(schema.authRateLimit.id, bucket.id))
+    return { blocked: false, attemptsRemaining: EMAIL_MAX_FAILURES - 1 }
+  }
+
+  const nextCount = bucket.attemptCount + 1
+  const blocked = nextCount >= EMAIL_MAX_FAILURES
+
+  await db.update(schema.authRateLimit)
+    .set({
+      attemptCount: nextCount,
+      lastAttemptAt: now,
+      updatedAt: now,
+    })
+    .where(eq(schema.authRateLimit.id, bucket.id))
+
+  return { blocked, attemptsRemaining: Math.max(0, EMAIL_MAX_FAILURES - nextCount) }
 }
 
-export async function POST(request: NextRequest) {
-  if (!isAllowedOrigin(request)) {
+async function resetEmailFailures(email: string) {
+  await db.delete(schema.authRateLimit)
+    .where(and(eq(schema.authRateLimit.keyType, "email"), eq(schema.authRateLimit.keyValue, email)))
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
+
+export async function POST(req: NextRequest) {
+  // CORS guard
+  const origin = req.headers.get("origin")
+  if (origin && origin !== req.nextUrl.origin && origin !== process.env.BETTER_AUTH_URL) {
+    return NextResponse.json({ success: false, message: "Forbidden." }, { status: 403 })
+  }
+
+  if (!req.headers.get("content-type")?.includes("application/json")) {
+    return NextResponse.json({ success: false, message: "Unsupported content type." }, { status: 415 })
+  }
+
+  const ip = clientIp(req)
+
+  // ── IP block check ─────────────────────────────────────────────────────────
+  const ipStatus = await isIpBlocked(ip)
+  if (ipStatus.blocked && ipStatus.blockedUntil) {
     return NextResponse.json(
-      { success: false, message: "Forbidden origin." },
-      { status: 403 }
+      {
+        success: false,
+        message: "For mange loginforsøg. Prøv igen om lidt.",
+        blockedUntil: ipStatus.blockedUntil.toISOString(),
+      },
+      { status: 429, headers: { "Retry-After": String(ipStatus.retryAfterSeconds) } }
     )
   }
 
-  const contentType = request.headers.get("content-type")
-  if (!contentType || !contentType.includes("application/json")) {
-    return NextResponse.json(
-      { success: false, message: "Unsupported content type." },
-      { status: 415 }
-    )
-  }
-
-  const ipAddress = extractIpAddress(request)
-  const userAgent = extractUserAgent(request)
-  const deviceFingerprint = await generateDeviceFingerprint(ipAddress, userAgent)
-
-  let body: LoginPayload
+  // ── Parse body ─────────────────────────────────────────────────────────────
+  let rawEmail = "", rawPassword = ""
   try {
-    body = (await request.json()) as LoginPayload
+    const body = await req.json()
+    rawEmail    = String(body.email    ?? "")
+    rawPassword = String(body.password ?? "")
   } catch {
-    return NextResponse.json(
-      { success: false, message: "Ugyldig forespørgsel." },
-      { status: 400 }
-    )
+    return NextResponse.json({ success: false, message: "Ugyldig forespørgsel." }, { status: 400 })
   }
 
-  const email = normalizeEmail(body.email ?? "")
-  const password = sanitizePasswordInput(body.password ?? "")
+  const email    = normalizeEmail(rawEmail)
+  const password = sanitize(rawPassword)
 
   if (!isValidEmail(email) || password.length < 1 || password.length > 256) {
     return NextResponse.json(
@@ -135,238 +247,93 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const ipDeviceLimitStatus = await checkIpAndDeviceRateLimit(
-    ipAddress,
-    deviceFingerprint
-  )
-
-  if (ipDeviceLimitStatus.limited && ipDeviceLimitStatus.blockedUntil) {
+  // ── Email rate limit check ─────────────────────────────────────────────────
+  const emailStatus = await isEmailBlocked(email)
+  if (emailStatus.blocked) {
     return NextResponse.json(
       {
         success: false,
-        message: "For mange loginforsøg fra denne enhed eller IP. Prøv igen senere.",
-        reason: "ip_device_rate_limited",
-        limitedBy: ipDeviceLimitStatus.limitedBy,
-        retryAfterSeconds: ipDeviceLimitStatus.retryAfterSeconds,
-        blockedUntil: ipDeviceLimitStatus.blockedUntil.toISOString(),
+        message: "For mange mislykkede forsøg. Prøv igen i morgen.",
+        attemptsRemaining: 0,
+      },
+      { status: 429 }
+    )
+  }
+
+  // ── Call better-auth directly (in-process — no HTTP self-fetch) ────────────
+  let authOk = false
+
+  try {
+    const baseUrl = process.env.BETTER_AUTH_URL ?? req.nextUrl.origin
+    const authResp = await auth.handler(
+      new Request(new URL("/api/auth/sign-in/email", baseUrl), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "origin": baseUrl,
+          cookie: req.headers.get("cookie") ?? "",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+    )
+
+    authOk = authResp.ok
+
+    if (authOk) {
+      // ── Success ─────────────────────────────────────────────────────────────
+      resetIpFailures(ip).catch(() => {})            // fire-and-forget
+      resetEmailFailures(email).catch(() => {})      // fire-and-forget
+
+      const response = NextResponse.json({ success: true }, { status: 200 })
+      forwardCookies(authResp, response)
+      response.headers.set("Cache-Control", "no-store, private")
+      return response
+    }
+  } catch (err) {
+    console.error("[sign-in] auth.handler error:", err)
+    return NextResponse.json(
+      { success: false, message: "Intern fejl. Prøv igen." },
+      { status: 500 }
+    )
+  }
+
+  // ── Failure — record against IP and email ──────────────────────────────────
+  const { nowBlocked: ipNowBlocked, blockedUntil } = await recordIpFailure(ip)
+  const { blocked: emailBlocked, attemptsRemaining } = await recordEmailFailure(email)
+
+  if (ipNowBlocked && blockedUntil) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "For mange mislykkede forsøg. Din IP er blokeret i 15 minutter.",
+        blockedUntil: blockedUntil.toISOString(),
+        attemptsRemaining: 0,
       },
       {
         status: 429,
         headers: {
-          "Retry-After": String(ipDeviceLimitStatus.retryAfterSeconds),
+          "Retry-After": String(Math.ceil((blockedUntil.getTime() - Date.now()) / 1000)),
         },
       }
     )
   }
 
-  const users = await db
-    .select({ id: schema.user.id, email: schema.user.email, name: schema.user.name })
-    .from(schema.user)
-    .where(eq(schema.user.email, email))
-    .limit(1)
-
-  const user = users[0]
-
-  if (user) {
-    const lockStatus = await isAccountLocked(user.id)
-    if (lockStatus.locked && lockStatus.lockout) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Kontoen er midlertidigt låst. Prøv igen senere.",
-          reason: "account_locked",
-          lockedUntil: lockStatus.lockout.lockedUntil.toISOString(),
-        },
-        { status: 423 }
-      )
-    }
-
-    const failedAttemptCount = await countRecentFailedAttempts(user.id)
-    const delayMs = getProgressiveDelayMs(failedAttemptCount)
-    if (delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
-    }
-  }
-
-  const betterAuthResponse = await forwardToBetterAuthSignIn(request, {
-    email,
-    password,
-  })
-
-  const betterAuthPayload = await betterAuthResponse.json().catch(() => null)
-  const signInSucceeded = betterAuthResponse.ok && !betterAuthPayload?.error
-
-  if (!user) {
-    const rateLimitStatus = await registerFailedIpAndDeviceAttempt(
-      ipAddress,
-      deviceFingerprint
-    )
-
-    await logSecurityEvent({
-      eventType: "login_attempt_user_not_found",
-      severity: "info",
-      ipAddress,
-      userAgent,
-      details: {
-        email,
-        deviceFingerprint,
-      },
-    })
-
-    if (rateLimitStatus.limited && rateLimitStatus.blockedUntil) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "For mange loginforsøg fra denne enhed eller IP. Prøv igen senere.",
-          reason: "ip_device_rate_limited",
-          limitedBy: rateLimitStatus.limitedBy,
-          retryAfterSeconds: rateLimitStatus.retryAfterSeconds,
-          blockedUntil: rateLimitStatus.blockedUntil.toISOString(),
-        },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rateLimitStatus.retryAfterSeconds),
-          },
-        }
-      )
-    }
-
-    return NextResponse.json(
-      { success: false, message: GENERIC_LOGIN_ERROR },
-      { status: 401 }
-    )
-  }
-
-  if (signInSucceeded) {
-    await resetIpAndDeviceRateLimit(ipAddress, deviceFingerprint)
-    await resetFailedAttempts(user.id)
-
-    const recorded = await recordLoginAttempt({
-      userId: user.id,
-      email: user.email,
-      ipAddress,
-      userAgent,
-      success: true,
-      reason: "login_success",
-    })
-
-    const currentSessionToken = betterAuthResponse.headers
-      .get("set-cookie")
-      ?.match(/better-auth\.session_token=([^;]+)/)?.[1]
-
-    if (currentSessionToken) {
-      await db
-        .delete(schema.session)
-        .where(
-          and(
-            eq(schema.session.userId, user.id),
-            ne(schema.session.token, currentSessionToken)
-          )
-        )
-    }
-
-    await logSecurityEvent({
-      userId: user.id,
-      eventType: "login_successful",
-      severity: "info",
-      ipAddress,
-      userAgent,
-      details: {
-        email,
-        attemptCount: recorded.attemptCount,
-        deviceFingerprint,
-      },
-    })
-
-    const response = NextResponse.json(
-      { success: true, message: "Login successful" },
-      { status: 200 }
-    )
-    applyResponseCookies(betterAuthResponse, response)
-    response.headers.set("Cache-Control", "no-store")
-    return response
-  }
-
-  const failedRecord = await recordLoginAttempt({
-    userId: user.id,
-    email: user.email,
-    ipAddress,
-    userAgent,
-    success: false,
-    reason: "invalid_password",
-  })
-
-  const rateLimitStatus = await registerFailedIpAndDeviceAttempt(
-    ipAddress,
-    deviceFingerprint
-  )
-
-  if (failedRecord.attemptCount >= LOGIN_SECURITY_CONFIG.LOCKOUT_THRESHOLD) {
-    const lockout = await lockUserAccount(user.id, ipAddress, userAgent, "max_login_attempts")
-
-    queueSecurityEmail("account_locked", {
-      userEmail: user.email,
-      userName: user.name,
-      lockedUntil: lockout.lockedUntil,
-      ipAddress,
-      attemptCount: failedRecord.attemptCount,
-      supportEmail: process.env.SUPPORT_EMAIL || "support@example.com",
-    })
-
+  if (emailBlocked) {
     return NextResponse.json(
       {
         success: false,
-        message: "Kontoen er midlertidigt låst. Prøv igen senere.",
-        reason: "account_locked",
-        lockedUntil: lockout.lockedUntil.toISOString(),
+        message: "For mange mislykkede forsøg. Prøv igen i morgen.",
+        attemptsRemaining: 0,
       },
-      { status: 423 }
+      { status: 429 }
     )
   }
-
-  if (rateLimitStatus.limited && rateLimitStatus.blockedUntil) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "For mange loginforsøg fra denne enhed eller IP. Prøv igen senere.",
-        reason: "ip_device_rate_limited",
-        limitedBy: rateLimitStatus.limitedBy,
-        retryAfterSeconds: rateLimitStatus.retryAfterSeconds,
-        blockedUntil: rateLimitStatus.blockedUntil.toISOString(),
-      },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(rateLimitStatus.retryAfterSeconds),
-        },
-      }
-    )
-  }
-
-  const delayMs = getProgressiveDelayMs(failedRecord.attemptCount)
-
-  await logSecurityEvent({
-    userId: user.id,
-    eventType: "login_failed",
-    severity: "warning",
-    ipAddress,
-    userAgent,
-    details: {
-      email,
-      attemptCount: failedRecord.attemptCount,
-      delayMs,
-      deviceFingerprint,
-    },
-  })
 
   return NextResponse.json(
     {
       success: false,
-      message: GENERIC_LOGIN_ERROR,
-      reason: "invalid_credentials",
-      attemptCount: failedRecord.attemptCount,
-      delayMs,
+      message: `Forkert e-mail eller adgangskode. ${attemptsRemaining} forsøg tilbage.`,
+      attemptsRemaining,
     },
     { status: 401 }
   )

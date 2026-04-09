@@ -96,26 +96,19 @@ export function AdminThemeProvider({
     [theme, resolvedTheme, setThemeAndPersist, toggle],
   )
 
-  const themeClass = useMemo(() => {
-    if (!isHydrated) {
-      if (initialTheme === "system") {
-        // The init script set data-admin-theme on <html> before paint.
-        // Use it to avoid flash; fall back to empty string if unavailable (SSR).
-        if (typeof document !== "undefined") {
-          const pre = document.documentElement.getAttribute("data-admin-theme")
-          if (pre === "light") return " light"
-          if (pre === "dark") return " dark"
-        }
-        return "" // SSR: CSS @media handles system theme, no flash
-      }
-      return initialTheme === "light" ? " light" : " dark"
-    }
-    return resolvedTheme === "light" ? " light" : " dark"
-  }, [isHydrated, initialTheme, resolvedTheme])
+  // Always render the server-consistent class during SSR/hydration.
+  // suppressHydrationWarning lets React skip the diff for this attribute
+  // since the theme script may have already patched the DOM before hydration.
+  const themeClass = isHydrated
+    ? resolvedTheme === "light" ? " light" : " dark"
+    : initialTheme === "light" ? " light" : " dark"
 
   return (
     <AdminThemeContext.Provider value={contextValue}>
-      <div className={`admin-theme${themeClass} flex min-h-svh w-full text-foreground`}>
+      <div
+        suppressHydrationWarning
+        className={`admin-theme${themeClass} flex min-h-svh w-full text-foreground`}
+      >
         {children}
       </div>
     </AdminThemeContext.Provider>

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import {
-  ExternalLink,
   GripVertical,
   Loader2,
   Save,
@@ -10,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react"
 
+import { IntranetMarkdownEditor } from "@/components/intranet/IntranetMarkdownEditor"
 import { AdminCreateButton } from "@/app/admin/_components/AdminCreateButton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -148,6 +148,13 @@ export default function AdminIntranetPage() {
     setSelectedId(id)
   }
 
+  function updateSelected(patch: Partial<IntranetFaqItem>) {
+    if (!selectedItem) return
+    setItems((current) =>
+      current.map((item) => (item.id === selectedItem.id ? { ...item, ...patch } : item))
+    )
+  }
+
   async function saveItems() {
     setSaving(true)
     setToast(null)
@@ -176,164 +183,219 @@ export default function AdminIntranetPage() {
   }
 
   return (
-    <div className="flex h-[calc(100svh-10rem)] min-h-0 flex-col gap-4">
-      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-linear-to-br from-background via-card to-muted/30 p-6 shadow-sm">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-sky-500/10 blur-3xl" />
+    <div className="flex h-[calc(100svh-10rem)] min-h-0 flex-col lg:flex-row lg:gap-4 gap-0">
+      {/* Left panel: List of items */}
+      <div className="flex min-w-0 flex-1 flex-col lg:flex-1">
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-linear-to-br from-background via-card to-muted/30 p-6 shadow-sm">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-sky-500/10 blur-3xl" />
 
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-foreground">Intranet FAQ</p>
-              <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur">
-                {items.length} punkter
-              </span>
-              {hasUnsavedChanges && (
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-300">
-                  Ikke gemt endnu
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-foreground">FAQ-punkter</p>
+                <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur">
+                  {items.length} punkter
                 </span>
-              )}
+                {hasUnsavedChanges && (
+                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-300">
+                    Ikke gemt
+                  </span>
+                )}
+              </div>
             </div>
-            <p className="max-w-3xl text-sm text-muted-foreground">
-              Moderne overblik med fast arbejdsområde. Indhold redigeres i den fulde editor.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <AdminCreateButton type="button" variant="outline" onClick={addItem}>
-              Tilføj punkt
-            </AdminCreateButton>
-            <Button type="button" onClick={() => void saveItems()} disabled={saving || !items.length}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Gem ændringer
-            </Button>
+            <div className="flex items-center gap-2">
+              <AdminCreateButton type="button" variant="outline" size="sm" onClick={addItem}>
+                Tilføj punkt
+              </AdminCreateButton>
+              <Button type="button" size="sm" onClick={() => void saveItems()} disabled={saving || !items.length}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Gem
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {toast && (
-        <div className={`rounded-2xl border px-4 py-3 text-sm ${toast.type === "success" ? "admin-toast-success" : "admin-toast-error"}`}>
-          {toast.text}
-        </div>
-      )}
-
-      <div className="flex min-h-0 flex-1 flex-col rounded-3xl border border-border/60 bg-card/95 p-4 shadow-sm backdrop-blur">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-foreground">FAQ-punkter</p>
-            <p className="text-xs text-muted-foreground">Træk og slip for at ændre rækkefølgen. Åbn derefter i fuld editor.</p>
+        {toast && (
+          <div className={`rounded-2xl border px-4 py-3 text-sm ${toast.type === "success" ? "admin-toast-success" : "admin-toast-error"}`}>
+            {toast.text}
           </div>
-          <span className="rounded-full border border-border/60 px-2 py-0.5 text-xs text-muted-foreground">{filteredItems.length} vist</span>
-        </div>
+        )}
 
-        <div className="relative mb-3">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Søg i titel og indhold"
-            className="h-10 rounded-xl border-border/60 bg-background/80 pl-9"
-          />
-        </div>
+        {/* List container */}
+        <div className="mt-4 flex min-h-0 flex-1 flex-col rounded-3xl border border-border/60 bg-card/95 p-4 shadow-sm backdrop-blur">
+          <div className="mb-3">
+            <p className="text-xs text-muted-foreground mb-2">Søg og drag for at organisere</p>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Søg i titel..."
+                className="h-10 rounded-xl border-border/60 bg-background/80 pl-9 text-sm"
+              />
+            </div>
+          </div>
 
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-3 pr-4">
-            {filteredItems.map((item) => {
-              const selected = item.id === selectedItem?.id
-              const absoluteIndex = items.findIndex((current) => current.id === item.id)
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-2 pr-4">
+              {filteredItems.map((item) => {
+                const selected = item.id === selectedItem?.id
+                const absoluteIndex = items.findIndex((current) => current.id === item.id)
 
-            return (
-              <div
-                key={item.id}
-                role="button"
-                tabIndex={0}
-                aria-pressed={selected}
-                draggable
-                onDragStart={(event) => {
-                  setDraggedId(item.id)
-                  event.dataTransfer.effectAllowed = "move"
-                  event.dataTransfer.setData("text/plain", item.id)
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault()
-                  event.dataTransfer.dropEffect = "move"
-                }}
-                onDrop={(event) => {
-                  event.preventDefault()
-                  const sourceId = draggedId ?? event.dataTransfer.getData("text/plain")
-                  if (!sourceId || sourceId === item.id) return
-                  moveItemToIndex(sourceId, absoluteIndex)
-                  setDraggedId(null)
-                }}
-                onDragEnd={() => setDraggedId(null)}
-                onClick={() => setSelectedId(item.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault()
-                    setSelectedId(item.id)
-                  }
-                }}
-                className={`w-full rounded-2xl border p-4 text-left transition-all duration-200 ${
-                  selected
-                    ? "border-(--accent-strong) bg-(--accent-soft) shadow-sm"
-                    : "border-border/60 bg-background hover:-translate-y-0.5 hover:border-(--accent-strong)/40 hover:bg-muted/40"
-                } ${draggedId === item.id ? "opacity-60" : ""}`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="cursor-grab rounded-xl border border-border/60 bg-background/70 p-2 text-muted-foreground active:cursor-grabbing">
-                    <GripVertical className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
-                      <span className="rounded-full border border-border/60 bg-background/80 px-2 py-0.5 text-[11px] text-muted-foreground">
+                return (
+                  <div
+                    key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selected}
+                    draggable
+                    onDragStart={(event) => {
+                      setDraggedId(item.id)
+                      event.dataTransfer.effectAllowed = "move"
+                      event.dataTransfer.setData("text/plain", item.id)
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault()
+                      event.dataTransfer.dropEffect = "move"
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      const sourceId = draggedId ?? event.dataTransfer.getData("text/plain")
+                      if (!sourceId || sourceId === item.id) return
+                      moveItemToIndex(sourceId, absoluteIndex)
+                      setDraggedId(null)
+                    }}
+                    onDragEnd={() => setDraggedId(null)}
+                    onClick={() => setSelectedId(item.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        setSelectedId(item.id)
+                      }
+                    }}
+                    className={`group w-full rounded-xl border p-3 text-left transition-all duration-200 ${
+                      selected
+                        ? "border-blue-500/50 bg-blue-500/10 shadow-sm"
+                        : "border-border/40 bg-background/50 hover:border-border/60 hover:bg-muted/50"
+                    } ${draggedId === item.id ? "opacity-50" : ""} cursor-pointer`}
+                  >
+                    <div className="flex items-start gap-2 min-w-0">
+                      <div className="mt-0.5 cursor-grab rounded-lg border border-border/60 bg-muted/30 p-1.5 text-muted-foreground active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+                        <GripVertical className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{item.title || "Uden titel"}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                          {stripIntranetContent(item.content).slice(0, 80) || "Intet indhold"}
+                        </p>
+                      </div>
+                      <span className="mt-0.5 shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                         #{absoluteIndex + 1}
                       </span>
                     </div>
-                    <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
-                      {stripIntranetContent(item.content).slice(0, 150) || "Intet indhold endnu"}
-                    </p>
                   </div>
-                </div>
+                )
+              })}
 
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <p className="text-[11px] text-muted-foreground">Træk og slip for at flytte punktet</p>
-                  <Button type="button" size="sm" variant="secondary" asChild className="ml-auto rounded-lg">
-                    <a
-                      href={`/admin/intranet/full-editor?id=${encodeURIComponent(item.id)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Åbn editor
-                    </a>
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="rounded-lg text-red-600 hover:text-red-700"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      deleteItem(item.id)
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+              {!filteredItems.length && (
+                <div className="rounded-2xl border border-dashed border-border/40 px-4 py-8 text-center text-sm text-muted-foreground">
+                  Ingen punkter matcher søgningen
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+
+      {/* Right panel: Editor (Desktop) */}
+      {selectedItem ? (
+        <div className="hidden lg:flex min-w-0 w-2/5 flex-col rounded-3xl border border-border/60 bg-card/95 shadow-sm backdrop-blur overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/40 px-6 py-4 shrink-0">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground truncate">{selectedItem.title}</p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => deleteItem(selectedItem.id)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-500/10 ml-2"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-4 p-6">
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Titel
+                </label>
+                <Input
+                  value={selectedItem.title}
+                  onChange={(event) => updateSelected({ title: event.target.value })}
+                  placeholder="Titel på FAQ-punkt"
+                  className="rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2 flex-1 min-h-0">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Indhold
+                </label>
+                <div className="h-96">
+                  <IntranetMarkdownEditor
+                    key={selectedItem.id}
+                    value={selectedItem.content}
+                    onChange={(next) => updateSelected({ content: next })}
+                  />
                 </div>
               </div>
-            )
-          })}
-
-          {!filteredItems.length && (
-            <div className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-              Ingen punkter matcher din søgning.
             </div>
-          )}
+          </ScrollArea>
+        </div>
+      ) : null}
+
+      {/* Mobile Editor */}
+      {selectedItem ? (
+        <div className="lg:hidden mt-4 flex flex-col rounded-3xl border border-border/60 bg-card/95 shadow-sm backdrop-blur overflow-hidden max-h-96">
+          <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 shrink-0">
+            <p className="text-sm font-semibold text-foreground truncate">{selectedItem.title}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => deleteItem(selectedItem.id)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-500/10 ml-2"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
-        </ScrollArea>
-      </div>
+
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-3 p-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Titel</label>
+                <Input
+                  value={selectedItem.title}
+                  onChange={(event) => updateSelected({ title: event.target.value })}
+                  placeholder="Titel"
+                  className="rounded-lg text-sm"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Åbn fuld editor for at redigere indhold</p>
+              <Button variant="secondary" size="sm" asChild className="w-full rounded-lg">
+                <a href={`/admin/intranet/full-editor?id=${encodeURIComponent(selectedItem.id)}`} target="_blank" rel="noreferrer">
+                  Åbn fuld editor
+                </a>
+              </Button>
+            </div>
+          </ScrollArea>
+        </div>
+      ) : null}
     </div>
   )
 }
