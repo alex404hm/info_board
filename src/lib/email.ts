@@ -4,7 +4,7 @@ const hasSmtpCredentials = Boolean(process.env.SMTP_USER && process.env.SMTP_PAS
 
 const transporter = hasSmtpCredentials
   ? nodemailer.createTransport({
-      host: process.env.SMTP_HOST ?? "mail.privateemail.com",
+      host: process.env.SMTP_HOST ?? "smtp.gmail.com",
       port: Number(process.env.SMTP_PORT ?? 465),
       secure: process.env.SMTP_SECURE !== "false",
       auth: {
@@ -72,7 +72,7 @@ function emailLayout(opts: {
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td align="center" style="background:#0f1c30;padding:28px 32px;">
-                <img src="https://info.alexander-holm.com/logo.svg" alt="TEC" width="72" height="25" style="display:block;filter:brightness(0) invert(1);" />
+                <img src="https://info.alexander-holm.com/logo-email.svg" alt="TEC" width="72" height="25" style="display:block;" />
               </td>
             </tr>
           </table>

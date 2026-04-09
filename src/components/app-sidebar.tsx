@@ -38,7 +38,6 @@ const adminSections = [
     label: "Administration",
     items: [
       { title: "Oversigt",    url: "/admin/dashboard", icon: LayoutDashboard },
-      { title: "Intranet",    url: "/admin/intranet",  icon: FileText },
       { title: "Brugere",     url: "/admin/users",    icon: Users },
     ],
   },

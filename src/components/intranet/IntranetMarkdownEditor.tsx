@@ -639,7 +639,7 @@ export function IntranetMarkdownEditor({
 
         {/* Editor area */}
         <ScrollArea
-          className="h-105"
+          className="h-105 bg-background"
           onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY }) }}
         >
           <EditorContent editor={editor} className="h-full" />

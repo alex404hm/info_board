@@ -30,7 +30,7 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { useAdminTheme } from "../../_components/AdminThemeProvider"
+import { useAdminTheme } from "@/components/admin/AdminThemeProvider"
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 

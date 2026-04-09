@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
-import SettingsClient from "./_components/SettingsClient"
+import SettingsClient from "@/components/admin/SettingsClient"
 
 export default async function SettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() })

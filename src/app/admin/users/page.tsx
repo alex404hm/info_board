@@ -289,7 +289,7 @@ export default function UsersPage() {
           <p className="mt-1 text-sm text-muted">
             Administrer instruktør- og administrator-konti
             {pendingCount > 0 && (
-              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400">
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400">
                 <Clock className="h-3 w-3" />
                 {pendingCount} afventer
               </span>
@@ -348,7 +348,7 @@ export default function UsersPage() {
                     <div className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                       isPending
-                        ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                        ? "bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/20"
                         : "bg-emerald-600/20 text-emerald-400"
                     )}>
                       {initials(u.name, u.email)}
@@ -364,7 +364,7 @@ export default function UsersPage() {
                         )}
                       </p>
                       {isPending && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400 shrink-0">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-semibold text-amber-700 shrink-0 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400">
                           <Clock className="h-2.5 w-2.5" />
                           Afventer
                         </span>
@@ -392,7 +392,7 @@ export default function UsersPage() {
                         onClick={() => handleResendInvite(u.email)}
                         disabled={resendingEmail === u.email}
                         title="Gensend invitationsmail"
-                        className="border-amber-500/20 bg-amber-500/8 text-amber-400 hover:bg-amber-500/20 hover:text-amber-400"
+                        className="border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/8 dark:text-amber-400 dark:hover:bg-amber-500/20 dark:hover:text-amber-400"
                       >
                         {resendingEmail === u.email ? (
                           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -505,13 +505,13 @@ export default function UsersPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-6 text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20">
-                    <CheckCircle className="h-5 w-5 text-emerald-400" />
+                <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-6 text-center dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                    <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-emerald-400">Invitation sendt!</p>
-                    <p className="mt-0.5 text-xs text-emerald-400/70">
+                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Invitation sendt!</p>
+                    <p className="mt-0.5 text-xs text-emerald-600/80 dark:text-emerald-400/70">
                       En e-mail er sendt til <strong>{inviteEmail}</strong>
                     </p>
                   </div>

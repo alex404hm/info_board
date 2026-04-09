@@ -1,10 +1,10 @@
 import { auth } from "@/lib/auth"
 import { getUserRole } from "@/lib/session-role"
 import { headers, cookies } from "next/headers"
-import AdminHeader from "./_components/AdminHeader"
-import { AdminThemeProvider } from "./_components/AdminThemeProvider"
+import AdminHeader from "@/components/admin/AdminHeader"
+import { AdminThemeProvider } from "@/components/admin/AdminThemeProvider"
 import { AppSidebar } from "@/components/app-sidebar"
-import AdminLogin from "./_components/AdminLogin"
+import AdminLogin from "@/components/admin/AdminLogin"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
