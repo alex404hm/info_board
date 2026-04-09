@@ -90,7 +90,7 @@ function EventRow({ ev, isEventToday }: { ev: CalendarEvent; isEventToday: (ev: 
   const dateStr = new Date(ev.start).toLocaleDateString("da-DK", { day: "numeric", month: "short" })
 
   return (
-    <div className="flex items-center gap-3 rounded-xl px-3.5 py-3 bg-white/[0.03] hover:bg-white/[0.055] transition-colors">
+    <div className="flex items-center gap-3 rounded-xl px-3.5 py-3 bg-white/3 hover:bg-white/5.5 transition-colors">
       {/* Category dot – pings on today */}
       <div className="relative shrink-0 flex items-center justify-center">
         <span className={cn("block h-2 w-2 rounded-full", col.dot)} />
@@ -142,7 +142,7 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-center gap-2 px-1 pt-3 pb-1.5 first:pt-0">
       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
-      <span className="flex-1 h-px bg-white/[0.05]" />
+      <span className="flex-1 h-px bg-white/5" />
       <span className="text-[10px] font-bold tabular-nums text-slate-600">{count}</span>
     </div>
   )
@@ -270,10 +270,10 @@ export function CalendarPanel() {
         <div className="flex items-center justify-between border-b border-light px-3 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-0.5 sm:gap-1">
-              <button onClick={prev} className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.08] active:scale-95 text-muted">
+              <button onClick={prev} className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/8 active:scale-95 text-muted">
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button onClick={next} className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.08] active:scale-95 text-muted">
+              <button onClick={next} className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/8 active:scale-95 text-muted">
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
@@ -304,7 +304,7 @@ export function CalendarPanel() {
               <div
                 key={i}
                 className={cn(
-                  "relative min-h-[56px] overflow-hidden p-1 sm:min-h-[80px] sm:p-1.5 md:min-h-[100px] md:p-2 border-light",
+                  "relative min-h-14 overflow-hidden p-1 sm:min-h-20 sm:p-1.5 md:min-h-25 md:p-2 border-light",
                   !isLastRow && "border-b",
                   !isRightEdge && "border-r",
                   !day && "pointer-events-none",
@@ -352,7 +352,7 @@ export function CalendarPanel() {
                         {de.slice(0, 2).map((ev) => {
                           const col = catColor(ev.category)
                           return (
-                            <div key={ev.id} className={cn("flex min-w-0 items-center gap-1 rounded-[4px] px-1.5 py-[3px] text-[10px] font-medium leading-tight overflow-hidden", col.pill)}>
+                            <div key={ev.id} className={cn("flex min-w-0 items-center gap-1 rounded-lg px-1.5 py-0.75 text-[10px] font-medium leading-tight overflow-hidden", col.pill)}>
                               <span className={cn("h-1 w-1 shrink-0 rounded-full", col.dot)} />
                               <span className="min-w-0 truncate">{ev.title}</span>
                             </div>

@@ -11,13 +11,38 @@ function requireEnv(name: "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL") {
   return value
 }
 
+function parseEnvUrlList(value: string) {
+  return value
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
+function isValidUrl(value: string) {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 const secret = requireEnv("BETTER_AUTH_SECRET")
-const baseURL = requireEnv("BETTER_AUTH_URL")
+const configuredAuthUrls = parseEnvUrlList(requireEnv("BETTER_AUTH_URL"))
+const validAuthUrls = configuredAuthUrls.filter(isValidUrl)
+
+if (validAuthUrls.length === 0) {
+  throw new Error("BETTER_AUTH_URL must include at least one valid URL")
+}
+
+const baseURL = validAuthUrls[0]
 const secureCookies = process.env.NODE_ENV === "production"
 const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined
 
+type BetterAuthPlugin = NonNullable<Parameters<typeof betterAuth>[0]["plugins"]>[number]
+
 // Workaround for a known pnpm type-resolution mismatch between plugin/core declaration paths.
-const adminPlugin = admin() as unknown as any
+const adminPlugin = admin() as unknown as BetterAuthPlugin
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -72,5 +97,5 @@ export const auth = betterAuth({
   plugins: [adminPlugin],
   secret,
   baseURL,
-  trustedOrigins: [baseURL],
+  trustedOrigins: validAuthUrls,
 })

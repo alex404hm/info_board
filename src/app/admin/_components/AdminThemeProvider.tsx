@@ -100,8 +100,14 @@ export function AdminThemeProvider({
   // suppressHydrationWarning lets React skip the diff for this attribute
   // since the theme script may have already patched the DOM before hydration.
   const themeClass = isHydrated
-    ? resolvedTheme === "light" ? " light" : " dark"
-    : initialTheme === "light" ? " light" : " dark"
+    ? theme === "system"
+      ? ""
+      : resolvedTheme === "light" ? " light" : " dark"
+    : initialTheme === "light"
+      ? " light"
+      : initialTheme === "dark"
+        ? " dark"
+        : ""
 
   return (
     <AdminThemeContext.Provider value={contextValue}>

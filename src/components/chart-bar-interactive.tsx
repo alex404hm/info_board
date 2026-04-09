@@ -128,17 +128,17 @@ export function ChartBarInteractive({ days = 30 }: { days?: number }) {
       </CardHeader>
       <CardContent className="px-2 sm:p-6">
         {isError ? (
-          <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-62.5 items-center justify-center text-sm text-muted-foreground">
             Kunne ikke hente diagramdata.
           </div>
         ) : isLoading ? (
-          <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-62.5 items-center justify-center text-sm text-muted-foreground">
             Henter diagramdata...
           </div>
         ) : (
         <ChartContainer
           config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
+          className="aspect-auto h-62.5 w-full"
         >
           <BarChart
             accessibilityLayer
@@ -166,7 +166,7 @@ export function ChartBarInteractive({ days = 30 }: { days?: number }) {
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  className="w-[150px]"
+                  className="w-37.5"
                   labelFormatter={(value) => {
                     return new Date(value).toLocaleDateString("en-US", {
                       month: "short",

@@ -87,7 +87,7 @@ export function CanteenGrid() {
 
   return (
     <div className="flex flex-1 overflow-y-auto custom-scrollbar" style={{ background: "var(--background)" }}>
-      <div className="m-auto w-full max-w-[1400px] p-6 md:p-10">
+      <div className="m-auto w-full max-w-350 p-6 md:p-10">
         <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
           {CANTEEN_CATEGORIES.map(cat => (
             <button
@@ -225,7 +225,7 @@ export function CanteenDetail({ slug }: { slug: string }) {
 
       {/* Item list */}
       <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ background: "var(--background)" }}>
-        <div className="mx-auto w-full max-w-[860px] px-5 py-4 md:px-10">
+        <div className="mx-auto w-full max-w-215 px-5 py-4 md:px-10">
           {visibleItems.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
               <UtensilsCrossed className="h-10 w-10 opacity-20" />

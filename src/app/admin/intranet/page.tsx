@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
+  Edit2,
   GripVertical,
   Loader2,
   Save,
@@ -11,6 +12,7 @@ import {
 
 import { IntranetMarkdownEditor } from "@/components/intranet/IntranetMarkdownEditor"
 import { AdminCreateButton } from "@/app/admin/_components/AdminCreateButton"
+import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -42,14 +44,17 @@ function createDraftItem(): IntranetFaqItem {
 }
 
 export default function AdminIntranetPage() {
+  const confirmDialog = useConfirmDialog()
   const [items, setItems] = useState<IntranetFaqItem[]>(normalizeItemsForEditor(DEFAULT_INTRANET_FAQ_ITEMS))
   const [baselineItems, setBaselineItems] = useState<IntranetFaqItem[]>(normalizeItemsForEditor(DEFAULT_INTRANET_FAQ_ITEMS))
   const [selectedId, setSelectedId] = useState<string>(DEFAULT_INTRANET_FAQ_ITEMS[0]?.id ?? "")
+  const [showEditor, setShowEditor] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [query, setQuery] = useState("")
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const mobileEditorRef = useRef<HTMLDivElement | null>(null)
 
   const selectedItem = useMemo(
     () => items.find((item) => item.id === selectedId) ?? items[0] ?? null,
@@ -118,10 +123,17 @@ export default function AdminIntranetPage() {
     return () => window.clearTimeout(timeout)
   }, [toast])
 
+  useEffect(() => {
+    if (!selectedItem) {
+      setShowEditor(false)
+    }
+  }, [selectedItem])
+
   function addItem() {
     const newItem = createDraftItem()
     setItems((current) => [...current, newItem])
     setSelectedId(newItem.id)
+    setShowEditor(true)
   }
 
   function deleteItem(id: string) {
@@ -130,7 +142,39 @@ export default function AdminIntranetPage() {
 
     if (selectedId === id) {
       setSelectedId(next[0]?.id ?? "")
+      if (!next.length) {
+        setShowEditor(false)
+      }
     }
+  }
+
+  function startEditing(id: string) {
+    setSelectedId(id)
+    setShowEditor(true)
+
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+      window.setTimeout(() => {
+        mobileEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 80)
+    }
+  }
+
+  async function requestDeleteItem(id: string) {
+    const item = items.find((entry) => entry.id === id)
+    if (!item) return
+
+    const shouldDelete = await confirmDialog({
+      title: "Slet FAQ-punkt?",
+      description: `Er du sikker på, at du vil slette \"${item.title || "Uden titel"}\"? Handlingen kan ikke fortrydes.`,
+      confirmText: "Slet",
+      cancelText: "Annuller",
+      tone: "danger",
+    })
+
+    if (!shouldDelete) return
+
+    deleteItem(id)
+    setToast({ type: "success", text: "FAQ-punkt slettet. Husk at gemme ændringer." })
   }
 
   function moveItemToIndex(id: string, targetIndex: number) {
@@ -207,6 +251,11 @@ export default function AdminIntranetPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              {showEditor && selectedItem ? (
+                <Button type="button" size="sm" variant="outline" onClick={() => setShowEditor(false)}>
+                  Luk editor
+                </Button>
+              ) : null}
               <AdminCreateButton type="button" variant="outline" size="sm" onClick={addItem}>
                 Tilføj punkt
               </AdminCreateButton>
@@ -241,7 +290,12 @@ export default function AdminIntranetPage() {
 
           <ScrollArea className="min-h-0 flex-1">
             <div className="space-y-2 pr-4">
-              {filteredItems.map((item) => {
+              {loading ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-border/40 bg-background/40 px-4 py-8 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Henter FAQ-punkter...
+                </div>
+              ) : filteredItems.map((item) => {
                 const selected = item.id === selectedItem?.id
                 const absoluteIndex = items.findIndex((current) => current.id === item.id)
 
@@ -270,6 +324,7 @@ export default function AdminIntranetPage() {
                     }}
                     onDragEnd={() => setDraggedId(null)}
                     onClick={() => setSelectedId(item.id)}
+                    onDoubleClick={() => startEditing(item.id)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault()
@@ -295,6 +350,33 @@ export default function AdminIntranetPage() {
                       <span className="mt-0.5 shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                         #{absoluteIndex + 1}
                       </span>
+                      <div className="ml-1 flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            startEditing(item.id)
+                          }}
+                          title="Rediger"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            void requestDeleteItem(item.id)
+                          }}
+                          title="Slet"
+                          className="hover:bg-red-500/10 hover:text-red-400"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )
@@ -311,21 +393,26 @@ export default function AdminIntranetPage() {
       </div>
 
       {/* Right panel: Editor (Desktop) */}
-      {selectedItem ? (
+      {showEditor && selectedItem ? (
         <div className="hidden lg:flex min-w-0 w-2/5 flex-col rounded-3xl border border-border/60 bg-card/95 shadow-sm backdrop-blur overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/40 px-6 py-4 shrink-0">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-foreground truncate">{selectedItem.title}</p>
+              <p className="text-sm font-semibold text-foreground truncate">Rediger: {selectedItem.title}</p>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => deleteItem(selectedItem.id)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-500/10 ml-2"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowEditor(false)}>
+                Luk
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => void requestDeleteItem(selectedItem.id)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <ScrollArea className="min-h-0 flex-1">
@@ -359,25 +446,41 @@ export default function AdminIntranetPage() {
         </div>
       ) : null}
 
+      {!showEditor && selectedItem ? (
+        <div className="hidden lg:flex min-w-0 w-2/5 flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-card/40 p-8 text-center">
+          <p className="text-sm font-medium text-foreground">Redigering i samme side</p>
+          <p className="mt-1 text-xs text-muted-foreground">Klik på Rediger ud for et FAQ-punkt for at åbne editoren her.</p>
+          <Button type="button" size="sm" className="mt-4" onClick={() => startEditing(selectedItem.id)}>
+            <Edit2 className="h-4 w-4" />
+            Rediger valgt punkt
+          </Button>
+        </div>
+      ) : null}
+
       {/* Mobile Editor */}
-      {selectedItem ? (
-        <div className="lg:hidden mt-4 flex flex-col rounded-3xl border border-border/60 bg-card/95 shadow-sm backdrop-blur overflow-hidden max-h-96">
+      {showEditor && selectedItem ? (
+        <div ref={mobileEditorRef} className="lg:hidden mt-4 flex flex-col rounded-3xl border border-border/60 bg-card/95 shadow-sm backdrop-blur overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 shrink-0">
             <p className="text-sm font-semibold text-foreground truncate">{selectedItem.title}</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => deleteItem(selectedItem.id)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-500/10 ml-2"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowEditor(false)}>
+                Luk
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => void requestDeleteItem(selectedItem.id)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="space-y-3 p-4">
-              <div className="space-y-1.5">
+          <ScrollArea className="min-h-0 max-h-[70svh] flex-1">
+            <div className="space-y-4 p-4">
+              <div className="space-y-2">
                 <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Titel</label>
                 <Input
                   value={selectedItem.title}
@@ -386,12 +489,17 @@ export default function AdminIntranetPage() {
                   className="rounded-lg text-sm"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Åbn fuld editor for at redigere indhold</p>
-              <Button variant="secondary" size="sm" asChild className="w-full rounded-lg">
-                <a href={`/admin/intranet/full-editor?id=${encodeURIComponent(selectedItem.id)}`} target="_blank" rel="noreferrer">
-                  Åbn fuld editor
-                </a>
-              </Button>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Indhold</label>
+                <div className="h-[52svh] min-h-80">
+                  <IntranetMarkdownEditor
+                    key={selectedItem.id}
+                    value={selectedItem.content}
+                    onChange={(next) => updateSelected({ content: next })}
+                  />
+                </div>
+              </div>
             </div>
           </ScrollArea>
         </div>
