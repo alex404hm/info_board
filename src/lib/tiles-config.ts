@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react"
 
 export type TileId = "afgange" | "kantine" | "kalender" | "nyheder" | "kontakter" | "vejr" | "trafik" | "kokkenvagt" | "beskeder" | "intranet"
 
-export type TileDefinition = {
+type TileDefinition = {
   id: TileId
   defaultLabel: string
   href: string

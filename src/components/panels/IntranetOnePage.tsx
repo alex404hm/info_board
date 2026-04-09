@@ -167,7 +167,7 @@ export function IntranetOnePage() {
                             fontFamily: '"Sans", sans-serif',
                           }}
                         >
-                          <IntranetFaqMarkdown content={item.content} linkBehavior="webview" />
+                          <IntranetFaqMarkdown content={item.content} />
                         </motion.div>
                       </motion.div>
                     )}

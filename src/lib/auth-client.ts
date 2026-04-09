@@ -8,4 +8,4 @@ export const authClient = createAuthClient({
   ],
 })
 
-export const { signIn, signOut, useSession } = authClient
+export const { signOut, useSession } = authClient

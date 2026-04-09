@@ -208,15 +208,6 @@ function DetailView({ section, onBack }: { section: IntranetSection; onBack: () 
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
-export function IntranetPanel({ sections }: { sections: IntranetSection[] }) {
-  const router = useRouter()
-  return (
-    <NavContext.Provider value={(key) => router.push(`/intranet/${key}`)}>
-      <HubView sections={sections} />
-    </NavContext.Provider>
-  )
-}
-
 export function IntranetSectionPage({
   sectionKey,
   sections,

@@ -78,7 +78,7 @@ export function useDailyDishData() {
   return dailyDishData
 }
 
-export function useDeparturesData() {
+function useDeparturesData() {
   const [departures, setDepartures] = useState<Departure[]>([])
   const departuresRef = useRef<Departure[]>([])
 

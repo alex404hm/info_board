@@ -17,7 +17,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 
-export const description = "An interactive bar chart"
+const description = "An interactive bar chart"
 
 type ChartPoint = {
   date: string

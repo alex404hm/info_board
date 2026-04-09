@@ -23,7 +23,7 @@ export type KanplaItem = {
   >
 }
 
-export type KanplaFrontendPayload = {
+type KanplaFrontendPayload = {
   modules?: Array<{ id: string; name?: string }>
   offers?: Record<string, { items?: KanplaItem[] }>
   school?: { currency?: string }
@@ -86,7 +86,7 @@ export function normalize(text: string): string {
 /**
  * Check if a name represents a valid dish (not a status message)
  */
-export function isValidDishName(name: string): boolean {
+function isValidDishName(name: string): boolean {
   const lower = name.toLowerCase()
   const nonDishPattern =
     /god\s*(fredag|weekend)|lukket|ingen\s+dagens\s+ret|producerer\s+ikke|serveres\s+ikke|ferie|helligdag/
@@ -116,7 +116,7 @@ export type MenuCandidate = {
   description: string
 }
 
-export type DayMenuItems = {
+type DayMenuItems = {
   regular: MenuCandidate[]
   vegetarian: MenuCandidate[]
 }
@@ -212,7 +212,7 @@ export function extractMenuItems(
 /**
  * Get a specific dish type for a given date
  */
-export function getDishForDate(
+function getDishForDate(
   data: KanplaFrontendPayload,
   dateKey: string,
   type: MenuType = "regular"
@@ -231,7 +231,7 @@ export function getDishForDate(
 /**
  * Get today's dish
  */
-export function getTodaysDish(
+function getTodaysDish(
   data: KanplaFrontendPayload,
   type: MenuType = "regular"
 ): MenuCandidate | null {
@@ -243,7 +243,7 @@ export function getTodaysDish(
 /**
  * Get dishes for the next N days
  */
-export function getUpcomingDishes(
+function getUpcomingDishes(
   data: KanplaFrontendPayload,
   days: number = 7,
   type: MenuType = "regular"

@@ -9,7 +9,7 @@ type CanteenItem     = { name: string; price: string; category: string }
 type CanteenResponse = { items: CanteenItem[]; error?: string }
 type SortDir         = "asc" | "desc" | null
 
-export const CANTEEN_CATEGORIES = [
+const CANTEEN_CATEGORIES = [
   { key: "Drikkevarer",   slug: "drikkevarer",  label: "Drikkevarer",  image: "/logo/drikkevarer.png", color: "#38bdf8" },
   { key: "Morgenmad",    slug: "morgenmad",     label: "Morgenmad",    image: "/logo/morgenmad.jpg",    color: "#fbbf24" },
   { key: "Varme drikke", slug: "varme-drikke",  label: "Varme drikke", image: "/logo/varmedrikke.jpg",  color: "#fb923c" },
@@ -261,8 +261,3 @@ export function CanteenDetail({ slug }: { slug: string }) {
   )
 }
 
-// ─── Legacy export ────────────────────────────────────────────────────────────
-
-export function CanteenPanel({ onSelectionChange: _ }: { onSelectionChange?: (open: boolean) => void }) {
-  return <CanteenGrid />
-}

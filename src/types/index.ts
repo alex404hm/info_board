@@ -91,23 +91,6 @@ export type DailyDishApiResponse = {
   }>
 }
 
-export type ImportantContact = {
-  name: string
-  role: string
-  phone: string
-  email: string
-  status: string
-}
-
-export type Instructor = {
-  id: string
-  name: string
-  title: string
-  area: string
-  email: string
-  phone: string
-  room: string
-}
 
 export type DrNewsItem = {
   title: string

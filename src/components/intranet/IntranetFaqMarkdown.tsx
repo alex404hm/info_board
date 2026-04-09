@@ -1,13 +1,11 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import type { MouseEvent } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
 import { isLikelyHtmlContent } from "@/lib/intranet-content"
 
-type LinkBehavior = "webview" | "default" | "disabled"
+type LinkBehavior = "default" | "disabled"
 
 export function IntranetFaqMarkdown({
   content,
@@ -16,34 +14,9 @@ export function IntranetFaqMarkdown({
   content: string
   linkBehavior?: LinkBehavior
 }) {
-  const router = useRouter()
-
-  function handleHtmlClick(event: MouseEvent<HTMLDivElement>) {
-    const target = event.target as HTMLElement | null
-    const anchor = target?.closest("a") as HTMLAnchorElement | null
-    if (!anchor) return
-
-    if (linkBehavior === "disabled") {
-      event.preventDefault()
-      return
-    }
-
-    if (linkBehavior !== "webview") return
-
-    const href = anchor.getAttribute("href") ?? ""
-    if (!href || href.startsWith("mailto:") || href.startsWith("tel:")) return
-
-    event.preventDefault()
-    router.push(`/intranet/web-view?url=${encodeURIComponent(href)}`)
-  }
-
   if (isLikelyHtmlContent(content)) {
     return (
-      <div
-        className="rich-content wrap-break-word"
-        onClickCapture={handleHtmlClick}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
+      <div className="rich-content wrap-break-word" dangerouslySetInnerHTML={{ __html: content }} />
     )
   }
 
@@ -80,13 +53,6 @@ export function IntranetFaqMarkdown({
               <a
                 href={targetHref}
                 className="font-semibold text-(--accent-strong) underline decoration-[1.5px] underline-offset-4 hover:opacity-90"
-                onClick={(event) => {
-                  if (!targetHref || linkBehavior !== "webview") return
-                  if (targetHref.startsWith("mailto:") || targetHref.startsWith("tel:")) return
-
-                  event.preventDefault()
-                  router.push(`/intranet/web-view?url=${encodeURIComponent(targetHref)}`)
-                }}
               >
                 {children}
               </a>

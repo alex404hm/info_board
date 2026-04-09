@@ -21,7 +21,7 @@ function parseInlineMarkdown(value: string) {
   return html
 }
 
-export function markdownToHtml(markdown: string) {
+function markdownToHtml(markdown: string) {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n")
   const blocks: string[] = []
   let index = 0

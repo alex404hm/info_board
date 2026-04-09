@@ -200,7 +200,7 @@ export async function sendResetPasswordEmail(to: string, url: string): Promise<v
   })
 }
 
-export async function sendEmail({
+async function sendEmail({
   to,
   subject,
   html,
