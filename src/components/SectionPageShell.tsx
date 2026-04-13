@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
+import { apiFetch } from "@/lib/api-fetch"
 import { useEffect, useRef, useState } from "react"
 
 import { StatusBar } from "@/components/StatusBar"
@@ -53,7 +54,7 @@ export function SectionPageShell({
     if (!tileId) return
 
     let mounted = true
-    fetch("/api/tiles-config", { cache: "no-store" })
+    apiFetch("/api/tiles-config", { cache: "no-store" })
       .then((r) => r.ok ? r.json() : null)
       .then((data: TileConfig[] | null) => {
         if (!mounted) return
@@ -81,7 +82,7 @@ export function SectionPageShell({
 
       {/* Header */}
       {!noHeader && (
-        <div className="shrink-0 px-3 py-2.5 sm:px-4 sm:py-3 md:px-6"
+        <div className="shrink-0 px-8 py-4"
           style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}>
           <div
             className={
@@ -92,16 +93,16 @@ export function SectionPageShell({
           >
             <Link
               href={backHref}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors sm:px-3"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
               style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)", color: "var(--foreground-muted)" }}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Tilbage
             </Link>
             <div className="min-w-0 flex-1 text-right">
-              <h1 className="truncate text-sm font-bold sm:text-base md:text-lg" style={{ color: "var(--foreground)" }}>{title}</h1>
+              <h1 className="truncate text-lg font-bold" style={{ color: "var(--foreground)" }}>{title}</h1>
               {subtitle && (
-                <p className="truncate text-[11px] sm:text-xs" style={{ color: "var(--foreground-muted)" }}>{subtitle}</p>
+                <p className="truncate text-xs" style={{ color: "var(--foreground-muted)" }}>{subtitle}</p>
               )}
             </div>
           </div>
@@ -110,7 +111,7 @@ export function SectionPageShell({
 
       {/* Main content */}
       <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none custom-scrollbar relative">
-        <div className={`${fullWidth ? "w-full px-3 pb-12 pt-3 sm:px-6 sm:pt-6 md:px-8 md:pt-8 md:pb-12" : "mx-auto w-full max-w-350 px-3 pb-12 pt-3 sm:px-4 sm:pt-6 md:px-10 md:pt-8 md:pb-12"}`} style={{ paddingBottom: "max(3rem, calc(env(safe-area-inset-bottom) + 1.5rem))" }}>
+        <div className={`${fullWidth ? "w-full px-8 pb-12 pt-8" : "mx-auto w-full max-w-350 px-10 pb-12 pt-8"}`} style={{ paddingBottom: "3rem" }}>
           {children}
         </div>
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 import {
   User,
   Mail,
@@ -255,7 +256,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
     try {
       const fd = new FormData()
       fd.append("avatar", file)
-      const res = await fetch("/api/admin/avatar", { method: "POST", body: fd })
+      const res = await apiFetch("/api/admin/avatar", { method: "POST", body: fd })
       const json = await res.json()
 
       if (!res.ok) {

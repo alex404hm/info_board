@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Mail, Phone } from "lucide-react"
+import { apiFetch } from "@/lib/api-fetch"
 
 type Contact = {
   id: number
@@ -124,7 +125,7 @@ export function ContactsPanel() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/kontakter", { cache: "no-store" })
+    apiFetch("/api/kontakter", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { contacts: [] }))
       .then((data) => {
         const all: Contact[] = Array.isArray(data.contacts) ? data.contacts : []
@@ -137,7 +138,7 @@ export function ContactsPanel() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-60 animate-pulse rounded-2xl" style={{ background: "var(--surface)" }} />
         ))}
@@ -151,7 +152,7 @@ export function ContactsPanel() {
         <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--foreground-soft)" }}>
           Vigtigste kontakter
         </p>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 grid-cols-4">
           {contacts.map((c) => <ContactCard key={c.id} contact={c} />)}
         </div>
       </div>

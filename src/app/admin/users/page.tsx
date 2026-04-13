@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 import {
   Users,
   Plus,
@@ -171,7 +172,7 @@ export default function UsersPage() {
   const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/admin/users")
+      const res = await apiFetch("/api/admin/users")
       if (!res.ok) throw new Error()
       const data = await res.json()
       setUsers(data.users)
@@ -198,7 +199,7 @@ export default function UsersPage() {
       return
     }
     setInviting(true)
-    const res = await fetch("/api/admin/invite", {
+    const res = await apiFetch("/api/admin/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
@@ -215,7 +216,7 @@ export default function UsersPage() {
 
   async function handleResendInvite(email: string) {
     setResendingEmail(email)
-    const res = await fetch("/api/admin/invite/resend", {
+    const res = await apiFetch("/api/admin/invite/resend", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -231,7 +232,7 @@ export default function UsersPage() {
 
   async function handleRoleChange(id: string, role: string) {
     setUpdatingRole(id)
-    const res = await fetch(`/api/admin/users/${id}`, {
+    const res = await apiFetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role }),
@@ -249,7 +250,7 @@ export default function UsersPage() {
   async function handleDelete() {
     if (!deleteId) return
     setDeleting(true)
-    const res = await fetch(`/api/admin/users/${deleteId}`, { method: "DELETE" })
+    const res = await apiFetch(`/api/admin/users/${deleteId}`, { method: "DELETE" })
     const data = await res.json()
     if (!res.ok) {
       toast("error", data.error ?? "Kunne ikke slette bruger.")
@@ -375,7 +376,7 @@ export default function UsersPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="hidden text-xs text-muted sm:block mr-1">
+                    <span className="hidden text-xs text-muted block mr-1">
                       {fmtDate(u.createdAt)}
                     </span>
 
@@ -399,7 +400,7 @@ export default function UsersPage() {
                         ) : (
                           <Send className="h-3.5 w-3.5" />
                         )}
-                        <span className="hidden sm:inline">Gensend</span>
+                        <span className="hidden inline">Gensend</span>
                       </Button>
                     )}
 

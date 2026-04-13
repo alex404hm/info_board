@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { apiFetch } from "@/lib/api-fetch"
 import { ArrowLeft, Loader2, Save } from "lucide-react"
 
 import { IntranetMarkdownEditor } from "@/components/intranet/IntranetMarkdownEditor"
@@ -64,7 +65,7 @@ export default function AdminIntranetEditPage() {
     let mounted = true
     async function load() {
       try {
-        const res = await fetch("/api/intranet-faq", { cache: "no-store" })
+        const res = await apiFetch("/api/intranet-faq", { cache: "no-store" })
         if (!res.ok) throw new Error()
         const data = (await res.json()) as IntranetFaqItem[]
         if (!mounted) return
@@ -113,7 +114,7 @@ export default function AdminIntranetEditPage() {
         ? [...allItems, item]
         : allItems.map((i) => (i.id === item.id ? item : i))
 
-      const res = await fetch("/api/intranet-faq", {
+      const res = await apiFetch("/api/intranet-faq", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedItems),

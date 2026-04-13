@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { YellowStickyNote } from "@/components/YellowStickyNote"
+import { apiFetch } from "@/lib/api-fetch"
 
 type BoardMessage = {
   id: string
@@ -27,7 +28,7 @@ export function LatestMessageBlock() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchLatest = () => {
-    fetch("/api/messages", { cache: "no-store" })
+    apiFetch("/api/messages", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : []))
       .then((data: BoardMessage[]) => {
         if (!Array.isArray(data) || data.length === 0) { setMsg(null); return }

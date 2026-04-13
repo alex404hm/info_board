@@ -15,7 +15,7 @@ const PhoneInputField = React.forwardRef<
     ref={ref}
     data-slot="input"
     className={cn(
-      "flex-1 min-w-0 bg-transparent text-base outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+      "flex-1 min-w-0 bg-transparent text-base outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 text-sm",
       className,
     )}
     {...props}

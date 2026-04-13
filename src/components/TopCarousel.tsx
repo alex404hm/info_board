@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
+import { apiFetch } from "@/lib/api-fetch"
 import Image from "next/image"
 import { useDailyDishData } from "@/hooks/use-api-data"
 import { decodeHtmlEntities, lineBadgeStyle } from "@/lib/utils"
@@ -12,6 +13,7 @@ import type { TrafikPost } from "@/app/api/trafik/route"
 const SWIPE_VELOCITY_THRESHOLD = 0.3
 const SWIPE_MIN_DISTANCE = 10
 const SWIPE_CLICK_THRESHOLD = 10
+const SWIPE_MIN_SWEEP = 240
 
 const C1 = "var(--foreground)"
 const C2 = "var(--foreground-muted)"
@@ -90,7 +92,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
         <div className="flex h-full flex-col overflow-hidden rounded-2xl" style={{ background: "var(--surface-alt)", border: `1px solid ${C3}` }}>
 
           {/* Header */}
-          <div className="flex items-center gap-3 px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
+          <div className="flex shrink-0 items-center gap-3 px-4 pt-4 pb-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/15 shrink-0">
               <Image src="/logo/kanpla.png" alt="Kanpla" width={20} height={20} className="h-full w-full rounded-[3px] object-fill" />
             </div>
@@ -157,7 +159,7 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
 
             {/* Weekly menu — desktop only */}
             {weekMenu.length > 0 && (
-              <div className="hidden sm:contents">
+              <div className="contents">
                 <div className="shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.10)" }} />
                 <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.45)" }}>
                   Ugens menu
@@ -280,10 +282,10 @@ function buildWidgetNode(id: ModuleId, props: WidgetProps): React.ReactNode {
           </div>
 
           {/* ── Body ── */}
-          <div className="flex flex-1 min-h-0 px-3 sm:px-4 pb-3 sm:pb-4 pt-3 gap-4 sm:gap-5">
+          <div className="flex flex-1 min-h-0 gap-5 px-4 pt-3 pb-4">
 
             {/* Left: mini calendar — hidden on mobile */}
-            <div className="hidden sm:flex flex-col shrink-0" style={{ width: 248 }}>
+            <div className="flex shrink-0 flex-col" style={{ width: 248 }}>
               {/* DOW row */}
               <div className="grid grid-cols-7 mb-1">
                 {dayInitials.map((ltr, i) => (
@@ -512,9 +514,9 @@ function SlideContent({
 
   if (heroNode) {
     return (
-      <div className="grid gap-3 pb-3 sm:gap-4 sm:pb-4 md:grid-cols-[360px_1fr] items-stretch">
+      <div className="grid grid-cols-[380px_1fr] gap-4 pb-4 items-stretch">
         <div className="flex flex-col">{heroNode}</div>
-        <div className="flex h-full flex-col gap-3 sm:gap-4">
+        <div className="flex h-full flex-col gap-4">
           {normalNodes.map(({ id, node }) => (
             <div key={id} className="flex flex-1 flex-col overflow-hidden min-h-0">{node}</div>
           ))}
@@ -525,12 +527,12 @@ function SlideContent({
 
   const gridCols =
     normalNodes.length === 1 ? "grid-cols-1" :
-    normalNodes.length === 2 ? "grid-cols-1 min-[480px]:grid-cols-2" :
-    "grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3"
+    normalNodes.length === 2 ? "grid-cols-2" :
+    "grid-cols-3"
   return (
-    <div className={`grid gap-3 pb-3 sm:gap-4 sm:pb-4 ${gridCols} items-stretch`}>
+    <div className={`grid gap-4 pb-4 ${gridCols} items-stretch`}>
       {normalNodes.map(({ id, node }) => (
-        <div key={id} className="flex flex-col sm:min-h-[380px]">{node}</div>
+        <div key={id} className="flex min-h-95 flex-col">{node}</div>
       ))}
     </div>
   )
@@ -588,7 +590,7 @@ export function TopCarousel() {
     let mounted = true
     const loadCalendar = async () => {
       try {
-        const res = await fetch("/api/calendar", { cache: "no-store" })
+        const res = await apiFetch("/api/calendar", { cache: "no-store" })
         if (!res.ok) return
         const data = (await res.json()) as { events?: CalendarEvent[] }
         if (mounted && Array.isArray(data.events)) setCalendarEvents(data.events)
@@ -596,7 +598,7 @@ export function TopCarousel() {
     }
     const loadDepartures = async () => {
       try {
-        const res = await fetch("/api/departures", { cache: "no-store" })
+        const res = await apiFetch("/api/departures", { cache: "no-store" })
         if (!res.ok) return
         const data = (await res.json()) as { groups?: { departures: Departure[] }[] }
         if (!mounted || !Array.isArray(data.groups)) return
@@ -607,7 +609,7 @@ export function TopCarousel() {
     }
     const loadTrafik = async () => {
       try {
-        const res = await fetch("/api/trafik", { cache: "no-store" })
+        const res = await apiFetch("/api/trafik", { cache: "no-store" })
         if (!res.ok) return
         const data = (await res.json()) as { items?: TrafikPost[] }
         if (mounted && Array.isArray(data.items)) setTrafikPosts(data.items)
@@ -616,7 +618,7 @@ export function TopCarousel() {
 
     const loadDrNews = async () => {
       try {
-        const res = await fetch("/api/dr-news", { cache: "no-store" })
+        const res = await apiFetch("/api/dr-news", { cache: "no-store" })
         if (!res.ok) return
         const data = (await res.json()) as DrNewsApiResponse
         if (mounted && Array.isArray(data.items)) setDrNewsItems(data.items)
@@ -718,7 +720,7 @@ export function TopCarousel() {
     pointerStartX.current = null; setDragDelta(0)
     resetIdle()
     const isFlick = velocity >= SWIPE_VELOCITY_THRESHOLD && Math.abs(delta) >= SWIPE_MIN_DISTANCE
-    const isSweep = Math.abs(delta) >= window.innerWidth * 0.15
+    const isSweep = Math.abs(delta) >= SWIPE_MIN_SWEEP
     if (isFlick || isSweep) {
       didSwipe.current = true
       setJumping(false)
@@ -730,14 +732,14 @@ export function TopCarousel() {
   }, [resetIdle])
 
   return (
-    <div className="relative sm:px-24">
-      <div className="mx-auto w-full max-w-[1400px]">
+    <div className="relative px-24">
+      <div className="mx-auto w-full max-w-350">
         <div className="relative flex items-center">
 
           {/* Prev — sits outside the viewport in the side padding zone */}
           <button
             onClick={goToPrevious}
-            className="absolute -left-20 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.10] active:scale-90"
+            className="absolute -left-20 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full hover:bg-white/10 active:scale-90"
             style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 6px 20px rgba(0,0,0,0.50)" }}
             aria-label="Forrige slide"
           >
@@ -747,7 +749,7 @@ export function TopCarousel() {
           {/* Viewport — fills full width between the padding zones */}
           <div
             className="w-full select-none"
-            style={{ overflow: "hidden", cursor: dragDelta !== 0 ? "grabbing" : "grab", touchAction: "pan-y" }}
+            style={{ overflow: "hidden", cursor: dragDelta !== 0 ? "grabbing" : "grab" }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -765,7 +767,7 @@ export function TopCarousel() {
               onTransitionEnd={handleTransitionEnd}
             >
               {extSlides.map((slide, i) => (
-                <div key={`${slide.id}-${i}`} className="w-full shrink-0 overflow-hidden px-1 sm:px-3">
+                <div key={`${slide.id}-${i}`} className="w-full shrink-0 overflow-hidden px-3">
                   <SlideContent slide={slide} widgetProps={widgetProps} />
                 </div>
               ))}
@@ -775,7 +777,7 @@ export function TopCarousel() {
           {/* Next — sits outside the viewport in the side padding zone */}
           <button
             onClick={goToNext}
-            className="absolute -right-20 top-1/2 z-10 -translate-y-1/2 hidden sm:flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/[0.10] active:scale-90"
+            className="absolute -right-20 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full hover:bg-white/10 active:scale-90"
             style={{ background: C5, border: `1px solid ${C3}`, boxShadow: "0 6px 20px rgba(0,0,0,0.50)" }}
             aria-label="Næste slide"
           >

@@ -41,12 +41,10 @@ export function InfoBoardIdleGuard({
     startIdle()
     window.addEventListener("mousemove", onActivity)
     window.addEventListener("keydown", onActivity)
-    window.addEventListener("touchstart", onActivity, { passive: true })
     return () => {
       if (idleTimer.current) clearTimeout(idleTimer.current)
       window.removeEventListener("mousemove", onActivity)
       window.removeEventListener("keydown", onActivity)
-      window.removeEventListener("touchstart", onActivity)
     }
   }, [])
 
@@ -90,7 +88,7 @@ export function InfoBoardIdleGuard({
   const isLow = count <= 3
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#15192a]">
+    <div className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-[#15192a]">
       {/* Animated gradient background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>

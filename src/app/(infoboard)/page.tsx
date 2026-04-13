@@ -9,9 +9,9 @@ export default function InfoBoardHome() {
       <InfoBoardIdleGuard />
       <StatusBar />
 
-      <div className="relative flex flex-1 min-h-0 flex-col px-3 sm:px-6 lg:px-10">
+      <div className="relative flex flex-1 min-h-0 flex-col px-3 px-6 px-10">
 
-        <div className="flex-1 min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar py-2 sm:py-4">
+        <div className="flex-1 min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar py-2 py-4">
           <div className="w-full">
             <TopCarousel />
           </div>
@@ -20,7 +20,7 @@ export default function InfoBoardHome() {
         <NavTiles />
 
         <div
-          className="hidden xl:block"
+          className="block"
           style={{
             position: "absolute",
             right: "1.5rem",

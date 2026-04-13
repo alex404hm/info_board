@@ -26,10 +26,10 @@ export function StatusBar() {
 
   return (
     <header
-      className="status-bar flex w-full min-h-[52px] sm:min-h-[68px] shrink-0 items-center justify-between overflow-hidden px-3 sm:px-6 lg:px-10"
+      className="status-bar flex w-full min-h-17 shrink-0 items-center justify-between overflow-hidden px-10"
     >
       {/* Left - Branding */}
-      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+      <div className="flex min-w-0 items-center gap-4">
         <Link href="/" className="flex items-center transition-opacity hover:opacity-75">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -43,21 +43,21 @@ export function StatusBar() {
       </div>
 
       {/* Right - Weather, Clock, Date */}
-      <div className="ml-2 flex min-w-0 flex-1 items-center justify-end gap-2 sm:ml-3 sm:gap-6">
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Image src={iconSrc} alt="" width={28} height={28} className="h-5 w-5 sm:h-7 sm:w-7" />
-          <span className="text-sm font-bold tabular-nums text-foreground-strong sm:text-base">
+      <div className="ml-3 flex min-w-0 flex-1 items-center justify-end gap-6">
+        <div className="flex shrink-0 items-center gap-2">
+          <Image src={iconSrc} alt="" width={28} height={28} className="h-7 w-7" />
+          <span className="text-base font-bold tabular-nums text-foreground-strong">
             {weather?.temperatureC ?? "--"}°
           </span>
         </div>
 
-        <div className="h-5 w-px sm:h-6 status-bar-divider" />
+        <div className="h-6 w-px status-bar-divider" />
 
         <div className="min-w-0 text-right">
-          <p className="text-sm leading-none font-bold tabular-nums tracking-tight text-foreground-strong sm:text-xl">
+          <p className="text-xl leading-none font-bold tabular-nums tracking-tight text-foreground-strong">
             {time}
           </p>
-          <p className="hidden max-w-[42vw] truncate text-[10px] font-bold capitalize text-foreground-strong sm:block sm:text-[11px] md:max-w-none">
+          <p className="max-w-none truncate text-[11px] font-bold capitalize text-foreground-strong">
             {date}
           </p>
         </div>

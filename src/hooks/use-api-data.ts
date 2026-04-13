@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 
 import type {
   DeparturesApiResponse,
@@ -21,7 +22,7 @@ export function useWeatherData() {
       if (inFlight) return
       inFlight = true
       try {
-        const response = await fetch("/api/weather", { cache: "no-store" })
+        const response = await apiFetch("/api/weather", { cache: "no-store" })
         if (!response.ok) return
         const data = (await response.json()) as WeatherApiResponse
         if (mounted) setWeather(data)
@@ -58,7 +59,7 @@ export function useDailyDishData() {
 
     const load = async () => {
       try {
-        const response = await fetch("/api/daily-dish")
+        const response = await apiFetch("/api/daily-dish")
         if (!response.ok) return
         const data = (await response.json()) as DailyDishApiResponse
         if (mounted) setDailyDishData(data)
@@ -108,7 +109,7 @@ function useDeparturesData() {
       if (inFlight) return
       inFlight = true
       try {
-        const response = await fetch("/api/departures", { cache: "no-store" })
+        const response = await apiFetch("/api/departures", { cache: "no-store" })
         if (!response.ok) return
         const data = (await response.json()) as DeparturesApiResponse
         const nextDepartures = Array.isArray(data.departures)
@@ -196,7 +197,7 @@ export function useDepartureGroupsData() {
 
     const load = async () => {
       try {
-        const response = await fetch("/api/departures", { cache: "no-store" })
+        const response = await apiFetch("/api/departures", { cache: "no-store" })
         if (!response.ok) return
         const data = (await response.json()) as DeparturesApiResponse
         const nextGroups = Array.isArray(data.groups) ? data.groups : []

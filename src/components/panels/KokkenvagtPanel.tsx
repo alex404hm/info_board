@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 import {
   ListChecks,
   Info,
@@ -14,7 +15,6 @@ import {
   Circle,
   ChevronDown,
   ChevronUp,
-  X,
   RotateCcw,
 } from "lucide-react"
 
@@ -306,146 +306,11 @@ function GuideSectionCard({
   )
 }
 
-// ─── Mobile Guide Sheet ────────────────────────────────────────────────────────
-
-function MobileGuideSheet({
-  open,
-  onClose,
-  openSection,
-  onSectionToggle,
-  checked,
-  toggle,
-  reset,
-  doneCount,
-}: {
-  open: boolean
-  onClose: () => void
-  openSection: number | null
-  onSectionToggle: (sectionIndex: number) => void
-  checked: Record<string, boolean>
-  toggle: (si: number, ii: number) => void
-  reset: () => void
-  doneCount: number
-}) {
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const pct = Math.round((doneCount / TOTAL_ITEMS) * 100)
-  const allDone = doneCount === TOTAL_ITEMS
-
-  // Lock body scroll when open
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
-    return () => { document.body.style.overflow = "" }
-  }, [open])
-
-  if (!open) return null
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden">
-      {/* Backdrop */}
-      <div
-        ref={overlayRef}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Sheet */}
-      <div className="relative flex max-h-[92dvh] flex-col rounded-t-3xl border-t shadow-2xl" style={{ borderColor: "var(--surface-border)", background: "var(--background)" }}>
-
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full" style={{ background: "var(--surface-border)" }} />
-        </div>
-
-        {/* Sheet header */}
-        <div className="flex items-center gap-3 border-b px-5 pb-4 pt-2" style={{ borderColor: "var(--surface-border)" }}>
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-            <ListChecks className="h-4.5 w-4.5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold" style={{ color: "var(--foreground)" }}>Køkken Guide</h2>
-            <p className="text-xs" style={{ color: "var(--foreground)" }}>{doneCount} af {TOTAL_ITEMS} opgaver udført</p>
-          </div>
-          <button
-            onClick={() => { if (window.confirm("Nulstil alle opgaver?")) reset() }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-            style={{ color: "var(--foreground-muted)" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)"
-              ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent"
-              ;(e.currentTarget as HTMLElement).style.color = "var(--foreground-muted)"
-            }}
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-            style={{ color: "var(--foreground-muted)" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)"
-              ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent"
-              ;(e.currentTarget as HTMLElement).style.color = "var(--foreground-muted)"
-            }}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Progress bar */}
-        <div className="px-5 pt-4 pb-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--foreground-muted)" }}>Fremgang</span>
-            <span className={`text-xs font-bold tabular-nums`} style={{ color: "var(--accent)" }}>{pct}%</span>
-          </div>
-          <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--surface-border)" }}>
-            <div
-              className={`h-full rounded-full transition-all duration-500`}
-              style={{ width: `${pct}%`, background: "var(--accent)" }}
-            />
-          </div>
-          {allDone && (
-            <p className="mt-2 text-center text-xs font-semibold" style={{ color: "var(--accent)" }}>
-              Alle opgaver er udført!
-            </p>
-          )}
-        </div>
-
-        {/* Scrollable list */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2">
-          {GUIDE_SECTIONS.map((section, si) => (
-            <GuideSectionCard
-              key={si}
-              section={section}
-              si={si}
-              checked={checked}
-              toggle={toggle}
-              isOpen={openSection === si}
-              onToggle={() => onSectionToggle(si)}
-            />
-          ))}
-
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 export function KokkenvagtPanel() {
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [sheetOpen, setSheetOpen] = useState(false)
   const [openGuideSection, setOpenGuideSection] = useState<number | null>(0)
   const { checked, toggle, reset, doneCount, hydrated } = useChecklist()
 
@@ -461,7 +326,7 @@ export function KokkenvagtPanel() {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const res = await fetch("/api/kokkenvagt")
+        const res = await apiFetch("/api/kokkenvagt")
         if (res.ok) {
           const data = await res.json()
           setSchedule(data)
@@ -486,47 +351,10 @@ export function KokkenvagtPanel() {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]">
+      <div className="grid grid-cols-[1fr_420px] gap-8">
 
         {/* ── Schedule table ── */}
         <div>
-          {/* Mobile guide progress strip */}
-          {hydrated && (
-            <button
-              onClick={() => setSheetOpen(true)}
-              className="lg:hidden w-full mb-4 flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors"
-              style={{
-                borderColor: "var(--surface-border)",
-                background: "var(--surface-soft)",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "var(--surface-alt)"
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "var(--surface-soft)"
-              }}
-            >
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl`} style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-                <ListChecks className="h-4.5 w-4.5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>Køkken Guide</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: "var(--surface-border)" }}>
-                    <div
-                      className={`h-full rounded-full transition-all duration-500`}
-                      style={{ width: `${pct}%`, background: "var(--accent)" }}
-                    />
-                  </div>
-                  <span className={`text-xs font-bold tabular-nums shrink-0`} style={{ color: "var(--accent)" }}>
-                    {doneCount}/{TOTAL_ITEMS}
-                  </span>
-                </div>
-              </div>
-              <ChevronUp className="h-4 w-4 shrink-0" style={{ color: "var(--foreground-muted)", transform: "rotate(90deg)" }} />
-            </button>
-          )}
-
           <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--surface-border)", background: "var(--surface-soft)" }}>
 
             {/* Header */}
@@ -550,7 +378,7 @@ export function KokkenvagtPanel() {
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Uge</th>
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Person 1</th>
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Person 2</th>
-                    <th className="hidden sm:table-cell px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Instruktor</th>
+                    <th className="table-cell px-5 py-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--foreground-muted)" }}>Instruktor</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -613,7 +441,7 @@ export function KokkenvagtPanel() {
                             <span className="font-medium" style={{ color: "var(--foreground)" }}>{row.person2}</span>
                           </div>
                         </td>
-                        <td className="hidden sm:table-cell px-5 py-4">
+                        <td className="table-cell px-5 py-4">
                           {row.authorName ? (
                             <div className="flex items-center gap-2">
                               <Avatar name={row.authorName} size="sm" />
@@ -633,7 +461,7 @@ export function KokkenvagtPanel() {
         </div>
 
         {/* ── Kitchen Guide (desktop) ── */}
-        <div className="hidden lg:block space-y-3">
+        <div className="block space-y-3">
 
           {/* Guide header with progress */}
           <div className="flex items-center gap-2.5 px-1 pb-1">
@@ -698,18 +526,6 @@ export function KokkenvagtPanel() {
         </div>
 
       </div>
-
-      {/* ── Mobile bottom sheet ── */}
-      <MobileGuideSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        openSection={openGuideSection}
-        onSectionToggle={toggleGuideSection}
-        checked={checked}
-        toggle={toggle}
-        reset={reset}
-        doneCount={doneCount}
-      />
     </>
   )
 }

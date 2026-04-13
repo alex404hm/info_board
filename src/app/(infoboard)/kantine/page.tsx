@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { apiFetch } from "@/lib/api-fetch"
 import { useRouter } from "next/navigation"
 
 import { StatusBar } from "@/components/StatusBar"
@@ -16,7 +17,7 @@ export default function CanteenPage() {
 
   useEffect(() => {
     let mounted = true
-    fetch("/api/tiles-config", { cache: "no-store" })
+    apiFetch("/api/tiles-config", { cache: "no-store" })
       .then(r => r.ok ? r.json() : null)
       .then((data: TileConfig[] | null) => {
         if (!mounted) return
@@ -36,7 +37,7 @@ export default function CanteenPage() {
       <StatusBar />
 
       <div
-        className="shrink-0 px-4 py-3 md:px-6"
+        className="shrink-0 px-4 py-3 px-6"
         style={{ background: "var(--surface-muted)", borderBottom: "1px solid var(--surface-border)" }}
       >
         <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3">
@@ -49,7 +50,7 @@ export default function CanteenPage() {
             Tilbage
           </Link>
           <div className="min-w-0 flex-1 text-right">
-            <h1 className="truncate text-base font-bold md:text-lg" style={{ color: "var(--foreground)" }}>Kantine</h1>
+            <h1 className="truncate text-base font-bold text-lg" style={{ color: "var(--foreground)" }}>Kantine</h1>
             <p className="text-xs" style={{ color: "var(--foreground-muted)" }}>Vælg en kategori herunder</p>
           </div>
         </div>

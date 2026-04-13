@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react"
 
 export default function NotFoundPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 md:px-8 lg:px-12 xl:px-16">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 px-6 px-8 px-12 px-16">
       <div className="mx-auto flex w-full max-w-3xl items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -20,7 +20,7 @@ export default function NotFoundPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.04, duration: 0.35, ease: "easeOut" }}
-              className="text-6xl font-black tracking-tight text-blue-500/90 sm:text-7xl"
+              className="text-6xl font-black tracking-tight text-blue-500/90 text-7xl"
             >
               404
             </motion.p>
@@ -28,7 +28,7 @@ export default function NotFoundPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08, duration: 0.4, ease: "easeOut" }}
-              className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl"
+              className="text-3xl font-bold tracking-tight text-foreground text-5xl"
             >
               Siden blev ikke fundet
             </motion.h1>
@@ -36,7 +36,7 @@ export default function NotFoundPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.14, duration: 0.35, ease: "easeOut" }}
-              className="mx-auto max-w-xl text-base text-muted-foreground sm:text-lg"
+              className="mx-auto max-w-xl text-base text-muted-foreground text-lg"
             >
               Beklager, vi kunne ikke finde den side, du leder efter.
             </motion.p>

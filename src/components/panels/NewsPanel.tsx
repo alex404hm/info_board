@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import Image from "next/image"
 import { ArrowUp, CheckCircle2, Clock3, Info, Newspaper, RefreshCw } from "lucide-react"
+import { apiFetch } from "@/lib/api-fetch"
 
 import type { DrNewsApiResponse, DrNewsItem } from "@/types"
 import { decodeHtmlEntities } from "@/lib/utils"
@@ -98,7 +99,7 @@ export function NewsPanel() {
 
   const fetchDrNews = useCallback(async (isManual = false) => {
     try {
-      const res = await fetch("/api/dr-news", { cache: "no-store" })
+      const res = await apiFetch("/api/dr-news", { cache: "no-store" })
       if (!res.ok) return
       const data = (await res.json()) as DrNewsApiResponse
       const nextItems: NewsItemWithTimestamp[] = (data.items ?? []).map((item) => ({
@@ -174,7 +175,7 @@ export function NewsPanel() {
     <>
       {toast && <Toast toast={toast} onDone={() => setToast(null)} />}
 
-      <div className="mx-auto w-full max-w-3xl space-y-3 px-2 pb-6 md:px-0">
+      <div className="mx-auto w-full max-w-3xl space-y-3 px-2 pb-6 px-0">
         {/* Feed header */}
         <div className="flex items-center justify-between gap-3 pb-1">
           <div className="flex items-center gap-2 text-sm">
@@ -228,7 +229,7 @@ export function NewsPanel() {
               >
                 {/* Hero image */}
                 {hasImage && (
-                  <div className={`relative w-full overflow-hidden ${isHero ? "h-72 md:h-96" : "h-52 md:h-64"}`}>
+                  <div className={`relative w-full overflow-hidden ${isHero ? "h-72 h-96" : "h-52 h-64"}`}>
                     <Image
                       src={item.imageUrl!}
                       alt={item.title}
@@ -254,7 +255,7 @@ export function NewsPanel() {
                   </div>
                 )}
 
-                <div className="p-6 md:p-8">
+                <div className="p-6 p-8">
                   {/* Meta row */}
                   <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted">
                     {!hasImage && (
@@ -285,7 +286,7 @@ export function NewsPanel() {
                   {/* Title */}
                   <h2
                     className={`font-bold leading-tight ${
-                      isHero ? "text-2xl md:text-4xl" : "text-xl md:text-2xl"
+                      isHero ? "text-2xl text-4xl" : "text-xl text-2xl"
                     } text-foreground-strong`}
                   >
                     {decodeHtmlEntities(item.title)}

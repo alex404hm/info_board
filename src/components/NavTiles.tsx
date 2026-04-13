@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { apiFetch } from "@/lib/api-fetch"
 import { cn } from "@/lib/utils"
 import {
   TILE_DEFINITIONS,
@@ -17,7 +18,7 @@ export function NavTiles() {
 
     const load = async () => {
       try {
-        const res = await fetch("/api/tiles-config", { cache: "no-store" })
+        const res = await apiFetch("/api/tiles-config", { cache: "no-store" })
         if (!res.ok) return
         const data = (await res.json()) as TileConfig[]
         if (mounted && Array.isArray(data)) setConfig(data)
@@ -30,7 +31,7 @@ export function NavTiles() {
   }, [])
 
   if (config === null) {
-    return <div className="shrink-0 nav-tiles pb-4 sm:pb-2" style={{ minHeight: "88px" }} />
+    return <div className="shrink-0 nav-tiles pb-2" style={{ minHeight: "96px" }} />
   }
 
   const visible = config
@@ -44,11 +45,14 @@ export function NavTiles() {
   if (visible.length === 0) return null
 
   return (
-    <div className="shrink-0 nav-tiles pb-4 sm:pb-2">
+    <div className="shrink-0 nav-tiles pb-2">
       {/* subtle gradient separator */}
       <div className="nav-tiles-separator" />
 
-      <div className="flex w-full items-stretch gap-1.5 overflow-x-auto px-2 pt-2 pb-1 no-scrollbar sm:gap-3 sm:px-4 sm:py-3">
+      <div
+        className="grid w-full items-stretch gap-3 px-4 py-3"
+        style={{ gridTemplateColumns: `repeat(${Math.max(visible.length, 1)}, minmax(0, 1fr))` }}
+      >
         {visible.map(({ cfg, def }) => {
           const Icon = def.icon
           return (
@@ -56,9 +60,8 @@ export function NavTiles() {
               key={def.id}
               href={def.href}
               className={cn(
-                "group relative flex flex-1 flex-col items-center justify-center gap-1.5 sm:gap-2",
-                "min-w-[56px] sm:min-w-0",
-                "rounded-xl px-2 py-2.5 sm:rounded-2xl sm:py-4",
+                "group relative flex min-w-0 flex-col items-center justify-center gap-2",
+                "rounded-2xl px-2 py-4",
                 "transition-colors duration-200 ease-out",
                 "nav-tile-card",
                 def.iconBg,
@@ -88,7 +91,7 @@ export function NavTiles() {
               <span
                 className={cn(
                   "block w-full truncate text-center font-semibold tracking-wide leading-tight",
-                  "text-[9px] sm:text-[11px]",
+                  "text-[11px]",
                   "nav-tile-label",
                 )}
               >

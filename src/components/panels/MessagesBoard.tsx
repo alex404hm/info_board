@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { MessageSquare, Pin } from "lucide-react"
+import { apiFetch } from "@/lib/api-fetch"
 
 import { YellowStickyNote } from "@/components/YellowStickyNote"
 
@@ -72,7 +73,7 @@ export function MessagesBoard() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchMessages = () => {
-    fetch("/api/messages", { cache: "no-store" })
+    apiFetch("/api/messages", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
         setMessages(Array.isArray(data) ? data : [])

@@ -3,46 +3,41 @@
 import React, { useState, useEffect } from "react"
 import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Lock, ShieldAlert, Loader2 } from "lucide-react"
 import Image from "next/image"
+import { apiFetch } from "@/lib/api-fetch"
 
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useAdminTheme } from "@/components/admin/AdminThemeProvider"
 
 function AdaptiveLogo() {
-  const [isDark, setIsDark] = React.useState(false)
+  const { resolvedTheme } = useAdminTheme()
+  const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
-    const update = () => {
-      const html = document.documentElement
-      if (html.classList.contains("dark")) { setIsDark(true); return }
-      if (html.classList.contains("light")) { setIsDark(false); return }
-      setIsDark(window.matchMedia("(prefers-color-scheme: dark)").matches)
-    }
-    update()
-    const media = window.matchMedia("(prefers-color-scheme: dark)")
-    media.addEventListener("change", update)
-    const observer = new MutationObserver(update)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
-    return () => { media.removeEventListener("change", update); observer.disconnect() }
+    setMounted(true)
   }, [])
+
+  // Keep first client render equal to SSR to avoid hydration mismatch.
+  const isDark = mounted && resolvedTheme === "dark"
 
   return (
     <Image
-      src="/logo.svg"
+      src={isDark ? "/logo-white.svg" : "/logo.svg"}
       alt="Logo"
-      width={96}
-      height={33}
+      width={144}
+      height={50}
       priority
-      className={isDark ? "brightness-0 invert" : "brightness-0"}
+      className="mx-auto h-10 w-auto"
     />
   )
 }
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-      <div className="w-full max-w-sm">{children}</div>
+    <div className="flex min-h-svh w-full flex-col items-center justify-center bg-background p-6 md:p-10">
+      <div className="mx-auto w-full max-w-sm">{children}</div>
     </div>
   )
 }
@@ -99,7 +94,7 @@ export default function AdminLogin() {
     setLoading(true)
 
     try {
-      const res = await fetch("/api/sign-in", {
+      const res = await apiFetch("/api/sign-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),

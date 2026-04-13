@@ -213,7 +213,7 @@ function LinkDialog({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent showCloseButton={false} className="gap-4 sm:max-w-sm">
+      <DialogContent showCloseButton={false} className="gap-4 max-w-sm">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Rediger link" : "Indsæt link"}</DialogTitle>
         </DialogHeader>

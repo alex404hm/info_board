@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 import Image from "next/image"
 import {
   LayoutGrid,
@@ -146,7 +147,7 @@ export default function DisplayPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/tiles-config", { cache: "no-store" })
+        const res = await apiFetch("/api/tiles-config", { cache: "no-store" })
         if (res.ok) {
           const data = (await res.json()) as TileConfig[]
           if (Array.isArray(data)) setConfig(data)
@@ -228,7 +229,7 @@ export default function DisplayPage() {
   async function handleSave() {
     setSaving(true)
     try {
-      const res = await fetch("/api/tiles-config", {
+      const res = await apiFetch("/api/tiles-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),

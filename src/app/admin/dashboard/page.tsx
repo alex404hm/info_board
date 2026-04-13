@@ -157,7 +157,7 @@ export default async function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="grid w-full gap-3 md:grid-cols-3">
+      <div className="grid w-full gap-3 grid-cols-3">
         <StatCard
           label="Aktive beskeder"
           value={activeMessages?.count ?? 0}

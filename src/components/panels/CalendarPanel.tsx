@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import { apiFetch } from "@/lib/api-fetch"
 import {
   Clock3,
   CalendarDays,
@@ -193,7 +194,7 @@ export function CalendarPanel() {
   useEffect(() => {
     let mounted = true
     const load = () =>
-      fetch("/api/calendar")
+      apiFetch("/api/calendar")
         .then((r) => r.json())
         .then((d) => { if (mounted) setEvents(Array.isArray(d.events) ? d.events : []) })
         .catch(() => {})
@@ -265,19 +266,19 @@ export function CalendarPanel() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_430px]">
+    <div className="grid gap-6 grid-cols-[1fr_430px]">
       <div className="surface-panel overflow-hidden">
-        <div className="flex items-center justify-between border-b border-light px-3 py-3 sm:px-6 sm:py-4">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-0.5 sm:gap-1">
-              <button onClick={prev} className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/8 active:scale-95 text-muted">
+        <div className="flex items-center justify-between border-b border-light px-3 py-3 px-6 py-4">
+          <div className="flex items-center gap-2 gap-4">
+            <div className="flex items-center gap-0.5 gap-1">
+              <button onClick={prev} className="flex h-8 w-8 h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/8 active:scale-95 text-muted">
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button onClick={next} className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/8 active:scale-95 text-muted">
+              <button onClick={next} className="flex h-8 w-8 h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/8 active:scale-95 text-muted">
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <h2 className="text-base font-bold text-foreground-strong sm:text-xl">
+            <h2 className="text-base font-bold text-foreground-strong text-xl">
               {MONTHS[vm]} <span className="text-subtle">{vy}</span>
             </h2>
           </div>
@@ -286,7 +287,7 @@ export function CalendarPanel() {
 
         <div className="grid grid-cols-7 border-b border-light">
           {DAYS.map((d, i) => (
-            <div key={d} className={cn("py-2 text-center text-[9px] font-bold uppercase tracking-wider sm:py-3 sm:text-[11px]", i >= 5 ? "text-slate-600" : "text-slate-500")}>
+            <div key={d} className={cn("py-2 text-center text-[9px] font-bold uppercase tracking-wider py-3 text-[11px]", i >= 5 ? "text-slate-600" : "text-slate-500")}>
               {d}
             </div>
           ))}
@@ -304,7 +305,7 @@ export function CalendarPanel() {
               <div
                 key={i}
                 className={cn(
-                  "relative min-h-14 overflow-hidden p-1 sm:min-h-20 sm:p-1.5 md:min-h-25 md:p-2 border-light",
+                  "relative min-h-14 overflow-hidden p-1 min-h-20 p-1.5 min-h-25 p-2 border-light",
                   !isLastRow && "border-b",
                   !isRightEdge && "border-r",
                   !day && "pointer-events-none",
@@ -314,7 +315,7 @@ export function CalendarPanel() {
                 {day && (
                   <>
                     {/* Mobile: centered number + centered dots */}
-                    <div className="flex flex-col items-center sm:hidden">
+                    <div className="flex flex-col items-center hidden">
                       <span
                         className={cn(
                           "inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums",
@@ -335,11 +336,11 @@ export function CalendarPanel() {
                     </div>
 
                     {/* Desktop: top-left number + event pills */}
-                    <div className="hidden sm:block">
-                      <div className="mb-1.5 pl-1 sm:pl-1.5">
+                    <div className="block">
+                      <div className="mb-1.5 pl-1 pl-1.5">
                         <span
                           className={cn(
-                            "inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums md:h-7 md:w-7 md:text-[13px]",
+                            "inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums h-7 w-7 text-[13px]",
                             isT && "bg-emerald-500 font-bold text-white shadow-sm shadow-emerald-500/30",
                             !isT && isWeekend && "text-slate-600",
                             !isT && !isWeekend && "text-slate-300",
@@ -372,7 +373,7 @@ export function CalendarPanel() {
       </div>
 
       <div className="surface-panel flex flex-col overflow-hidden">
-        <div className="flex items-center gap-2.5 border-b border-light px-3 py-3 sm:px-5 sm:py-4 shrink-0">
+        <div className="flex items-center gap-2.5 border-b border-light px-3 py-3 px-5 py-4 shrink-0">
           <CalendarDays className="h-4 w-4 text-accent shrink-0" />
           <p className="flex-1 text-sm font-semibold text-foreground-strong">Kommende 30 dage</p>
           {upcoming.length > 0 && (

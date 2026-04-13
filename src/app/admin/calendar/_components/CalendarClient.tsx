@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 import {
   Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon, Plus, Loader2,
 } from "lucide-react"
@@ -188,7 +189,7 @@ export default function CalendarAdminPage() {
     setLocationLoading(true)
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `https://api.dataforsyningen.dk/autocomplete?type=adresse&stormodtagerpostnumre=true&supplerendebynavn=true&fuzzy=true&q=${encodeURIComponent(q)}&startfra=vejnavn`
       )
       if (!res.ok || reqId !== locationRequestRef.current) return
@@ -261,7 +262,7 @@ export default function CalendarAdminPage() {
 
   const fetchEntries = useCallback(async () => {
     try {
-      const res = await fetch("/api/calendar-events")
+      const res = await apiFetch("/api/calendar-events")
       if (res.ok) setEntries(await res.json())
     } catch (e) {
       console.error("Failed to fetch calendar events:", e)
@@ -270,7 +271,7 @@ export default function CalendarAdminPage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch("/api/calendar-categories")
+      const res = await apiFetch("/api/calendar-categories")
       if (!res.ok) return
       const data = (await res.json()) as CalendarCategory[]
       setCategories(Array.isArray(data) ? data : [])
@@ -362,7 +363,7 @@ export default function CalendarAdminPage() {
     try {
       const url = editingId ? `/api/calendar-events/${editingId}` : "/api/calendar-events"
       const method = editingId ? "PATCH" : "POST"
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -398,7 +399,7 @@ export default function CalendarAdminPage() {
     const id = deleteEntry.id
     setDeletingEntryId(id)
     try {
-      const res = await fetch(`/api/calendar-events/${id}`, { method: "DELETE" })
+      const res = await apiFetch(`/api/calendar-events/${id}`, { method: "DELETE" })
       if (res.ok) {
         await fetchEntries()
         showToast("success", "Begivenhed slettet")
@@ -418,7 +419,7 @@ export default function CalendarAdminPage() {
     if (!name) return
     setCreatingCategory(true)
     try {
-      const res = await fetch("/api/calendar-categories", {
+      const res = await apiFetch("/api/calendar-categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -455,7 +456,7 @@ export default function CalendarAdminPage() {
 
     setDeletingCategoryId(item.id)
     try {
-      const res = await fetch(`/api/calendar-categories/${item.id}`, { method: "DELETE" })
+      const res = await apiFetch(`/api/calendar-categories/${item.id}`, { method: "DELETE" })
       if (!res.ok) {
         showToast("error", "Kunne ikke slette kategori")
         return
@@ -530,7 +531,7 @@ export default function CalendarAdminPage() {
           <form onSubmit={handleSubmit} className="space-y-5 p-6">
 
             {/* Title + Category */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Titel <span className="text-destructive">*</span>
@@ -649,7 +650,7 @@ export default function CalendarAdminPage() {
             </div>
 
             {/* Dates + Times */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <CalendarDays className="h-3 w-3" /> Startdato <span className="text-destructive">*</span>

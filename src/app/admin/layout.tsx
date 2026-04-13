@@ -14,6 +14,14 @@ export const metadata = {
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies()
+
+  const themeCookie = cookieStore.get("admin-theme")?.value
+  const initialTheme =
+    themeCookie === "light" || themeCookie === "dark" || themeCookie === "system"
+      ? themeCookie
+      : "system"
+
   const headersList = await headers()
   const session = await auth.api.getSession({ headers: headersList })
   const role = getUserRole(session)
@@ -21,7 +29,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   // ── All admin routes require a full session ──────────────────────────────
   if (!isAuthenticated) {
-    return <AdminLogin />
+    return (
+      <AdminThemeProvider initialTheme={initialTheme}>
+        <AdminLogin />
+      </AdminThemeProvider>
+    )
   }
 
   const user = {
@@ -31,14 +43,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     image: session.user.image ?? null,
     role: getUserRole(session) ?? null,
   }
-
-  const cookieStore = await cookies()
-
-  const themeCookie = cookieStore.get("admin-theme")?.value
-  const initialTheme =
-    themeCookie === "light" || themeCookie === "dark" || themeCookie === "system"
-      ? themeCookie
-      : "system"
 
   const sidebarCookie = cookieStore.get("sidebar_state")?.value
   const defaultSidebarOpen = sidebarCookie !== "false"
@@ -52,7 +56,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-card px-4">
   <AdminHeader user={user} />
             </header>
-            <ScrollArea className="flex-1 min-w-0 px-4 py-8 scroll-smooth sm:px-8 lg:px-12">
+            <ScrollArea className="flex-1 min-w-0 px-4 py-8 scroll-smooth px-8 px-12">
               <div className="mx-auto min-w-0 w-full max-w-5xl">{children}</div>
             </ScrollArea>
           </SidebarInset>

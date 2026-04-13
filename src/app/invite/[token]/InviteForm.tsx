@@ -109,7 +109,7 @@ export default function InviteForm({ token, email, role }: Props) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col p-8 md:p-12" style={{ "--input": "rgba(255,255,255,0.13)", "--ring": "rgba(95,157,255,0.45)" } as React.CSSProperties}>
+    <div className="flex min-h-svh flex-col p-8 p-12" style={{ "--input": "rgba(255,255,255,0.13)", "--ring": "rgba(95,157,255,0.45)" } as React.CSSProperties}>
       {/* Logo */}
       <div>
         <Image

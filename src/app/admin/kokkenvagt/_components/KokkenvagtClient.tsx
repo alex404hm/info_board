@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 import { Trash2, Edit2, X, CalendarDays, Clock, ChefHat, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, format, addMonths, subMonths, isSameMonth } from "date-fns"
@@ -238,7 +239,7 @@ export default function KokkenvagtAdminPage() {
 
   const fetchEntries = useCallback(async () => {
     try {
-      const res = await fetch("/api/kokkenvagt?admin=true")
+      const res = await apiFetch("/api/kokkenvagt?admin=true")
       if (res.ok) setEntries(await res.json())
     } catch (e) {
       console.error("Failed to fetch entries:", e)
@@ -300,7 +301,7 @@ export default function KokkenvagtAdminPage() {
       const year = getISOWeekYear(selectedDate)
       const url = editingId ? `/api/kokkenvagt/${editingId}` : "/api/kokkenvagt"
       const method = editingId ? "PATCH" : "POST"
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -335,7 +336,7 @@ export default function KokkenvagtAdminPage() {
     })
     if (!ok) return
     try {
-      const res = await fetch(`/api/kokkenvagt/${id}`, { method: "DELETE" })
+      const res = await apiFetch(`/api/kokkenvagt/${id}`, { method: "DELETE" })
       if (res.ok) {
         await fetchEntries()
         showToast("success", "Vagt slettet")
@@ -474,7 +475,7 @@ export default function KokkenvagtAdminPage() {
             </div>
 
             {/* Persons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Person 1

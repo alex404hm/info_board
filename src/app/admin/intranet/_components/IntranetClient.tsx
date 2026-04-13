@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { apiFetch } from "@/lib/api-fetch"
 import { Edit2, FileText, GripVertical, Loader2, Search, Trash2 } from "lucide-react"
 
 import { AdminCreateButton } from "@/components/admin/AdminCreateButton"
@@ -46,7 +47,7 @@ export default function AdminIntranetPage() {
     let mounted = true
     async function load() {
       try {
-        const res = await fetch("/api/intranet-faq", { cache: "no-store" })
+        const res = await apiFetch("/api/intranet-faq", { cache: "no-store" })
         if (!res.ok) throw new Error()
         const data = (await res.json()) as IntranetFaqItem[]
         if (mounted && Array.isArray(data) && data.length) setItems(data)
@@ -85,7 +86,7 @@ export default function AdminIntranetPage() {
     setSaving(true)
     setToast(null)
     try {
-      const res = await fetch("/api/intranet-faq", {
+      const res = await apiFetch("/api/intranet-faq", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(items),
@@ -105,7 +106,7 @@ export default function AdminIntranetPage() {
     setDeletingId(id)
     try {
       const next = items.filter((item) => item.id !== id)
-      const res = await fetch("/api/intranet-faq", {
+      const res = await apiFetch("/api/intranet-faq", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(next),

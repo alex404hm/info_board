@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { AlertTriangle, ArrowUp, Car, CheckCircle2, ChevronDown, ChevronUp, Clock, RefreshCw, Train } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { apiFetch } from "@/lib/api-fetch"
 import type { TrafikPost } from "@/app/api/trafik/route"
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -95,7 +96,7 @@ function TrafikCard({ post }: { post: TrafikPost }) {
         </div>
 
         {/* Headline */}
-        <h2 className="text-base font-bold leading-snug md:text-lg text-foreground-strong">
+        <h2 className="text-base font-bold leading-snug text-lg text-foreground-strong">
           {post.text}
         </h2>
 
@@ -162,7 +163,7 @@ export function TrafikPanel() {
 
   const fetchPosts = useCallback(async () => {
     try {
-      const res = await fetch("/api/trafik", { cache: "no-store" })
+      const res = await apiFetch("/api/trafik", { cache: "no-store" })
       if (!res.ok) return
       const data = (await res.json()) as ApiResponse
       if (!mountedRef.current) return
@@ -225,7 +226,7 @@ export function TrafikPanel() {
 
   return (
     <>
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-2 pb-6 md:px-0">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-2 pb-6 px-0">
       {/* Header row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">

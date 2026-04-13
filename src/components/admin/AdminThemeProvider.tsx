@@ -12,7 +12,7 @@ const AdminThemeContext = createContext<{
   resolvedTheme: ResolvedAdminTheme
   setTheme: (nextTheme: AdminTheme) => void
   toggle: () => void
-}>({ theme: "system", resolvedTheme: "dark", setTheme: () => {}, toggle: () => {} })
+}>({ theme: "system", resolvedTheme: "light", setTheme: () => {}, toggle: () => {} })
 
 export function useAdminTheme() {
   return useContext(AdminThemeContext)
@@ -33,7 +33,9 @@ export function AdminThemeProvider({
 
   const [theme, setTheme] = useState<AdminTheme>(initialTheme)
   const [systemTheme, setSystemTheme] = useState<ResolvedAdminTheme>(() => {
-    if (typeof window === "undefined") return "dark"
+    if (typeof window === "undefined") return "light"
+    const htmlTheme = document.documentElement.getAttribute("data-admin-theme")
+    if (htmlTheme === "dark" || htmlTheme === "light") return htmlTheme
     const media = window.matchMedia("(prefers-color-scheme: dark)")
     return media.matches ? "dark" : "light"
   })
@@ -96,18 +98,13 @@ export function AdminThemeProvider({
     [theme, resolvedTheme, setThemeAndPersist, toggle],
   )
 
-  // Always render the server-consistent class during SSR/hydration.
-  // suppressHydrationWarning lets React skip the diff for this attribute
-  // since the theme script may have already patched the DOM before hydration.
   const themeClass = isHydrated
-    ? theme === "system"
-      ? ""
-      : resolvedTheme === "light" ? " light" : " dark"
+    ? resolvedTheme === "light" ? " light" : " dark"
     : initialTheme === "light"
       ? " light"
       : initialTheme === "dark"
         ? " dark"
-        : ""
+        : " system"
 
   return (
     <AdminThemeContext.Provider value={contextValue}>

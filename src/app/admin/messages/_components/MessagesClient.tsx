@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import { apiFetch } from "@/lib/api-fetch"
 import {
   Plus, Trash2, X, CheckCircle, AlertCircle, Pencil,
   Archive, ArchiveRestore, ChevronDown, ChevronUp, Clock, CheckSquare, Square,
@@ -607,7 +608,7 @@ export default function MessagesPage() {
 
   const fetchMessages = useCallback(async () => {
     try {
-      const res = await fetch("/api/messages?admin=true")
+      const res = await apiFetch("/api/messages?admin=true")
       if (res.ok) setMessages(await res.json())
     } catch {}
     setLoading(false)
@@ -625,7 +626,7 @@ export default function MessagesPage() {
     try {
       const url = editingId ? `/api/messages/${editingId}` : "/api/messages"
       const method = editingId ? "PATCH" : "POST"
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -699,7 +700,7 @@ export default function MessagesPage() {
 
   async function handleArchive(id: string, active: boolean) {
     try {
-      const res = await fetch(`/api/messages/${id}`, {
+      const res = await apiFetch(`/api/messages/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: !active }),
@@ -721,7 +722,7 @@ export default function MessagesPage() {
     const id = deleteMessage.id
     setDeletingMessageId(id)
     try {
-      const res = await fetch(`/api/messages/${id}`, { method: "DELETE" })
+      const res = await apiFetch(`/api/messages/${id}`, { method: "DELETE" })
       if (res.ok) {
         showToast("success", "Besked slettet")
         setDeleteMessage(null)
@@ -740,7 +741,7 @@ export default function MessagesPage() {
     const base = msg.expiresAt ? new Date(msg.expiresAt) : new Date()
     base.setDate(base.getDate() + days)
     try {
-      const res = await fetch(`/api/messages/${id}`, {
+      const res = await apiFetch(`/api/messages/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expiresAt: base.toISOString() }),
@@ -755,7 +756,7 @@ export default function MessagesPage() {
 
   async function handlePin(id: string, currentlyPinned: boolean) {
     try {
-      const res = await fetch(`/api/messages/${id}`, {
+      const res = await apiFetch(`/api/messages/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pinned: !currentlyPinned }),
@@ -779,7 +780,7 @@ export default function MessagesPage() {
       tone: "danger",
     })
     if (!ok) return
-    await Promise.all([...selectedIds].map((id) => fetch(`/api/messages/${id}`, { method: "DELETE" })))
+    await Promise.all([...selectedIds].map((id) => apiFetch(`/api/messages/${id}`, { method: "DELETE" })))
     showToast("success", `${count} ${count === 1 ? "besked" : "beskeder"} slettet`)
     exitSelectionMode()
     broadcastUpdate()
@@ -789,7 +790,7 @@ export default function MessagesPage() {
   async function handleBulkArchive() {
     const ids = [...selectedIds]
     await Promise.all(ids.map((id) =>
-      fetch(`/api/messages/${id}`, {
+      apiFetch(`/api/messages/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: false }),
@@ -809,7 +810,7 @@ export default function MessagesPage() {
       if (!msg) return
       const base = msg.expiresAt ? new Date(msg.expiresAt) : new Date()
       base.setDate(base.getDate() + days)
-      return fetch(`/api/messages/${id}`, {
+      return apiFetch(`/api/messages/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expiresAt: base.toISOString() }),
@@ -896,7 +897,7 @@ export default function MessagesPage() {
 
       {/* ── Form ── */}
       {showForm && (
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-7 shadow-xl md:p-8">
+        <div className="rounded-2xl border border-border/50 bg-card/40 p-7 shadow-xl p-8">
           <h2 className="mb-6 text-lg font-bold text-foreground">{editingId ? "Rediger besked" : "Ny besked"}</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-1.5">

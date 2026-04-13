@@ -16,6 +16,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
+import { apiFetch } from "@/lib/api-fetch"
 
 const description = "An interactive bar chart"
 
@@ -59,7 +60,7 @@ export function ChartBarInteractive({ days = 30 }: { days?: number }) {
         setIsLoading(true)
         setIsError(false)
 
-        const res = await fetch(`/api/admin/dashboard/messages-chart?days=${days}`, {
+        const res = await apiFetch(`/api/admin/dashboard/messages-chart?days=${days}`, {
           cache: "no-store",
         })
 
@@ -99,8 +100,8 @@ export function ChartBarInteractive({ days = 30 }: { days?: number }) {
 
   return (
     <Card className="py-0">
-      <CardHeader className="flex flex-col items-stretch border-b p-0! sm:flex-row">
-        <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:py-0!">
+      <CardHeader className="flex flex-col items-stretch border-b p-0! flex-row">
+        <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 py-0!">
           <CardTitle>Beskeder over tid</CardTitle>
           <CardDescription>
             Seneste {days} dage sammenlignet med forrige {days} dage
@@ -112,13 +113,13 @@ export function ChartBarInteractive({ days = 30 }: { days?: number }) {
               <button
                 key={chart}
                 data-active={activeChart === chart}
-                className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 border-t-0 border-l px-8 py-6"
                 onClick={() => setActiveChart(chart)}
               >
                 <span className="text-xs text-muted-foreground">
                   {chartConfig[chart].label}
                 </span>
-                <span className="text-lg leading-none font-bold sm:text-3xl">
+                <span className="text-lg leading-none font-bold text-3xl">
                   {total[chart].toLocaleString()}
                 </span>
               </button>
@@ -126,7 +127,7 @@ export function ChartBarInteractive({ days = 30 }: { days?: number }) {
           })}
         </div>
       </CardHeader>
-      <CardContent className="px-2 sm:p-6">
+      <CardContent className="px-2 p-6">
         {isError ? (
           <div className="flex h-62.5 items-center justify-center text-sm text-muted-foreground">
             Kunne ikke hente diagramdata.
