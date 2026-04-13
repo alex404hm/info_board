@@ -126,7 +126,7 @@ function emailLayout(opts: {
         <tr>
           <td align="center" style="padding-top:20px;">
             <p style="margin:0;font-size:12px;color:#9aa3ae;">
-              TEC &middot; Frederiksberg &middot; Denmark
+              TEC &middot; Hvidovre &middot; Denmark
             </p>
           </td>
         </tr>

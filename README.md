@@ -1,984 +1,578 @@
 # TEC Info Board
 
-Modern information board and administration platform for TEC, built with Next.js App Router, Better Auth, Drizzle ORM, and PostgreSQL.
+> A dual-surface information and administration platform for TEC — public kiosk display and authenticated staff workspace, built with Next.js, Better Auth, Drizzle ORM, and PostgreSQL.
 
-> [!NOTE]
-> This README is generated from the current repository state (analyzed recursively) on April 9, 2026.
+![TEC Info Board Preview](preview.png)
 
-## 📖 Project Overview
+---
 
-TEC Info Board is a dual-surface application:
+## Table of Contents
 
-- **Infoboard surface**: a kiosk-style, read-optimized display for weather, departures, canteen menu, traffic, news, contacts, calendar, intranet content, kitchen duty, and pinned messages.
-- **Admin surface**: authenticated teacher/admin workspace for user management, invites, message CRUD, calendar/events/categories CRUD, tile visibility control, intranet editing, uploads, and dashboard analytics.
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Database Schema](#database-schema)
+- [API Reference](#api-reference)
+- [Environment Variables](#environment-variables)
+- [Getting Started](#getting-started)
+- [Common Commands](#common-commands)
+- [Authentication & Roles](#authentication--roles)
+- [External Integrations](#external-integrations)
+- [Deployment](#deployment)
 
-Primary goals:
+---
 
-- Deliver a reliable real-time school information display.
-- Keep editorial workflows simple for staff.
-- Centralize data in one secure, role-aware backend.
+## Overview
 
-## ✨ Features
+TEC Info Board is two applications in one:
 
-- Next.js 16 App Router architecture with route handlers in `src/app/api/**`.
-- Better Auth integration (credentials auth + admin plugin + trusted origins).
-- Role-based authorization (`teacher`, `admin`) on protected APIs.
-- Security-hardened sign-in API with IP + email rate-limiting.
-- Dynamic tile configuration persisted in DB (`setting` table).
-- Message scheduling (`activeFrom`, `expiresAt`, `repeatDays`, `pinned`).
-- Calendar events and categories with cascade-safe category deletion behavior.
-- Invitation onboarding flow (`/api/admin/invite` + `/api/invite/[token]`).
-- File uploads with MIME and magic-byte validation.
-- External integrations:
-	- MET weather API
-	- Rejseplanen departures API
-	- DR traffic API
-	- DR RSS/news pages
-	- Kanpla menu API
-	- Kalendarium API
+| Surface | Path | Audience | Purpose |
+|---|---|---|---|
+| **Infoboard** | `/` | Public / kiosk screens | Real-time weather, departures, news, menu, traffic, contacts, calendar, messages |
+| **Admin** | `/admin` | Teachers & admins | User management, content editing, tile config, analytics dashboard |
 
-## 🧭 Architecture
+The infoboard is designed to run unattended on wall-mounted screens. The admin surface is a full content-management workspace with role-based permissions.
+
+---
+
+## Features
+
+### Infoboard
+- Live weather from the MET API with 5-day forecast
+- Public-transport departures from two configurable stops (Rejseplanen)
+- Traffic incidents from DR Trafik API
+- Daily canteen dish + full menu inventory (Kanpla)
+- Cached and enriched DR news articles
+- Danish public calendar events (Kalendarium API)
+- Staff contacts directory (sourced from `contacts.json`)
+- Pinned and scheduled messages with repeat patterns
+- Kitchen-duty (kokkenvagt) schedule
+- Intranet pages rendered from rich markdown
+
+### Admin
+- Credential-based sign-in with IP + email rate limiting
+- Invitation-based onboarding flow with email delivery
+- Password reset via email token
+- Role-based access control (`user`, `teacher`, `admin`)
+- Message CRUD — scheduling with `activeFrom`, `expiresAt`, `repeatDays`, `pinned`, priority levels
+- Calendar events + category management with cascade-safe deletion
+- Intranet CMS with TipTap rich-text editor (tables, links, alignment, underline)
+- File + avatar uploads with MIME and magic-byte validation
+- Dynamic tile visibility/ordering persisted in the database
+- Dashboard analytics with message timeseries chart
+- Session cookie caching (5-minute window) to reduce database load
+
+---
+
+## Tech Stack
+
+| Category | Library / Tool | Version |
+|---|---|---|
+| Framework | Next.js (App Router) | 16.2.1 |
+| Language | TypeScript | ^5 |
+| Runtime | Node.js | 20+ |
+| UI Library | React | 19.2.3 |
+| Auth | better-auth (credentials + admin plugin) | ^1.5.4 |
+| ORM | Drizzle ORM | ^0.45.2 |
+| Database | PostgreSQL | — |
+| DB Driver | pg / @neondatabase/serverless | ^8.20.0 / ^1.0.2 |
+| Styling | Tailwind CSS v4 + Sass | ^4 / ^1.98.0 |
+| UI Primitives | Radix UI + shadcn/ui | ^1.4.3 |
+| Rich Text | TipTap (core + extensions) | ^3.20.5 |
+| Animation | Framer Motion | ^12.0.0 |
+| Charts | Recharts | 3.8.0 |
+| Email | Nodemailer | ^8.0.4 |
+| Dates | date-fns | ^4.1.0 |
+| Icons | Lucide React | ^0.575.0 |
+| Markdown | react-markdown + remark-gfm | ^10.1.0 |
+| Forms | react-day-picker, react-phone-number-input | ^9.14.0 / ^3.4.16 |
+| Package Manager | pnpm | 9+ |
+| Migrations CLI | drizzle-kit | ^0.31.9 |
+| Linting | ESLint | ^9 |
+
+---
+
+## Architecture
+
+### System Overview
 
 ```mermaid
 flowchart TD
-	A[Infoboard UI<br/>src/app/(infoboard)] --> C[Route Handlers<br/>src/app/api]
-	B[Admin UI<br/>src/app/admin] --> C
-	C --> D[(PostgreSQL)]
-	C --> E[MET Weather API]
-	C --> F[Rejseplanen API]
-	C --> G[Kanpla API]
-	C --> H[DR Trafik API]
-	C --> I[DR RSS + article pages]
-	C --> J[Kalendarium API]
-	B --> K[Better Auth Session]
-	C --> K
+    A[Infoboard UI<br/>src/app/(infoboard)] --> C[API Route Handlers<br/>src/app/api]
+    B[Admin UI<br/>src/app/admin] --> C
+    C --> D[(PostgreSQL)]
+    C --> E[MET Weather API]
+    C --> F[Rejseplanen API]
+    C --> G[Kanpla API]
+    C --> H[DR Trafik API]
+    C --> I[DR RSS + article pages]
+    C --> J[Kalendarium API]
+    B --> K[Better Auth Session]
+    C --> K
+    K --> D
 ```
+
+### Request Flow — Message Creation
 
 ```mermaid
 sequenceDiagram
-	participant U as Admin User
-	participant UI as Admin Client
-	participant API as /api/messages
-	participant DB as PostgreSQL
-	participant IB as Infoboard Client
-	U->>UI: Create message
-	UI->>API: POST /api/messages
-	API->>API: Session + role validation
-	API->>DB: INSERT message
-	API-->>UI: 201 Created
-	IB->>API: Poll GET /api/messages
-	API->>DB: SELECT active messages
-	API-->>IB: Updated message list
+    participant U as Staff User
+    participant UI as Admin Client
+    participant P as Proxy (src/proxy.ts)
+    participant API as /api/messages
+    participant Auth as Better Auth
+    participant DB as PostgreSQL
+    participant IB as Infoboard Client
+
+    U->>UI: Fill in message form
+    UI->>P: POST /api/messages
+    P->>Auth: Validate session cookie
+    Auth-->>P: Session + role
+    P->>API: Forwarded request
+    API->>API: Role check (teacher / admin)
+    API->>DB: INSERT message
+    API-->>UI: 201 Created
+    IB->>API: Poll GET /api/messages
+    API->>DB: SELECT active messages
+    API-->>IB: Updated message list
 ```
 
-## 🗂️ Repository Structure
+### Request Flow — Invitation Onboarding
 
-### Tree View (source-focused)
+```mermaid
+sequenceDiagram
+    participant A as Admin
+    participant API as /api/admin/invite
+    participant DB as PostgreSQL
+    participant Email as SMTP
+    participant U as Invitee
+    participant Inv as /api/invite/[token]
+
+    A->>API: POST (email + role)
+    API->>DB: INSERT invitation
+    API->>Email: Send invite link
+    U->>Inv: GET /invite/[token] (read metadata)
+    U->>Inv: POST /invite/[token] (set password)
+    Inv->>DB: Create user + mark invitation accepted
+    U-->>Admin: Redirect to /admin
+```
+
+---
+
+## Project Structure
 
 ```text
 tec-info/
-├─ drizzle/
-│  ├─ *.sql                         # Drizzle migrations
-│  └─ meta/                         # Migration snapshots/journal
-├─ public/
-│  ├─ logo/                         # Brand/logo assets
-│  └─ weather/                      # Weather icon assets + symbol mapping
-├─ src/
-│  ├─ app/
-│  │  ├─ (infoboard)/               # Public display routes and section pages
-│  │  ├─ admin/                     # Teacher/admin interface routes
-│  │  ├─ api/                       # REST API route handlers
-│  │  ├─ invite/                    # Invite acceptance UI
-│  │  ├─ reset-password/            # Password reset UI
-│  │  ├─ layout.tsx                 # Root app layout + providers
-│  │  ├─ globals.css                # Global styles
-│  │  └─ contacts.json              # Contact data source for /api/kontakter
-│  ├─ components/
-│  │  ├─ admin/                     # Admin-specific UI components
-│  │  ├─ intranet/                  # Intranet editor/renderer components
-│  │  ├─ panels/                    # Info panel components
-│  │  └─ ui/                        # Shared UI primitives
-│  ├─ db/
-│  │  ├─ index.ts                   # Drizzle client initialization
-│  │  ├─ schema.ts                  # Full DB schema definitions
-│  │  └─ seed.ts                    # Seed script for initial users
-│  ├─ hooks/                        # Client hooks for data + UX guards
-│  ├─ lib/                          # Core business logic/auth/utilities
-│  ├─ styles/                       # SCSS vars/animations/editor styles
-│  ├─ types/                        # Shared API/front-end TS contracts
-│  └─ proxy.ts                      # Next.js proxy (security headers + redirect)
-├─ drizzle.config.ts                # Drizzle toolkit config
-├─ next.config.ts                   # Next.js runtime config
-├─ package.json                     # Scripts + dependencies
-├─ tsconfig.json                    # TS compiler options
-└─ eslint.config.mjs                # Lint config
+├── drizzle/
+│   ├── *.sql                         # SQL migration files
+│   └── meta/                         # Migration snapshots and journal
+├── public/
+│   ├── logo/                         # Brand SVG assets
+│   └── weather/                      # Weather icon PNGs + symbol code mapping
+├── src/
+│   ├── app/
+│   │   ├── (infoboard)/              # Public kiosk routes
+│   │   │   ├── afgange/              # Departures panel
+│   │   │   ├── beskeder/             # Messages panel
+│   │   │   ├── intranet/             # Intranet viewer
+│   │   │   ├── kalender/             # Calendar panel
+│   │   │   ├── kantine/              # Canteen panel
+│   │   │   ├── kokkenvagt/           # Kitchen duty panel
+│   │   │   ├── kontakter/            # Contacts panel
+│   │   │   ├── nyheder/              # News panel
+│   │   │   ├── trafik/               # Traffic panel
+│   │   │   └── vejr/                 # Weather panel
+│   │   ├── admin/                    # Authenticated admin routes
+│   │   │   ├── calendar/             # Calendar event management
+│   │   │   ├── dashboard/            # Analytics overview
+│   │   │   ├── display/              # Tile visibility settings
+│   │   │   ├── intranet/             # Intranet CMS
+│   │   │   ├── kokkenvagt/           # Kitchen duty management
+│   │   │   ├── messages/             # Message management
+│   │   │   ├── settings/             # Account / system settings
+│   │   │   └── users/                # User + invitation management
+│   │   ├── api/                      # REST API route handlers
+│   │   ├── invite/                   # Invitation acceptance UI
+│   │   ├── reset-password/           # Password reset UI
+│   │   ├── layout.tsx                # Root layout + providers
+│   │   ├── globals.css               # Global stylesheet
+│   │   └── contacts.json             # Static contacts data source
+│   ├── components/
+│   │   ├── admin/                    # Admin-specific components
+│   │   ├── intranet/                 # Intranet editor + renderer
+│   │   ├── panels/                   # Infoboard panel components
+│   │   └── ui/                       # Shared UI primitives (shadcn/ui)
+│   ├── db/
+│   │   ├── index.ts                  # Drizzle client singleton
+│   │   ├── schema.ts                 # Full table definitions
+│   │   └── seed.ts                   # Initial admin user seed
+│   ├── hooks/
+│   │   ├── use-api-data.ts           # Generic data-fetching hook
+│   │   └── use-unsaved-changes-guard.ts
+│   ├── lib/                          # Core utilities + auth helpers
+│   ├── styles/                       # SCSS variables + animation sheets
+│   ├── types/                        # Shared TypeScript types
+│   └── proxy.ts                      # Next.js request interceptor (security headers, session check)
+├── .env.example                      # Environment variable template
+├── components.json                   # shadcn/ui component config
+├── drizzle.config.ts                 # Drizzle ORM config
+├── next.config.ts                    # Next.js runtime config
+├── package.json
+└── pnpm-workspace.yaml
 ```
 
-### Main Module Relationships
+---
 
-- `src/app/(infoboard)` renders live panels that consume public APIs.
-- `src/app/admin` enforces session + role checks for protected workflows.
-- `src/app/api/**` contains all HTTP contracts and business rules.
-- `src/lib/auth.ts` + `src/lib/session-role.ts` gate privileged access.
-- `src/db/schema.ts` centralizes data model consumed by API handlers.
-- `src/lib/tiles-config.ts` + `setting` table drive runtime tile visibility/order.
+## Database Schema
 
-## 📦 Technologies
+All tables are defined in [src/db/schema.ts](src/db/schema.ts).
 
-| Category | Stack |
-| --- | --- |
-| Language | TypeScript, SQL |
-| Runtime | Node.js, Next.js 16.2.1, React 19.2.3 |
-| UI | Tailwind CSS v4, Sass, Radix UI, shadcn/ui, Framer Motion, Recharts |
-| Auth | better-auth + better-auth admin plugin |
-| Data | PostgreSQL, Drizzle ORM, drizzle-kit |
-| Email | Nodemailer |
-| Tooling | ESLint 9, TypeScript 5, pnpm, tsx, cross-env |
+### Tables
 
-<details>
-<summary><strong>Dependency Snapshot</strong></summary>
+| Table | Purpose |
+|---|---|
+| `user` | User accounts with role (`user`, `teacher`, `admin`) |
+| `session` | Better Auth session records |
+| `account` | Auth provider accounts (credentials) |
+| `verification` | Email verification tokens |
+| `invitation` | Time-limited invite tokens |
+| `message` | Scheduled infoboard messages |
+| `setting` | Key-value config store (tile layout, etc.) |
+| `dr_news_article` | Cached + enriched DR news articles |
+| `wage_data` | Wage group data (JSON blob) |
+| `kokkenvagt_entry` | Kitchen duty schedule entries |
+| `intranet_page` | Intranet CMS pages (rich markdown content) |
+| `calendar_event` | Calendar events |
+| `calendar_category` | Calendar event categories |
+| `auth_rate_limit` | Custom rate-limit state (IP + email) |
 
-### Runtime dependencies
+### Key Column Details
 
-- `next`, `react`, `react-dom`
-- `better-auth`
-- `drizzle-orm`, `pg`, `@neondatabase/serverless`
-- `nodemailer`
-- `framer-motion`, `recharts`
-- `@tiptap/*`
-- `lucide-react`, `radix-ui`, `@radix-ui/react-scroll-area`
-- `react-markdown`, `remark-gfm`, `react-day-picker`, `react-phone-number-input`
-- `clsx`, `tailwind-merge`, `date-fns`
+**`message`**
+- `priority`: `normal` | `high` | `urgent`
+- `activeFrom` / `expiresAt`: ISO timestamps for scheduling
+- `repeatDays`: JSON array of weekday numbers (`0`–`6`)
+- `pinned`: boolean — pinned messages always surface to the top
 
-### Dev dependencies
+**`intranet_page`**
+- `key`: unique slug used for routing
+- `content`: rich markdown stored as text
+- `isDraft`: boolean — drafts hidden from the infoboard
 
-- `typescript`, `eslint`, `eslint-config-next`
-- `drizzle-kit`, `tsx`, `dotenv`, `cross-env`
-- `tailwindcss`, `@tailwindcss/postcss`, `postcss`, `sass`
-- `@types/*` packages for Node, React, PG, Nodemailer
+**`setting`**
+- `key`: `tiles_config` — stores JSON array of tile visibility/order objects
 
-</details>
+---
 
-## ✅ Requirements
+## API Reference
 
-- Node.js 20+ recommended.
-- pnpm 9+ recommended.
-- PostgreSQL database reachable from `DATABASE_URL`.
-- SMTP credentials (required for invite/reset password email workflows).
-- Internet access for external data providers (weather/departures/news/traffic/menu/calendar).
+### Public Endpoints (no auth required)
 
-## 🚀 Installation Guide
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/weather` | Current conditions + 5-day forecast (MET API) |
+| `GET` | `/api/departures` | Departures from two configurable stops (Rejseplanen) |
+| `GET` | `/api/trafik` | Active traffic incidents (DR Trafik) |
+| `GET` | `/api/daily-dish` | Today's canteen dish (Kanpla) |
+| `GET` | `/api/canteen` | Full canteen inventory (Kanpla) |
+| `GET` | `/api/calendar` | Combined calendar event payload |
+| `GET` | `/api/calendar/[year]` | Danish national calendar for a specific year |
+| `GET` | `/api/dr-news` | Cached + enriched DR news feed |
+| `GET` | `/api/kontakter` | Filtered staff contacts directory |
+| `GET` | `/api/intranet-faq` | Published intranet FAQ entries |
+| `GET` | `/api/tiles-config` | Current tile visibility / ordering config |
 
-### 1. Install dependencies
+### Auth Endpoint
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/sign-in` | Rate-limited credential sign-in (IP + email) |
+| `*` | `/api/auth/[...all]` | Better Auth managed endpoints |
+
+### Messages (teacher / admin)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/messages` | Active public messages |
+| `GET` | `/api/messages?admin=true` | All messages (admin view) |
+| `POST` | `/api/messages` | Create a new message |
+| `PATCH` | `/api/messages/[id]` | Update a message (own or admin) |
+| `DELETE` | `/api/messages/[id]` | Delete a message (own or admin) |
+
+### Kitchen Duty (teacher / admin)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/kokkenvagt` | Upcoming entries (public) |
+| `GET` | `/api/kokkenvagt?admin=true` | All entries (admin view) |
+| `POST` | `/api/kokkenvagt` | Create an entry |
+| `PATCH` | `/api/kokkenvagt/[id]` | Update an entry |
+| `DELETE` | `/api/kokkenvagt/[id]` | Delete an entry |
+
+### Calendar Events (teacher / admin)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/calendar-events` | List events |
+| `POST` | `/api/calendar-events` | Create event |
+| `PATCH` | `/api/calendar-events/[id]` | Update event |
+| `DELETE` | `/api/calendar-events/[id]` | Delete event |
+| `GET` | `/api/calendar-categories` | List categories |
+| `POST` | `/api/calendar-categories` | Create category |
+| `DELETE` | `/api/calendar-categories/[id]` | Delete category (nullifies event references) |
+
+### User & Invitation Management (admin only)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/admin/users` | List all users |
+| `POST` | `/api/admin/users` | Create user directly |
+| `PATCH` | `/api/admin/users/[id]` | Update user |
+| `DELETE` | `/api/admin/users/[id]` | Delete user (protected — cannot delete self or last admin) |
+| `POST` | `/api/admin/invite` | Create invitation + send email |
+| `POST` | `/api/admin/invite/resend` | Reissue an invite token |
+| `GET` | `/api/invite/[token]` | Read invitation metadata |
+| `POST` | `/api/invite/[token]` | Accept invitation + set password |
+
+### File Uploads (teacher / admin)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/admin/upload` | Upload document or image (MIME + magic-byte validated) |
+| `POST` | `/api/admin/avatar` | Upload profile avatar |
+
+### Dashboard (teacher / admin)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/admin/dashboard/messages-chart` | Message creation timeseries |
+| `PUT` | `/api/tiles-config` | Save tile visibility / order |
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in all required values.
+
+### Required
+
+| Variable | Description | Example |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `BETTER_AUTH_SECRET` | Random secret for session signing | `openssl rand -base64 32` |
+| `BETTER_AUTH_URL` | Auth base URL (can be comma-separated for multiple origins) | `http://localhost:3000` |
+| `NEXT_PUBLIC_BETTER_AUTH_URL` | Client-side auth URL | `http://localhost:3000` |
+| `SMTP_HOST` | SMTP server hostname | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port | `465` |
+| `SMTP_USER` | SMTP username / From address | `no-reply@example.com` |
+| `SMTP_PASS` | SMTP password / app password | — |
+| `SMTP_SECURE` | Use TLS | `true` |
+
+### Departures API
+
+| Variable | Description | Default |
+|---|---|---|
+| `REJSEPLANEN_API_KEY` | Rejseplanen API key | — |
+| `REJSEPLANEN_STOP_ID_1` | Primary stop ID | `3849` |
+| `REJSEPLANEN_STOP_ID_2` | Secondary stop ID | `2859` |
+
+### Optional
+
+| Variable | Description |
+|---|---|
+| `COOKIE_DOMAIN` | Shared cookie domain for multi-subdomain setups (e.g. `.tec.dk`) |
+| `NODE_OPTIONS` | Node.js options — automatically set to `--max-http-header-size=16384` via `dev` / `start` scripts |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** 20 or later
+- **pnpm** 9 or later (`npm install -g pnpm`)
+- A running **PostgreSQL** instance
+- SMTP credentials for email features
+
+### 1. Clone and install
 
 ```bash
+git clone <repo-url>
+cd tec-info
 pnpm install
 ```
 
 ### 2. Configure environment
 
-Create `.env.local` (preferred for local development).
-
-```env
-BETTER_AUTH_SECRET=
-BETTER_AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
-DATABASE_URL=
-COOKIE_DOMAIN=
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=
-SMTP_PASS=
-SMTP_SECURE=true
-REJSEPLANEN_API_KEY=
-REJSEPLANEN_STOP_ID_1=3849
-REJSEPLANEN_STOP_ID_2=2859
+```bash
+cp .env.example .env.local
+# Edit .env.local with your values
 ```
 
-### 3. Run database migrations
+### 3. Push the database schema
 
 ```bash
-pnpm db:generate
 pnpm db:push
 ```
 
-### 4. Seed initial users
+This applies the schema directly without generating migration files. Use `pnpm db:generate` + `pnpm db:migrate` for migration-based workflows.
+
+### 4. Seed the initial admin user
 
 ```bash
 pnpm seed
 ```
 
-> [!CAUTION]
-> The seed script creates default demo credentials (`admin@tec.dk`, `instruktor@tec.dk` with `password123`). Rotate/change credentials immediately in non-local environments.
+This creates the first admin account:
 
-### 5. Start development server
+| Field | Value |
+|---|---|
+| Email | `admin@tec.dk` |
+| Password | `rozbym-2vodsa-jakDox` |
+| Role | `admin` |
+
+> **Important:** Change this password immediately after first login in any non-local environment.
+
+### 5. Start the development server
 
 ```bash
 pnpm dev
 ```
 
-Open: `http://localhost:3000`
+The app is available at [http://localhost:3000](http://localhost:3000).
+The admin panel is at [http://localhost:3000/admin](http://localhost:3000/admin).
 
-## 🔧 Configuration
+---
 
-### Environment Variables
-
-| Variable | Required | Used In | Purpose |
-| --- | --- | --- | --- |
-| `BETTER_AUTH_SECRET` | Yes | `src/lib/auth.ts` | Better Auth signing secret |
-| `BETTER_AUTH_URL` | Yes | `src/lib/auth.ts`, `src/app/api/sign-in/route.ts`, `src/lib/email.ts` | Auth base URL(s), CORS checks, invite URL base |
-| `NEXT_PUBLIC_BETTER_AUTH_URL` | Yes (client auth) | `src/lib/auth-client.ts` | Client auth endpoint base URL |
-| `DATABASE_URL` | Yes | `src/db/index.ts`, `drizzle.config.ts` | PostgreSQL connection string |
-| `COOKIE_DOMAIN` | Optional | `src/lib/auth.ts` | Shared cookie domain override |
-| `SMTP_HOST` | Yes (email features) | `src/lib/email.ts` | SMTP host |
-| `SMTP_PORT` | Yes (email features) | `src/lib/email.ts` | SMTP port |
-| `SMTP_USER` | Yes (email features) | `src/lib/email.ts` | SMTP username + From address |
-| `SMTP_PASS` | Yes (email features) | `src/lib/email.ts` | SMTP password |
-| `SMTP_SECURE` | Optional | `src/lib/email.ts` | TLS mode toggle |
-| `REJSEPLANEN_API_KEY` | Yes for live departures | `src/app/api/departures/route.ts` | Rejseplanen access key |
-| `REJSEPLANEN_STOP_ID_1` | Optional | `src/app/api/departures/route.ts` | Primary stop id (default 3849) |
-| `REJSEPLANEN_STOP_ID_2` | Optional | `src/app/api/departures/route.ts` | Secondary stop id (default 2859) |
-
-### Config Files
-
-| File | Purpose |
-| --- | --- |
-| `next.config.ts` | External `pg` package handling + image remote patterns |
-| `drizzle.config.ts` | Schema path/output/dialect/db credentials for migrations |
-| `tsconfig.json` | Strict TS config + `@/*` path alias |
-| `eslint.config.mjs` | Next.js core web vitals + TS linting |
-| `postcss.config.mjs` | Tailwind v4 PostCSS plugin |
-| `components.json` | shadcn/ui generator settings and aliases |
-| `src/proxy.ts` | Security headers, `/login` redirect, `x-pathname` forwarding |
-
-> [!WARNING]
-> `src/proxy.ts` is the active request interceptor for Next.js 16. Do not add `src/middleware.ts` in parallel.
-
-## 🛠️ Usage
-
-### Common Commands
+## Common Commands
 
 | Command | Description |
-| --- | --- |
-| `pnpm dev` | Start development server |
-| `pnpm build` | Production build |
-| `pnpm start` | Start production server |
+|---|---|
+| `pnpm dev` | Start development server with hot reload |
+| `pnpm build` | Build for production |
+| `pnpm start` | Start the production server |
 | `pnpm lint` | Run ESLint |
-| `pnpm db:generate` | Generate Drizzle migration files |
-| `pnpm db:push` | Push schema to DB |
-| `pnpm db:studio` | Open Drizzle Studio |
-| `pnpm seed` | Seed initial users |
+| `pnpm seed` | Seed initial admin user |
+| `pnpm db:push` | Push schema changes to the database (no migration file) |
+| `pnpm db:generate` | Generate a new SQL migration file from schema changes |
+| `pnpm db:studio` | Open Drizzle Studio (visual database browser) |
 
-### Typical Workflows
+---
 
-1. **Infoboard operation**:
-	 Load `/` and let panels auto-refresh from public APIs.
-2. **Admin login and editing**:
-	 Open `/admin`, authenticate, then manage messages/calendar/users/intranet/display settings.
-3. **Invite onboarding**:
-	 Admin sends invite; recipient completes `/invite/[token]` to activate account.
+## Authentication & Roles
 
-## 📄 REST API Documentation
+### How It Works
 
-### Auth Model
+Authentication is handled by [Better Auth](https://better-auth.com) with the credentials provider and the admin plugin. Sessions are stored in the `session` table and cached in an httpOnly cookie.
 
-- **Public endpoints**: no session required.
-- **Teacher/Admin endpoints**: valid session + role in `teacher` or `admin`.
-- **Admin-only endpoints**: valid session + role `admin`.
+**Session cookie caching** is enabled with a 5-minute maxAge — within that window the session is validated from the cookie alone, avoiding a database round-trip on every request.
 
-### Endpoint Matrix
+The `src/proxy.ts` file is the central request interceptor. It applies security headers to all responses and forwards session information to API route handlers.
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| GET | `/api/weather` | Public | Current weather + forecast |
-| GET | `/api/departures` | Public | Public transport departures |
-| GET | `/api/trafik` | Public | DR traffic items |
-| GET | `/api/daily-dish` | Public | Daily dish summary |
-| GET | `/api/canteen` | Public | Canteen item listing |
-| GET | `/api/calendar` | Public | Generic calendar events payload |
-| GET | `/api/calendar/[year]` | Public | Danish calendar by year |
-| GET | `/api/dr-news` | Public | DR news feed + cached enrichment |
-| GET | `/api/kontakter` | Public | Filtered instructor contacts |
-| GET | `/api/intranet-faq` | Public | FAQ entries |
-| GET | `/api/tiles-config` | Public | Tile visibility/order config |
-| PUT | `/api/tiles-config` | Teacher/Admin | Update tile config |
-| GET | `/api/messages` | Public or Teacher/Admin* | Public active messages; admin mode with `?admin=true` |
-| POST | `/api/messages` | Teacher/Admin | Create message |
-| PATCH | `/api/messages/[id]` | Teacher/Admin | Update own message (admin can update all) |
-| DELETE | `/api/messages/[id]` | Teacher/Admin | Delete own message (admin can delete all) |
-| GET | `/api/kokkenvagt` | Public or Teacher/Admin* | Public future entries; admin mode with `?admin=true` |
-| POST | `/api/kokkenvagt` | Teacher/Admin | Create kitchen duty entry |
-| PATCH | `/api/kokkenvagt/[id]` | Teacher/Admin | Update own entry (admin all) |
-| DELETE | `/api/kokkenvagt/[id]` | Teacher/Admin | Delete own entry (admin all) |
-| GET | `/api/calendar-events` | Teacher/Admin | List events |
-| POST | `/api/calendar-events` | Teacher/Admin | Create event |
-| PATCH | `/api/calendar-events/[id]` | Teacher/Admin | Update own event (admin all) |
-| DELETE | `/api/calendar-events/[id]` | Teacher/Admin | Delete own event (admin all) |
-| GET | `/api/calendar-categories` | Teacher/Admin | List categories |
-| POST | `/api/calendar-categories` | Teacher/Admin | Create category |
-| DELETE | `/api/calendar-categories/[id]` | Teacher/Admin | Delete category (with event category nulling) |
-| POST | `/api/sign-in` | Public | Rate-limited credential sign-in |
-| GET | `/api/invite/[token]` | Public | Read invitation metadata |
-| POST | `/api/invite/[token]` | Public | Accept invitation |
-| GET | `/api/admin/users` | Admin | List users |
-| POST | `/api/admin/users` | Admin | Create user |
-| PATCH | `/api/admin/users/[id]` | Admin | Update user |
-| DELETE | `/api/admin/users/[id]` | Admin | Delete user with protections |
-| POST | `/api/admin/invite` | Admin | Create invitation + send email |
-| POST | `/api/admin/invite/resend` | Admin | Reissue invite token |
-| POST | `/api/admin/upload` | Teacher/Admin | Upload documents/images |
-| POST | `/api/admin/avatar` | Teacher/Admin | Upload avatar image |
-| GET | `/api/admin/dashboard/messages-chart` | Teacher/Admin | Dashboard timeseries metrics |
-| GET,POST | `/api/auth/[...all]` | Managed by better-auth | Auth transport routes |
+### Rate Limiting
 
-### Detailed API Contracts
+Sign-in attempts are rate-limited at two levels:
 
-<details>
-<summary><strong>Public Data Endpoints</strong></summary>
+| Level | Window | Limit | Block Duration |
+|---|---|---|---|
+| IP address | 15 minutes | 5 failures | 15 minutes |
+| Email address | 24 hours | 5 failures | 24 hours |
+| Better Auth (backup) | 60 seconds | 100 requests | — |
 
-#### `GET /api/weather`
+### Roles
 
-- **Purpose**: Current weather + 5-day forecast.
-- **Auth**: Public.
-- **Response** (`200`):
+| Role | Access |
+|---|---|
+| `user` | No admin access. Can sign in but has no write permissions. |
+| `teacher` | Can create and manage own messages, kitchen duty entries, and calendar events. |
+| `admin` | Full access — all of the above plus user management, invitations, tile config, and system settings. |
 
-```json
-{
-	"updatedAt": "2026-04-09T06:40:00.000Z",
-	"temperatureC": 7.2,
-	"humidityPct": 71,
-	"windMs": 3.5,
-	"windKmh": 12.6,
-	"symbolCode": "partlycloudy_day",
-	"condition": "Delvist skyet",
-	"forecastDays": [
-		{
-			"date": "2026-04-09",
-			"weekday": "torsdag",
-			"minC": 5,
-			"maxC": 11,
-			"condition": "Skyet",
-			"symbolCode": "cloudy"
-		}
-	]
-}
-```
+### Invitation Flow
 
-#### `GET /api/departures`
+1. Admin creates an invitation at **Admin → Users → Invite**.
+2. System inserts a token in the `invitation` table and sends an email with a link to `/invite/[token]`.
+3. Invitee opens the link, sets their password, and is redirected to `/admin`.
+4. The invitation is marked as accepted and can no longer be used.
 
-- **Purpose**: Multi-stop departure grouping.
-- **Auth**: Public.
-- **Response** (`200`):
+Admins can resend or reissue an expired invite token from the Users panel.
 
-```json
-{
-	"fetchedAt": "2026-04-09T06:45:10.000Z",
-	"groups": [
-		{
-			"id": "stop-1",
-			"title": "Fra station A",
-			"sourceStopId": "3849",
-			"departures": [
-				{
-					"line": "A",
-					"destination": "København H",
-					"time": "06:52",
-					"minutesUntil": 7,
-					"type": "train",
-					"platform": "3",
-					"delayMin": 0,
-					"cancelled": false
-				}
-			]
-		}
-	]
-}
-```
+---
 
-#### `GET /api/trafik`
+## External Integrations
 
-- **Purpose**: DR traffic incidents with recent updates.
-- **Auth**: Public.
-- **Response** (`200`):
+All integrations are **read-only** — the app only consumes data from these services.
 
-```json
-{
-	"fetchedAt": "2026-04-09T06:45:10.000Z",
-	"items": [
-		{
-			"_id": "abc123",
-			"region": "hovedstaden",
-			"type": "trafikuheld",
-			"text": "Kø på vejstrækning...",
-			"updates": []
-		}
-	]
-}
-```
+| Service | Endpoint | Data |
+|---|---|---|
+| **MET Weather API** | `api.met.no` | Current conditions, 5-day forecast, symbol codes |
+| **Rejseplanen** | `xmlopen.rejseplanen.dk` | Real-time bus/train departures for configured stops |
+| **DR Trafik** | DR API | Active road traffic incidents |
+| **DR News** | DR RSS feed + article pages | News headlines, images, and body content (cached in `dr_news_article`) |
+| **Kanpla** | `api.kanpla.dk` | Daily dish and full canteen menu inventory |
+| **Kalendarium** | Kalendarium API | Danish national calendar and local events |
 
-#### `GET /api/daily-dish`
+News articles are fetched from the DR RSS feed and then individually enriched with full body content. Enriched articles are cached in the `dr_news_article` table to avoid re-fetching on every infoboard poll.
 
-- **Purpose**: Daily meal summary from Kanpla.
-- **Auth**: Public.
-- **Response** (`200`) includes `found`, `servingToday`, `regular`, `vegetarian`, `weekMenu`.
+---
 
-#### `GET /api/canteen`
+## Deployment
 
-- **Purpose**: Canteen inventory-like list grouped by category.
-- **Auth**: Public.
-- **Response** (`200`):
+The project is a standard Next.js application with no platform-specific configuration files. It can be deployed anywhere Node.js runs.
 
-```json
-{
-	"items": [
-		{
-			"name": "Kaffe",
-			"price": "12 kr",
-			"category": "Varme drikke"
-		}
-	]
-}
-```
-
-#### `GET /api/calendar`
-
-- **Purpose**: Display-friendly calendar event feed.
-- **Auth**: Public.
-- **Response**: `{ "configured": boolean, "events": CalendarEvent[] }`.
-
-#### `GET /api/calendar/[year]`
-
-- **Purpose**: Year-specific Danish calendar from external provider.
-- **Path params**: `year: string`.
-- **Response** includes `days`, `solhvervOgJævndøgn`, `flagdage`.
-
-#### `GET /api/dr-news`
-
-- **Purpose**: DR RSS + article enrichment with DB cache (`dr_news_article`).
-- **Auth**: Public.
-- **Response**: `items: DrNewsItem[]`.
-
-#### `GET /api/kontakter`
-
-- **Purpose**: Contact list from `src/app/contacts.json`, filtered to instructors.
-- **Auth**: Public.
-
-</details>
-
-<details>
-<summary><strong>Tile Config + FAQ Endpoints</strong></summary>
-
-#### `GET /api/tiles-config`
-
-- **Auth**: Public.
-- **Returns**: `TileConfig[]`.
-
-#### `PUT /api/tiles-config`
-
-- **Auth**: Teacher/Admin.
-- **Body**:
-
-```json
-[
-	{ "id": "afgange", "visible": true, "label": "Afgange", "order": 0 }
-]
-```
-
-- **Success**: `{ "success": true }`.
-
-#### `GET /api/intranet-faq`
-
-- **Auth**: Public.
-- **Returns**: normalized FAQ array.
-
-#### `PUT /api/intranet-faq`
-
-- **Auth**: Teacher/Admin.
-- **Body**: `IntranetFaqItem[]`.
-- **Success**: `{ "success": true, "items": [...] }`.
-
-</details>
-
-<details>
-<summary><strong>Messages Endpoints</strong></summary>
-
-#### `GET /api/messages`
-
-- **Auth**:
-	- Public mode: no auth.
-	- Admin mode (`?admin=true`): Teacher/Admin required.
-- **Public output**: active, date-valid, repeat-day-valid messages (max 10).
-- **Admin output**: full list + `canManage` flag.
-
-#### `POST /api/messages`
-
-- **Auth**: Teacher/Admin.
-- **Body**:
-
-```json
-{
-	"title": "Vigtig besked",
-	"content": "Husk værkstedsmøde kl. 10",
-	"priority": "high",
-	"active": true,
-	"pinned": true,
-	"repeatDays": [1, 2, 3, 4, 5]
-}
-```
-
-- **Success**: created message (`201`).
-
-#### `PATCH /api/messages/[id]`
-
-- **Auth**: Teacher/Admin.
-- **Ownership rule**: non-admin can update own messages only.
-- **Body**: partial of message payload.
-
-#### `DELETE /api/messages/[id]`
-
-- **Auth**: Teacher/Admin.
-- **Ownership rule**: non-admin can delete own messages only.
-- **Success**: `{ "success": true }`.
-
-</details>
-
-<details>
-<summary><strong>Køkkenvagt Endpoints</strong></summary>
-
-#### `GET /api/kokkenvagt`
-
-- **Public mode**: returns current/future entries.
-- **Admin mode (`?admin=true`)**: returns all entries; requires Teacher/Admin.
-
-#### `POST /api/kokkenvagt`
-
-- **Auth**: Teacher/Admin.
-- **Body**:
-
-```json
-{
-	"week": 15,
-	"year": 2026,
-	"person1": "Navn A",
-	"person2": "Navn B",
-	"note": "Morgenhold",
-	"startTime": "08:00",
-	"endTime": "10:00"
-}
-```
-
-#### `PATCH /api/kokkenvagt/[id]`
-
-- **Auth**: Teacher/Admin.
-- **Rule**: non-admin can patch only own entries.
-
-#### `DELETE /api/kokkenvagt/[id]`
-
-- **Auth**: Teacher/Admin.
-- **Rule**: non-admin can delete only own entries.
-
-</details>
-
-<details>
-<summary><strong>Calendar Event + Category Endpoints</strong></summary>
-
-#### `GET /api/calendar-events`
-
-- **Auth**: Teacher/Admin.
-- **Returns**: event list with author metadata.
-
-#### `POST /api/calendar-events`
-
-- **Auth**: Teacher/Admin.
-- **Body**:
-
-```json
-{
-	"title": "Åbent hus",
-	"start": "2026-04-11T08:00:00.000Z",
-	"end": "2026-04-11T12:00:00.000Z",
-	"allDay": false,
-	"location": "Bygning A",
-	"description": "Velkomst for nye elever",
-	"category": "Arrangement"
-}
-```
-
-#### `PATCH /api/calendar-events/[id]`
-
-- **Auth**: Teacher/Admin.
-- **Rule**: non-admin can patch own events only.
-
-#### `DELETE /api/calendar-events/[id]`
-
-- **Auth**: Teacher/Admin.
-- **Rule**: non-admin can delete own events only.
-
-#### `GET /api/calendar-categories`
-
-- **Auth**: Teacher/Admin.
-- **Returns**: category list.
-
-#### `POST /api/calendar-categories`
-
-- **Auth**: Teacher/Admin.
-- **Body**: `{ "name": "Arrangement" }`.
-
-#### `DELETE /api/calendar-categories/[id]`
-
-- **Auth**: Teacher/Admin.
-- **Behavior**: sets matching `calendar_event.category` to `null` before delete.
-
-</details>
-
-<details>
-<summary><strong>Auth + Invite Endpoints</strong></summary>
-
-#### `POST /api/sign-in`
-
-- **Auth**: Public.
-- **Body**:
-
-```json
-{ "email": "admin@tec.dk", "password": "password123" }
-```
-
-- **Security controls**:
-	- IP bucket: 5 failures / 15 min window -> 15 min block.
-	- Email bucket: 5 failures / 24h window -> blocked until reset window.
-	- Content-Type enforcement (`application/json`).
-	- Origin checks vs same-origin and `BETTER_AUTH_URL`.
-
-#### `GET /api/invite/[token]`
-
-- **Auth**: Public.
-- **Purpose**: Validate invite token and return `email`, `role`.
-
-#### `POST /api/invite/[token]`
-
-- **Auth**: Public.
-- **Body**:
-
-```json
-{
-	"name": "Lærer Navn",
-	"password": "StrongPassword123",
-	"phoneNumber": "+45 12 34 56 78",
-	"image": "/uploads/avatar.png"
-}
-```
-
-- **Behavior**: verifies invite validity, writes user/account, marks invite accepted.
-
-#### `GET, POST /api/auth/[...all]`
-
-- **Transport**: delegated to Better Auth handler.
-
-</details>
-
-<details>
-<summary><strong>Admin Endpoints</strong></summary>
-
-#### `GET /api/admin/users`
-
-- **Auth**: Admin only.
-- **Returns**: user list (`id`, `name`, `email`, `role`, `image`, `createdAt`).
-
-#### `POST /api/admin/users`
-
-- **Auth**: Admin only.
-- **Body**:
-
-```json
-{
-	"name": "Ny Bruger",
-	"email": "user@tec.dk",
-	"password": "StrongPassword123",
-	"role": "teacher"
-}
-```
-
-#### `PATCH /api/admin/users/[id]`
-
-- **Auth**: Admin only.
-- **Body**: `{ "name"?: string, "role"?: "teacher" | "admin" }`.
-
-#### `DELETE /api/admin/users/[id]`
-
-- **Auth**: Admin only.
-- **Protection rules**:
-	- cannot self-delete,
-	- cannot delete last admin,
-	- cannot demote final admin role holder.
-
-#### `POST /api/admin/invite`
-
-- **Auth**: Admin only.
-- **Body**: `{ "email": string, "role": "teacher" | "admin" }`.
-- **Side effect**: sends invite email via Nodemailer.
-
-#### `POST /api/admin/invite/resend`
-
-- **Auth**: Admin only.
-- **Body**: `{ "email": string }`.
-
-#### `POST /api/admin/upload`
-
-- **Auth**: Teacher/Admin.
-- **Input**: multipart form (`file`).
-- **Validation**: MIME + magic bytes + max 10 MB.
-- **Output**: `{ "url": string, "name": string }`.
-
-#### `POST /api/admin/avatar`
-
-- **Auth**: Teacher/Admin.
-- **Input**: multipart form (`avatar`).
-- **Validation**: image MIME + signature + max 4 MB.
-- **Output**: `{ "url": string }`.
-
-#### `GET /api/admin/dashboard/messages-chart`
-
-- **Auth**: Teacher/Admin.
-- **Query**: `days` (7..90, default 30).
-- **Output**: day-by-day `{ current, previous }` timeseries.
-
-</details>
-
-## 🧩 Module & Function Documentation
-
-### Core Runtime Exports
-
-| Symbol | Location | Parameters | Returns | Description |
-| --- | --- | --- | --- | --- |
-| `auth` | `src/lib/auth.ts` | Better Auth config object | Better Auth instance | Main auth runtime (sessions, cookies, plugins, trusted origins). |
-| `authClient` | `src/lib/auth-client.ts` | n/a | Auth client | Browser auth client with admin plugin. |
-| `useSession` | `src/lib/auth-client.ts` | n/a | hook result | Read current auth session in client components. |
-| `signOut` | `src/lib/auth-client.ts` | n/a | Promise | Sign out current user. |
-| `db` | `src/db/index.ts` | n/a | Drizzle db client | PostgreSQL data access instance. |
-| `proxy(request)` | `src/proxy.ts` | `NextRequest` | `NextResponse` | Redirects `/login`, forwards `x-pathname`, applies security headers. |
-| `getUserRole(session)` | `src/lib/session-role.ts` | `unknown` | `string | undefined` | Safe role extraction helper. |
-
-### Utility Functions (`src/lib/utils.ts`)
-
-| Function | Parameters | Returns | Purpose |
-| --- | --- | --- | --- |
-| `cn` | `(...inputs: ClassValue[])` | `string` | Classname merge helper (`clsx` + `tailwind-merge`). |
-| `decodeHtmlEntities` | `(html: string)` | `string` | Decodes named and numeric HTML entities. |
-| `lineBadgeStyle` | `(line: string)` | `{ bg: string; text: string }` | Maps transit line codes to badge colors. |
-| `getWeatherIcon` | `(symbolCode?: string, timestamp?: string|number)` | `string` | Resolves weather icon path with day/night logic. |
-
-### Intranet Content Functions (`src/lib/intranet-content.ts`)
-
-| Function | Parameters | Returns | Purpose |
-| --- | --- | --- | --- |
-| `isLikelyHtmlContent` | `(content: string)` | `boolean` | Detects if content already looks like HTML. |
-| `normalizeEditorContent` | `(content: string)` | `string` | Converts markdown-like input to normalized HTML. |
-| `stripIntranetContent` | `(content: string)` | `string` | Removes tags/extra whitespace for plain text previewing. |
-
-### FAQ Functions (`src/lib/intranet-faq.ts`)
-
-| Function | Parameters | Returns | Purpose |
-| --- | --- | --- | --- |
-| `normalizeIntranetFaqItems` | `(input: unknown)` | `IntranetFaqItem[]` | Validates/sanitizes FAQ payload with fallback defaults. |
-
-### Kanpla Functions (`src/lib/kanpla-api.ts`)
-
-| Function | Parameters | Returns | Purpose |
-| --- | --- | --- | --- |
-| `formatPriceDkk` | `(unitPrice?: number, unitSystem?: string)` | `string` | Formats DKK price labels. |
-| `toDateKeyInCopenhagen` | `(dateSeconds: number)` | `string` | Converts unix timestamp to local date key `YYYY-MM-DD`. |
-| `toDateLabelDa` | `(dateSeconds: number)` | `string` | Danish date label formatter. |
-| `normalize` | `(text: string)` | `string` | Whitespace-normalized text helper. |
-| `extractMenuItems` | `(payload, options?)` | `Map<string, DayMenuItems>` | Extracts menu candidates by day and menu type. |
-| `fetchKanplaData` | `()` | `Promise<KanplaFrontendPayload>` | Fetches raw Kanpla frontend payload. |
-
-### Email Functions (`src/lib/email.ts`)
-
-| Function | Parameters | Returns | Purpose |
-| --- | --- | --- | --- |
-| `sendInviteEmail` | `(to: string, token: string, role: string)` | `Promise<string>` | Sends invitation email and returns invite link. |
-| `sendResetPasswordEmail` | `(to: string, url: string)` | `Promise<void>` | Sends reset-password email. |
-
-### Hooks (`src/hooks/*`)
-
-| Hook | Parameters | Returns | Purpose |
-| --- | --- | --- | --- |
-| `useWeatherData` | none | `WeatherApiResponse | null` | Polls `/api/weather` and updates on visibility/online events. |
-| `useDailyDishData` | none | `DailyDishApiResponse | null` | Polls `/api/daily-dish`. |
-| `useDepartureGroupsData` | none | `DepartureGroup[]` | Polls `/api/departures` with change-signature checks. |
-| `useIsMobile` | none | `boolean` | `<768px` media query hook. |
-| `useUnsavedChangesGuard` | options object | void | Navigation interception + confirm dialog for dirty forms. |
-
-### Component Exports (UI/Feature Modules)
-
-| Component | Location | Props (inferred) | Returns | Purpose |
-| --- | --- | --- | --- | --- |
-| `StatusBar` | `src/components/StatusBar.tsx` | none | `JSX.Element` | Top bar with time/date/weather |
-| `TopCarousel` | `src/components/TopCarousel.tsx` | none | `JSX.Element` | Rotating panel carousel for front page |
-| `NavTiles` | `src/components/NavTiles.tsx` | none | `JSX.Element` | Tile navigation grid from tile config |
-| `LatestMessageBlock` | `src/components/LatestMessageBlock.tsx` | none | `JSX.Element` | Sticky-note style latest important message |
-| `SectionPageShell` | `src/components/SectionPageShell.tsx` | title/subtitle/children/etc. | `JSX.Element` | Shared section wrapper + tile visibility guard |
-| `InfoBoardIdleGuard` | `src/components/InfoBoardIdleGuard.tsx` | idle/countdown options | `JSX.Element` | Inactivity timeout and redirect helper |
-| `YellowStickyNote` | `src/components/YellowStickyNote.tsx` | note props | `JSX.Element` | Reusable sticky-note visual component |
-| `AppSidebar` | `src/components/app-sidebar.tsx` | user + sidebar props | `JSX.Element` | Admin navigation sidebar |
-| `NavMain` | `src/components/nav-main.tsx` | section config | `JSX.Element` | Sidebar section renderer |
-| `NavUser` | `src/components/nav-user.tsx` | user props | `JSX.Element` | User profile nav block |
-| `ChartBarInteractive` | `src/components/chart-bar-interactive.tsx` | `{ days?: number }` | `JSX.Element` | Interactive dashboard chart |
-| `ConfirmDialogProvider` | `src/components/confirm-dialog-provider.tsx` | children | `JSX.Element` | Promise-based confirmation dialog context |
-| `useConfirmDialog` | `src/components/confirm-dialog-provider.tsx` | none | function | Opens typed confirmation dialog |
-| `AdminThemeProvider` | `src/components/admin/AdminThemeProvider.tsx` | theme props | `JSX.Element` | Admin theme state and persistence |
-| `useAdminTheme` | `src/components/admin/AdminThemeProvider.tsx` | none | context state | Access admin theme controller |
-| `AdminCreateButton` | `src/components/admin/AdminCreateButton.tsx` | action props | `JSX.Element` | Reusable action/create button |
-| `IntranetMarkdownEditor` | `src/components/intranet/IntranetMarkdownEditor.tsx` | editor props | `JSX.Element` | Rich intranet markdown/tiptap editor |
-| `IntranetFaqMarkdown` | `src/components/intranet/IntranetFaqMarkdown.tsx` | faq markdown props | `JSX.Element` | FAQ markdown rendering |
-| `WeatherPanel` | `src/components/panels/WeatherPanel.tsx` | none | `JSX.Element` | Weather section panel |
-| `TrafikPanel` | `src/components/panels/TrafikPanel.tsx` | none | `JSX.Element` | Traffic panel |
-| `NewsPanel` | `src/components/panels/NewsPanel.tsx` | none | `JSX.Element` | DR news panel |
-| `MessagesBoard` | `src/components/panels/MessagesBoard.tsx` | none | `JSX.Element` | Message board panel |
-| `KokkenvagtPanel` | `src/components/panels/KokkenvagtPanel.tsx` | none | `JSX.Element` | Kitchen duty panel |
-| `IntranetOnePage` | `src/components/panels/IntranetOnePage.tsx` | none | `JSX.Element` | Intranet one-page panel |
-| `DeparturesPanel` | `src/components/panels/DeparturesPanel.tsx` | none | `JSX.Element` | Departures panel |
-| `ContactsPanel` | `src/components/panels/ContactsPanel.tsx` | none | `JSX.Element` | Contacts panel |
-| `CanteenGrid` / `CanteenDetail` | `src/components/panels/CanteenPanel.tsx` | grid none / `{ slug }` | `JSX.Element` | Canteen list/detail views |
-| `CalendarPanel` | `src/components/panels/CalendarPanel.tsx` | none | `JSX.Element` | Calendar panel |
-| `PhoneNumberInput` | `src/components/ui/phone-input.tsx` | controlled input props | `JSX.Element` | Phone number input wrapper |
-
-### Data Model Exports (`src/db/schema.ts`)
-
-| Export | Type | Purpose |
-| --- | --- | --- |
-| `user`, `session`, `account`, `verification` | tables | Authentication and identity |
-| `message`, `calendarEvent`, `calendarCategory` | tables | Communication/calendar domains |
-| `kokkenvagtEntry` | table | Kitchen duty scheduling |
-| `intranetPage`, `setting`, `wageData` | tables | CMS/config/wage content |
-| `invitation`, `authRateLimit` | tables | Invite flow + sign-in protection |
-| `drNewsArticle` | table | News cache/enrichment persistence |
-| relation exports | relation builders | Typed relational linking |
-
-### Route-Local Helper Functions (Selected)
-
-The API layer also defines several non-exported helper functions for parsing, validation, and transformations.
-
-| Helper | Location | Purpose |
-| --- | --- | --- |
-| `toDanishCondition`, `groupByDay`, `buildForecast` | `src/app/api/weather/route.ts` | Weather transformation and forecast synthesis |
-| `fetchStopDepartures`, `delayMinutes`, `isCancelled`, `etaSortValue` | `src/app/api/departures/route.ts` | Departure normalization/sorting/cancellation logic |
-| `normalizeEmail`, `recordIpFailure`, `recordEmailFailure` | `src/app/api/sign-in/route.ts` | Sign-in hardening and rate-limit state transitions |
-| `requireAdmin` / `ensureAdmin` helpers | several `src/app/api/admin/**` and category routes | Shared role gate utilities |
-| `looksLikeImage`, `looksLikePdf`, `matchesImageSignature` | upload/avatar routes | Binary signature validation |
-| DR parsing helpers (`extractTag`, `stripTags`, `parseRssItems`) | `src/app/api/dr-news/route.ts` | RSS/article parsing pipeline |
-
-### Function Usage Examples
-
-```ts
-import { getUserRole } from "@/lib/session-role"
-import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
-
-export async function requireTeacherOrAdmin() {
-	const session = await auth.api.getSession({ headers: await headers() })
-	const role = getUserRole(session)
-	if (!session || !["teacher", "admin"].includes(role ?? "")) return null
-	return session
-}
-```
-
-```ts
-import { extractMenuItems, fetchKanplaData } from "@/lib/kanpla-api"
-
-export async function getTodayMenu() {
-	const payload = await fetchKanplaData()
-	const dateKey = new Date().toISOString().slice(0, 10)
-	const map = extractMenuItems(payload, { dateKeys: [dateKey] })
-	return map.get(dateKey)
-}
-```
-
-## 🔐 Security Notes
-
-- Proxy applies strict security headers and strips `Server` header.
-- Session cookies are secure/HTTP-only with strict same-site settings.
-- Sign-in endpoint defends against brute-force by IP and email buckets.
-- Upload endpoints enforce content signature validation, not just MIME claims.
-- Admin routes and privileged APIs consistently gate by role.
-
-## 🔄 Data and Workflow Summary
-
-| Workflow | Source | Processing | Storage/Output |
-| --- | --- | --- | --- |
-| Weather | MET API | symbol + forecast transforms | `/api/weather` JSON |
-| Departures | Rejseplanen | parse/cancel/delay/group logic | `/api/departures` JSON |
-| News | DR RSS + article HTML | parse + enrich + cache | `dr_news_article` + `/api/dr-news` |
-| Daily dish/canteen | Kanpla API | menu extraction/type classification | `/api/daily-dish`, `/api/canteen` |
-| Messages | Admin CRUD | scheduling filters + ownership checks | `message` table + infoboard display |
-| Calendar | Admin CRUD + external yearly feed | category and event handling | `calendar_event` / `/api/calendar*` |
-| Invitations | Admin invite + recipient accept | token lifecycle + account creation | `invitation`, `user`, `account` |
-
-## 🧾 Repository Activity Snapshot
-
-Collected from local git metadata:
-
-- **Commits**: 52
-- **Contributors**: 3 (`Alexander Holm`, `copilot-swe-agent[bot]`, `Alexander Holm Mortensen`)
-- **Local branches**: 1 (`main`)
-- **Remote branches**: 5 (including `origin/main`, `origin/development`, and Copilot branches)
-- **Tags**: 0
-- **Recent push status**: last recorded `git push` succeeded.
-
-> [!NOTE]
-> Releases and issue state are not fully inferable from a local checkout alone unless provider APIs are queried with credentials.
-
-## 🤝 Contributing
-
-### Development Standards
-
-1. Use TypeScript and existing `@/*` aliases.
-2. Keep API contracts explicit and role checks centralized.
-3. Validate all request input on route handlers.
-4. Keep UI changes aligned with current design system/components.
-
-### Suggested PR Flow
-
-1. Create branch from `main`.
-2. Implement feature/fix with focused commits.
-3. Run checks:
+### Vercel
 
 ```bash
-pnpm lint
-pnpm build
+vercel deploy
 ```
 
-4. If schema changed, include generated Drizzle migration files.
-5. Open PR with:
-	 - problem statement,
-	 - technical approach,
-	 - API/schema impact,
-	 - screenshots (if UI).
+Set all environment variables in the Vercel project dashboard. The `pg` package is already configured as a server external in `next.config.ts`.
 
-### Migration Rules
+### Self-hosted (Node.js)
 
-- Update `src/db/schema.ts` first.
-- Run `pnpm db:generate` and commit generated SQL.
-- Validate with `pnpm db:push` in a safe environment.
+```bash
+pnpm build
+pnpm start
+```
 
-## 🧪 Testing and Quality
+Run behind a reverse proxy (nginx, Caddy) that handles TLS. Set `COOKIE_DOMAIN` if admin and infoboard run on separate subdomains.
 
-Current repository state does not include a dedicated automated test suite. Quality gates currently rely on:
+### Docker (manual)
 
-- TypeScript compile-time checks,
-- ESLint,
-- Build validation,
-- runtime checks in API handlers.
+No `Dockerfile` is included. A minimal multi-stage build:
 
-Recommended next step: add integration tests for critical APIs (`sign-in`, `messages`, `invite`, `admin/users`) and smoke tests for infoboard fetch flows.
+```dockerfile
+FROM node:20-alpine AS base
+RUN corepack enable
 
-## 📚 Quick Reference
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-- Main app layout: `src/app/layout.tsx`
-- Infoboard home: `src/app/(infoboard)/page.tsx`
-- Admin layout guard: `src/app/admin/layout.tsx`
-- Auth runtime: `src/lib/auth.ts`
-- DB schema: `src/db/schema.ts`
-- API routes: `src/app/api/**/route.ts`
-- Proxy/security headers: `src/proxy.ts`
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm build
 
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+> Enable `output: 'standalone'` in `next.config.ts` for the standalone Docker output.
+
+### Database Migrations in CI/CD
+
+Run schema migrations as part of your deploy pipeline before starting the server:
+
+```bash
+pnpm db:push   # or pnpm db:generate && pnpm db:migrate
+```

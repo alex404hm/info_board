@@ -90,14 +90,7 @@ async function seed() {
     name: "Admin",
     email: "admin@tec.dk",
     role: "admin",
-    password: "password123",
-  })
-
-  await upsertUser({
-    name: "Instruktør",
-    email: "instruktor@tec.dk",
-    role: "teacher",
-    password: "password123",
+    password: "rozbym-2vodsa-jakDox",
   })
 }
 
