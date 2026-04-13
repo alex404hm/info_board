@@ -67,7 +67,16 @@ function emailLayout(opts: {
 
         <!-- Card -->
         <tr><td style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-        
+
+          <!-- Logo header -->
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td align="center" style="background:#0f1c30;padding:28px 32px;">
+                <img src="https://info.alexander-holm.com/logo-email.svg" alt="TEC" width="72" height="25" style="display:block;" />
+              </td>
+            </tr>
+          </table>
+
           <!-- Content -->
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>

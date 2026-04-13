@@ -5,20 +5,13 @@ import { Mail, Phone } from "lucide-react"
 import { apiFetch } from "@/lib/api-fetch"
 
 type Contact = {
-  id: number
+  id: string
   name: string
   email: string | null
   phone: string | null
-  profilePicture: string
+  profilePicture: string | null
   role: string
 }
-
-const SHOWN_NAMES = [
-  "Casper Nordkvist Vestergaard",
-  "Kristian Kure",
-  "Tuner Budanur",
-  "Mathias Casper Lynge Le-Holding",
-]
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/)
@@ -28,7 +21,7 @@ function getInitials(name: string) {
 }
 
 function Avatar({ contact, className }: { contact: Contact; className?: string }) {
-  if (contact.profilePicture) {
+  if (contact.profilePicture && contact.profilePicture.trim() !== "") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -129,8 +122,7 @@ export function ContactsPanel() {
       .then((r) => (r.ok ? r.json() : { contacts: [] }))
       .then((data) => {
         const all: Contact[] = Array.isArray(data.contacts) ? data.contacts : []
-        const filtered = SHOWN_NAMES.map((name) => all.find((c) => c.name === name)).filter(Boolean) as Contact[]
-        setContacts(filtered)
+        setContacts(all)
       })
       .catch(() => setContacts([]))
       .finally(() => setLoading(false))

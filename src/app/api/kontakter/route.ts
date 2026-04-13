@@ -1,46 +1,37 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { db } from "@/db";
+import { user } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 
 export type Contact = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string | null;
-  profilePicture: string;
+  profilePicture: string | null;
   role: string;
-  prioritized: boolean;
 };
 
 export async function GET() {
-  // Absolute path to contacts.json
-  const contactsPath = path.join(process.cwd(), "src/app/contacts.json");
-  let contactsRaw;
-  try {
-    contactsRaw = await fs.readFile(contactsPath, "utf-8");
-  } catch (err) {
-    return NextResponse.json({ error: "contacts.json not found" }, { status: 500 });
-  }
+  const instructors = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phoneNumber,
+      profilePicture: user.image,
+    })
+    .from(user)
+    .where(and(eq(user.role, "teacher"), eq(user.emailVerified, true)));
 
-  let contactsData: any[];
-  try {
-    contactsData = JSON.parse(contactsRaw);
-  } catch (err) {
-    return NextResponse.json({ error: "contacts.json is invalid" }, { status: 500 });
-  }
-
-  // Filter and map contacts
-  const contacts: Contact[] = contactsData
-    .filter((c) => c.role === "Instruktør")
-    .map((c, idx) => ({
-      id: idx + 1,
-      name: c.name,
-      email: c.email,
-      phone: c.phone ?? null,
-      profilePicture: "https://tec.dk/img/placeholders/3.svg",
-      role: c.role,
-      prioritized: typeof c.prioritized === "boolean" ? c.prioritized : false,
-    }));
+  const contacts: Contact[] = instructors.map((u) => ({
+    id: u.id,
+    name: u.name ?? "",
+    email: u.email,
+    phone: u.phone ?? null,
+    profilePicture: u.profilePicture ?? null,
+    role: "Instruktør",
+  }));
 
   return NextResponse.json({ contacts });
 }

@@ -25,6 +25,7 @@ import {
 import { authClient, useSession } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard"
+import { useConfirmDialog } from "@/components/confirm-dialog-provider"
 import {
   Avatar,
   AvatarImage,
@@ -36,27 +37,31 @@ import { useAdminTheme } from "@/components/admin/AdminThemeProvider"
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function parseBrowser(ua: string | null | undefined) {
-  if (!ua) return { browser: "Ukendt browser", os: "Ukendt operativsystem" }
-  const browser = ua.includes("Edg")
+  if (!ua) return { browser: "Ukendt browser", os: "Ukendt OS" }
+  const browser = /Edg\//.test(ua)
     ? "Edge"
-    : ua.includes("Chrome")
+    : /OPR\/|Opera\//.test(ua)
+    ? "Opera"
+    : /Chrome\//.test(ua)
     ? "Chrome"
-    : ua.includes("Firefox")
+    : /Firefox\//.test(ua)
     ? "Firefox"
-    : ua.includes("Safari")
+    : /Version\/.*Safari\//.test(ua)
+    ? "Safari"
+    : /Safari\//.test(ua)
     ? "Safari"
     : "Browser"
-  const os = ua.includes("Windows")
+  const os = /Windows NT/.test(ua)
     ? "Windows"
-    : ua.includes("Mac OS")
+    : /Mac OS X/.test(ua)
     ? "macOS"
-    : ua.includes("Linux")
-    ? "Linux"
-    : ua.includes("Android")
+    : /Android/.test(ua)
     ? "Android"
-    : ua.includes("iPhone") || ua.includes("iPad")
+    : /iPhone|iPad/.test(ua)
     ? "iOS"
-    : "Ukendt operativsystem"
+    : /Linux/.test(ua)
+    ? "Linux"
+    : "Ukendt OS"
   return { browser, os }
 }
 
@@ -230,6 +235,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
 
   // Only used to detect which session is "current" in the sessions list
   const { data: sessionData } = useSession()
+  const confirm = useConfirmDialog()
 
   // ── avatar ──
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -391,6 +397,14 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
   }
 
   async function handleRevokeAll() {
+    const ok = await confirm({
+      title: "Log ud alle andre sessioner?",
+      description: "Dette logger dig ud på alle andre enheder og browsere. Din nuværende session forbliver aktiv.",
+      confirmText: "Log ud alle andre",
+      cancelText: "Annullere",
+      tone: "warning",
+    })
+    if (!ok) return
     setRevoking("__all__")
     await authClient.revokeOtherSessions()
     await loadSessions()
@@ -718,8 +732,9 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
         ) : (
           <div className="space-y-2">
             {sessions.map((s) => {
-              const { browser, os } = parseBrowser(s.userAgent)
-              const DeviceIcon = getDeviceIcon(s.userAgent)
+              const ua = s.current ? (typeof navigator !== "undefined" ? navigator.userAgent : s.userAgent) : s.userAgent
+              const { browser, os } = parseBrowser(ua)
+              const DeviceIcon = getDeviceIcon(ua)
               const isRevoking = revoking === s.token
               return (
                 <div

@@ -11,7 +11,7 @@ export const DEFAULT_INTRANET_FAQ_ITEMS: IntranetFaqItem[] = [
     id: "studieadministration",
     title: "Studieadministration",
     content: `
-Studieadministrationen er fysisk placeret på TEC Frederiksberg.
+Studieadministrationen er fysisk placeret på TEC  .
 
 Stæhr Johansens Vej 7, 2000 Frederiksberg.
 

@@ -38,7 +38,7 @@ function passwordStrength(pw: string) {
   return           { score: s, label: "Meget stærk", color: "bg-emerald-500" }
 }
 
-async function compressImage(file: File): Promise<string> {
+async function resizeToBlob(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = ({ target }) => {
@@ -50,7 +50,11 @@ async function compressImage(file: File): Promise<string> {
         canvas.width  = Math.round(img.width  * scale)
         canvas.height = Math.round(img.height * scale)
         canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL("image/jpeg", 0.88))
+        canvas.toBlob(
+          (blob) => { blob ? resolve(blob) : reject(new Error("toBlob failed")) },
+          "image/jpeg",
+          0.88,
+        )
       }
       img.onerror = reject
       img.src = target?.result as string
@@ -67,7 +71,9 @@ export default function InviteForm({ token, email, role }: Props) {
   const [firstName,  setFirstName] = useState("")
   const [lastName,   setLastName]  = useState("")
   const [phone,      setPhone]     = useState("")
-  const [photo,      setPhoto]     = useState<string | null>(null)
+  const [photoPreview,   setPhotoPreview]   = useState<string | null>(null)
+  const [photoUrl,       setPhotoUrl]       = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
   const [password,   setPassword]  = useState("")
   const [confirm,    setConfirm]   = useState("")
   const [showPw,     setShowPw]    = useState(false)
@@ -95,7 +101,7 @@ export default function InviteForm({ token, email, role }: Props) {
     const res  = await fetch(`/api/invite/${token}`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ name, password, phoneNumber: phone.trim() || null, image: photo }),
+      body:    JSON.stringify({ name, password, phoneNumber: phone.trim() || null, image: photoUrl }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error ?? "Noget gik galt."); setSubmitting(false); return }
@@ -105,7 +111,26 @@ export default function InviteForm({ token, email, role }: Props) {
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) return
-    try { setPhoto(await compressImage(file)) } catch {}
+    const preview = URL.createObjectURL(file)
+    setPhotoPreview(preview)
+    setPhotoUrl(null)
+    setPhotoUploading(true)
+    try {
+      const blob = await resizeToBlob(file)
+      const fd = new FormData()
+      fd.append("file", blob, "photo.jpg")
+      const res = await fetch("/api/invite/upload", { method: "POST", body: fd })
+      const data = await res.json() as { url?: string }
+      if (res.ok && data.url) {
+        setPhotoUrl(data.url)
+      } else {
+        setPhotoPreview(null)
+      }
+    } catch {
+      setPhotoPreview(null)
+    } finally {
+      setPhotoUploading(false)
+    }
   }
 
   return (
@@ -272,28 +297,36 @@ export default function InviteForm({ token, email, role }: Props) {
                   </div>
 
                   <div
-                    onClick={() => fileRef.current?.click()}
+                    onClick={() => !photoUploading && fileRef.current?.click()}
                     onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
                     onDragLeave={() => setDragging(false)}
                     onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) void handleFile(f) }}
                     className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-                      dragging ? "border-primary bg-card" : photo ? "border-border bg-card" : "border-border hover:border-primary/40 hover:bg-card"
+                      dragging ? "border-primary bg-card" : photoPreview ? "border-border bg-card" : "border-border hover:border-primary/40 hover:bg-card"
                     }`}
                   >
-                    {photo ? (
+                    {photoPreview ? (
                       <div className="flex flex-col items-center gap-3">
                         <div className="relative">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={photo} alt="Preview" className="h-20 w-20 rounded-full object-cover ring-2 ring-border" />
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setPhoto(null) }}
-                            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          <img src={photoPreview} alt="Preview" className="h-20 w-20 rounded-full object-cover ring-2 ring-border" />
+                          {photoUploading ? (
+                            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                              <Loader2 className="h-5 w-5 animate-spin text-white" />
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setPhotoPreview(null); setPhotoUrl(null) }}
+                              className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground">Klik for at skifte billede</p>
+                        <p className="text-xs text-muted-foreground">
+                          {photoUploading ? "Uploader…" : "Klik for at skifte billede"}
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -311,10 +344,11 @@ export default function InviteForm({ token, email, role }: Props) {
                   </div>
 
                   <div className="flex gap-3">
-                    <Button size="lg" className="flex-1" onClick={() => go(4)}>
-                      Fortsæt <ArrowRight className="h-4 w-4" />
+                    <Button size="lg" className="flex-1" onClick={() => go(4)} disabled={photoUploading}>
+                      {photoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                      {photoUploading ? "Uploader…" : "Fortsæt"}
                     </Button>
-                    <Button size="lg" variant="outline" onClick={() => { setPhoto(null); go(4) }}>
+                    <Button size="lg" variant="outline" onClick={() => { setPhotoPreview(null); setPhotoUrl(null); go(4) }} disabled={photoUploading}>
                       Spring over
                     </Button>
                   </div>
@@ -418,9 +452,9 @@ export default function InviteForm({ token, email, role }: Props) {
                   </div>
 
                   <div className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
-                    {photo ? (
+                    {photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photo} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+                      <img src={photoUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                     ) : (
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
                         {initials}
