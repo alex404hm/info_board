@@ -153,6 +153,15 @@ export default function UsersPage() {
   const [inviteError, setInviteError] = useState("")
   const [inviteSent, setInviteSent] = useState(false)
 
+  // Create user modal
+  const [showCreate, setShowCreate] = useState(false)
+  const [createName, setCreateName] = useState("")
+  const [createEmail, setCreateEmail] = useState("")
+  const [createPassword, setCreatePassword] = useState("")
+  const [createRole, setCreateRole] = useState("teacher")
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState("")
+
   // Delete confirm
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -183,6 +192,37 @@ export default function UsersPage() {
   }, [toast])
 
   useEffect(() => { void loadUsers() }, [loadUsers])
+
+  function openCreate() {
+    setCreateName("")
+    setCreateEmail("")
+    setCreatePassword("")
+    setCreateRole("teacher")
+    setCreateError("")
+    setShowCreate(true)
+  }
+
+  async function handleCreate() {
+    setCreateError("")
+    if (!createName.trim()) { setCreateError("Indtast et navn."); return }
+    if (!createEmail.trim() || !createEmail.includes("@")) { setCreateError("Indtast en gyldig e-mailadresse."); return }
+    if (createPassword.length < 10) { setCreateError("Adgangskoden skal være mindst 10 tegn."); return }
+    setCreating(true)
+    const res = await apiFetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: createName.trim(), email: createEmail.trim(), password: createPassword, role: createRole }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setCreateError(data.error ?? "Kunne ikke oprette bruger.")
+    } else {
+      toast("success", `Bruger ${createName.trim()} oprettet`)
+      setShowCreate(false)
+      void loadUsers()
+    }
+    setCreating(false)
+  }
 
   function openInvite() {
     setInviteEmail("")
@@ -297,10 +337,15 @@ export default function UsersPage() {
             )}
           </p>
         </div>
-        <Button onClick={openInvite}>
-          <Plus className="h-4 w-4" />
-          Inviter bruger
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={openInvite}>
+            <Mail className="h-4 w-4" />
+            Inviter bruger
+          </Button>
+          <Button variant="outline" size="icon" onClick={openCreate} title="Opret bruger manuelt">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Users table */}
@@ -522,6 +567,113 @@ export default function UsersPage() {
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Create user modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="admin-panel w-full max-w-md p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-emerald-400" />
+                  Opret bruger manuelt
+                </h3>
+                <p className="text-xs text-muted mt-0.5">
+                  Brugeren kan logge ind med det valgte kodeord med det samme.
+                </p>
+              </div>
+              <Button variant="ghost" size="icon-sm" onClick={() => setShowCreate(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Navn</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={createName}
+                  onChange={(e) => { setCreateName(e.target.value); setCreateError("") }}
+                  placeholder="Fornavn Efternavn"
+                  className="admin-input w-full"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">E-mailadresse</label>
+                <input
+                  type="email"
+                  value={createEmail}
+                  onChange={(e) => { setCreateEmail(e.target.value); setCreateError("") }}
+                  placeholder="instruktor@tec.dk"
+                  className="admin-input w-full"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Adgangskode</label>
+                <input
+                  type="password"
+                  value={createPassword}
+                  onChange={(e) => { setCreatePassword(e.target.value); setCreateError("") }}
+                  onKeyDown={(e) => e.key === "Enter" && !creating && handleCreate()}
+                  placeholder="Mindst 10 tegn"
+                  className="admin-input w-full"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Rolle</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {ROLES.map((role) => {
+                    const RIcon = role.icon
+                    const isSelected = createRole === role.value
+                    return (
+                      <Button
+                        key={role.value}
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setCreateRole(role.value)}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
+                          isSelected
+                            ? cn(role.activeBg, role.border, role.color, "ring-1 ring-inset", role.border)
+                            : "border-border/60 bg-(--surface-soft) text-muted hover:text-foreground hover:border-border"
+                        )}
+                      >
+                        <RIcon className={cn("h-4 w-4", isSelected ? role.color : "")} />
+                        {role.label}
+                      </Button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {createError && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3.5 py-2.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+                  <p className="text-sm text-red-400">{createError}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <Button onClick={handleCreate} disabled={creating} className="flex-1">
+                  {creating ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {creating ? "Opretter…" : "Opret bruger"}
+                </Button>
+                <Button variant="outline" onClick={() => setShowCreate(false)}>
+                  Annuller
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
