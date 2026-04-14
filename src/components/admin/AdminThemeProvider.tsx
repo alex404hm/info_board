@@ -31,7 +31,14 @@ export function AdminThemeProvider({
     () => false,
   )
 
-  const [theme, setTheme] = useState<AdminTheme>(initialTheme)
+  const [theme, setTheme] = useState<AdminTheme>(() => {
+    if (typeof window === "undefined") return initialTheme
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored === "dark" || stored === "light" || stored === "system") return stored
+    } catch {}
+    return initialTheme
+  })
   const [systemTheme, setSystemTheme] = useState<ResolvedAdminTheme>(() => {
     if (typeof window === "undefined") return "light"
     const htmlTheme = document.documentElement.getAttribute("data-admin-theme")
@@ -98,13 +105,14 @@ export function AdminThemeProvider({
     [theme, resolvedTheme, setThemeAndPersist, toggle],
   )
 
+  // On the server, resolve "system" using the cookie-derived initialTheme.
+  // For "system" we don't know OS preference server-side, so we fall back to
+  // "dark" (the admin default). The inline script already set data-admin-theme
+  // on <html> to the correct resolved value before first paint, so there is no
+  // visible flash — the body background is already correct.
   const themeClass = isHydrated
     ? resolvedTheme === "light" ? " light" : " dark"
-    : initialTheme === "light"
-      ? " light"
-      : initialTheme === "dark"
-        ? " dark"
-        : " system"
+    : initialTheme === "light" ? " light" : " dark"
 
   return (
     <AdminThemeContext.Provider value={contextValue}>

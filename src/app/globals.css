@@ -162,6 +162,23 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
+
+  /* ── Prevent admin theme flash on page load ──────────────────────────────
+     The adminThemeInitScript sets data-admin-theme on <html> before first
+     paint. These rules snap html+body to the correct color immediately,
+     before React hydrates and the .admin-theme div is rendered. Without
+     these rules, the page briefly shows the :root white background even
+     when dark mode is active. */
+  html[data-admin-theme="dark"],
+  html[data-admin-theme="dark"] body {
+    background-color: oklch(0.145 0 0);
+    color: oklch(0.985 0 0);
+  }
+  html[data-admin-theme="light"],
+  html[data-admin-theme="light"] body {
+    background-color: oklch(1 0 0);
+    color: oklch(0.145 0 0);
+  }
 }
 
 @layer utilities {

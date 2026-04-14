@@ -505,8 +505,6 @@ export default function MessagesPage() {
     enabled: hasUnsavedChanges,
     title: "Er du sikker på, at du vil forlade siden?",
     description: "Hvis du forlader siden nu, mister du dine ændringer.",
-    confirmText: "Forlad uden at gemme",
-    cancelText: "Annullere",
     onConfirmLeave: () => {
       localStorage.removeItem(MESSAGES_DRAFT_KEY)
     },

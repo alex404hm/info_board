@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS='--max-http-header-size=16384' next dev -p 80",
+    "dev": "cross-env NODE_OPTIONS='--max-http-header-size=16384' next dev -p 3000",
     "build": "next build",
-    "start": "cross-env NODE_OPTIONS='--max-http-header-size=16384' next start -p 80",
+    "start": "cross-env NODE_OPTIONS='--max-http-header-size=16384' next start -p 3000",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",

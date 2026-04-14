@@ -233,8 +233,6 @@ export default function KokkenvagtAdminPage() {
     description: dirtyFields
       ? `Ikke-gemte felter: ${dirtyFields}. Hvis du forlader siden nu, mister du disse ændringer.`
       : "Hvis du forlader siden nu, mister du de ændringer, du har lavet i vagtformularen.",
-    confirmText: "Forlad uden at gemme",
-    cancelText: "Bliv og gem",
   })
 
   const fetchEntries = useCallback(async () => {

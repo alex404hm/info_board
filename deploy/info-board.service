@@ -1,0 +1,80 @@
+# =============================================================================
+#  /etc/systemd/system/info-board.service
+#
+#  Reference service file for running the Next.js app.
+#  Skip this if you already have your own service handling `pnpm start`.
+#  The update script (info-board-update.service) handles git pull + build only.
+#
+#  Install:
+#    sudo cp info-board.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable info-board
+#    sudo systemctl start info-board
+# =============================================================================
+
+[Unit]
+Description=TEC Info Board (Next.js)
+Documentation=https://github.com/alex404hm/info_board
+After=network-online.target
+Wants=network-online.target
+
+# Do not start until the update service has finished its first run on this boot.
+# This prevents the app from starting on a stale build while an update is in progress.
+After=info-board-update.service
+
+[Service]
+# ── Identity ──────────────────────────────────────────────────────────────────
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/Desktop/infoboard
+
+# ── Environment ───────────────────────────────────────────────────────────────
+# Load secrets from .env so they are available to Next.js at runtime.
+# EnvironmentFile silently skips if the file does not exist (the "-" prefix).
+EnvironmentFile=-/home/admin/Desktop/infoboard/.env
+EnvironmentFile=-/home/admin/Desktop/infoboard/.env.local
+
+Environment="NODE_ENV=production"
+Environment="NODE_OPTIONS=--max-http-header-size=16384"
+Environment="PORT=3000"
+
+# Extend PATH so pnpm / node are always found regardless of login shell
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/admin/.local/share/pnpm:/home/admin/.nvm/versions/node/current/bin"
+
+# ── Process ───────────────────────────────────────────────────────────────────
+Type=simple
+ExecStart=/usr/local/bin/pnpm start
+# Allow up to 60 s for Next.js to bind its port before systemd gives up
+TimeoutStartSec=60
+
+# Kill the whole process group cleanly on stop/restart
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# ── Restart policy ────────────────────────────────────────────────────────────
+Restart=always
+RestartSec=5s
+# Back off if it keeps crashing: cap at 2-minute intervals
+RestartMaxDelaySec=120s
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+# ── Security hardening (safe on Raspberry Pi OS) ──────────────────────────────
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+# Allow the app to write inside its own directory (e.g. Next.js cache)
+ReadWritePaths=/home/admin/Desktop/infoboard
+ReadWritePaths=/var/log
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+# stdout/stderr go to journald; tail with:
+#   journalctl -u info-board -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=info-board
+
+[Install]
+WantedBy=multi-user.target

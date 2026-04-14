@@ -1,0 +1,61 @@
+# =============================================================================
+#  /etc/systemd/system/info-board-update.service
+#
+#  One-shot service that runs the update script.
+#  Activated by info-board-update.timer (periodic) and on every boot.
+#
+#  Install together with the timer:
+#    sudo cp info-board-update.service /etc/systemd/system/
+#    sudo cp info-board-update.timer   /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now info-board-update.timer
+#
+#  Manual trigger:
+#    sudo systemctl start info-board-update.service
+# =============================================================================
+
+[Unit]
+Description=TEC Info Board — Git Update & Build
+Documentation=https://github.com/alex404hm/info_board
+
+# Must have network before we can reach GitHub
+After=network-online.target
+Wants=network-online.target
+
+# Wait for local DNS to be ready (avoids race on Pi with DHCP)
+After=nss-lookup.target
+
+[Service]
+# ── Identity ──────────────────────────────────────────────────────────────────
+# Run as root so it can write to /var/log and /var/lock.
+# To run as `admin` instead, change User/Group and ensure those paths are writable.
+User=root
+Group=root
+
+# ── Script ────────────────────────────────────────────────────────────────────
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/bin/bash /home/admin/Desktop/infoboard/deploy/update.sh
+
+# Give enough time for a full pnpm install + Next.js build on Pi 5 hardware
+TimeoutStartSec=600
+
+# ── Environment ───────────────────────────────────────────────────────────────
+Environment="HOME=/root"
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/admin/.local/share/pnpm:/usr/local/bin"
+
+# ── Failure handling ──────────────────────────────────────────────────────────
+# On unexpected failure, retry after 30 s (up to 3 times before giving up)
+Restart=on-failure
+RestartSec=30s
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+StandardOutput=journal+console
+StandardError=journal+console
+SyslogIdentifier=info-board-update
+
+[Install]
+# Activated by the timer — do NOT set WantedBy here; let the timer own that.
+WantedBy=multi-user.target

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { apiFetch } from "@/lib/api-fetch"
 import {
-  Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon, Plus, Loader2,
+  Trash2, Edit2, X, CalendarDays, Clock, MapPin, Tag, ChevronDown, CalendarIcon, Plus, Loader2, RefreshCw,
 } from "lucide-react"
 import { format } from "date-fns"
 import { da } from "date-fns/locale"
@@ -37,12 +37,51 @@ type CalendarEventEntry = {
   location: string | null
   description: string | null
   category: string | null
+  repeatDays: number[] | null
   authorName?: string | null
 }
 
 type CalendarCategory = {
   id: string
   name: string
+}
+
+const WEEKDAYS = [
+  { day: 1, short: "Man", long: "Mandag" },
+  { day: 2, short: "Tir", long: "Tirsdag" },
+  { day: 3, short: "Ons", long: "Onsdag" },
+  { day: 4, short: "Tor", long: "Torsdag" },
+  { day: 5, short: "Fre", long: "Fredag" },
+  { day: 6, short: "Lør", long: "Lørdag" },
+  { day: 0, short: "Søn", long: "Søndag" },
+]
+
+function WeekdayPicker({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
+  function toggle(day: number) {
+    onChange(value.includes(day) ? value.filter((d) => d !== day) : [...value, day])
+  }
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {WEEKDAYS.map(({ day, short }) => {
+        const active = value.includes(day)
+        return (
+          <button
+            key={day}
+            type="button"
+            onClick={() => toggle(day)}
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all border"
+            style={{
+              background: active ? "var(--primary)" : "transparent",
+              color: active ? "var(--primary-foreground)" : "var(--muted-foreground)",
+              borderColor: active ? "var(--primary)" : "var(--border)",
+            }}
+          >
+            {short}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 type FormSnapshot = {
@@ -55,6 +94,8 @@ type FormSnapshot = {
   endTime: string
   location: string
   description: string
+  repeatEnabled: boolean
+  repeatDaysKey: string
 }
 
 const EMPTY_FORM: FormSnapshot = {
@@ -67,10 +108,28 @@ const EMPTY_FORM: FormSnapshot = {
   endTime: "10:00",
   location: "",
   description: "",
+  repeatEnabled: false,
+  repeatDaysKey: "",
 }
 
 function isSameSnapshot(a: FormSnapshot, b: FormSnapshot) {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return (
+    a.title === b.title &&
+    a.category === b.category &&
+    a.allDay === b.allDay &&
+    a.startDate === b.startDate &&
+    a.startTime === b.startTime &&
+    a.endDate === b.endDate &&
+    a.endTime === b.endTime &&
+    a.location === b.location &&
+    a.description === b.description &&
+    a.repeatEnabled === b.repeatEnabled &&
+    a.repeatDaysKey === b.repeatDaysKey
+  )
+}
+
+function repeatDaysKey(days: number[]) {
+  return [...days].sort((a, b) => a - b).join(",")
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -133,6 +192,8 @@ export default function CalendarAdminPage() {
   const [endTime, setEndTime] = useState("10:00")
   const [location, setLocation] = useState("")
   const [description, setDescription] = useState("")
+  const [repeatEnabled, setRepeatEnabled] = useState(false)
+  const [repeatDays, setRepeatDays] = useState<number[]>([])
   const [newCategoryName, setNewCategoryName] = useState("")
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false)
   const [formBaseline, setFormBaseline] = useState<FormSnapshot>(EMPTY_FORM)
@@ -242,7 +303,9 @@ export default function CalendarAdminPage() {
     startTime,
     endDate: endDateObj ? format(endDateObj, "yyyy-MM-dd") : "",
     endTime, location, description,
-  }), [title, category, allDay, startDateObj, startTime, endDateObj, endTime, location, description])
+    repeatEnabled,
+    repeatDaysKey: repeatDaysKey(repeatDays),
+  }), [title, category, allDay, startDateObj, startTime, endDateObj, endTime, location, description, repeatEnabled, repeatDays])
 
   const hasUnsavedChanges = showForm && !isSameSnapshot(currentSnapshot, formBaseline)
 
@@ -250,8 +313,6 @@ export default function CalendarAdminPage() {
     enabled: hasUnsavedChanges,
     title: "Er du sikker på, at du vil forlade siden?",
     description: "Hvis du forlader siden nu, mister du dine ændringer.",
-    confirmText: "Forlad",
-    cancelText: "Bliv og gem",
   })
 
   const categoryOptions = useMemo(() => {
@@ -306,6 +367,8 @@ export default function CalendarAdminPage() {
     setEndTime("10:00")
     setLocation("")
     setDescription("")
+    setRepeatEnabled(false)
+    setRepeatDays([])
     setLocationApiSuggestions([])
     setLocationOpen(false)
     setLocationLoading(false)
@@ -322,6 +385,7 @@ export default function CalendarAdminPage() {
     const et = entry.end ? parseTime(entry.end) || "10:00" : "10:00"
     const sdObj = sd ? new Date(sd + "T12:00:00") : undefined
     const edObj = ed ? new Date(ed + "T12:00:00") : undefined
+    const rDays = entry.repeatDays ?? []
     const snap: FormSnapshot = {
       title: entry.title,
       category: entry.category ?? "",
@@ -332,6 +396,8 @@ export default function CalendarAdminPage() {
       endTime: et,
       location: entry.location ?? "",
       description: entry.description ?? "",
+      repeatEnabled: rDays.length > 0,
+      repeatDaysKey: repeatDaysKey(rDays),
     }
     setFormBaseline(snap)
     setTitle(entry.title)
@@ -343,6 +409,8 @@ export default function CalendarAdminPage() {
     setEndTime(et)
     setLocation(entry.location ?? "")
     setDescription(entry.description ?? "")
+    setRepeatEnabled(rDays.length > 0)
+    setRepeatDays(rDays)
     setLocationApiSuggestions([])
     setLocationOpen(false)
     setLocationLoading(false)
@@ -374,6 +442,7 @@ export default function CalendarAdminPage() {
           location: location || null,
           description: description || null,
           category: category || null,
+          repeatDays: repeatEnabled ? repeatDays : [],
         }),
       })
       if (res.ok) {
@@ -886,6 +955,49 @@ export default function CalendarAdminPage() {
               />
             </div>
 
+            {/* Repeat */}
+            <div className="space-y-3 rounded-xl border border-border/50 bg-card/30 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Gentag begivenhed</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={repeatEnabled}
+                  onClick={() => { setRepeatEnabled((v) => !v); if (repeatEnabled) setRepeatDays([]) }}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    repeatEnabled ? "bg-primary" : "bg-input"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                      repeatEnabled ? "translate-x-[18px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+              {repeatEnabled && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Begivenheden vises kun på de valgte ugedage
+                  </p>
+                  <WeekdayPicker value={repeatDays} onChange={setRepeatDays} />
+                  {repeatDays.length > 0 && (
+                    <p className="text-xs text-primary">
+                      Gentages hver: {repeatDays
+                        .slice()
+                        .sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b))
+                        .map(d => WEEKDAYS.find(w => w.day === d)?.long)
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-4">
               <Button type="button" variant="ghost" onClick={resetForm}>
                 Annuller
@@ -930,7 +1042,7 @@ export default function CalendarAdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/40">
-                  {["Titel", "Kategori", "Startdato", "Slutdato", "Tidspunkt", "Lokation", ""].map((h) => (
+                  {["Titel", "Kategori", "Startdato", "Slutdato", "Tidspunkt", "Gentager", "Lokation", ""].map((h) => (
                     <th
                       key={h}
                       className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
@@ -972,6 +1084,21 @@ export default function CalendarAdminPage() {
                             {fmtTime(entry.start)}
                             {entry.end && ` – ${fmtTime(entry.end)}`}
                           </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                        {(entry.repeatDays ?? []).length > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-500">
+                            <RefreshCw className="h-2.5 w-2.5" />
+                            {(entry.repeatDays ?? [])
+                              .slice()
+                              .sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b))
+                              .map(d => WEEKDAYS.find(w => w.day === d)?.short)
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        ) : (
+                          <span className="opacity-30">—</span>
                         )}
                       </td>
                       <td className="px-5 py-4 max-w-[140px] truncate text-xs text-muted-foreground">

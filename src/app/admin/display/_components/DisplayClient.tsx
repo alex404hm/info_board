@@ -162,8 +162,6 @@ export default function DisplayPage() {
     enabled: dirty,
     title: "Er du sikker på, at du vil forlade siden?",
     description: "Hvis du forlader siden nu, mister du dine ændringer.",
-    confirmText: "Forlad",
-    cancelText: "Bliv og gem",
   })
 
   function update(id: TileId, patch: Partial<TileConfig>) {

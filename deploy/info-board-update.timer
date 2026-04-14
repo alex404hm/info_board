@@ -1,0 +1,41 @@
+# =============================================================================
+#  /etc/systemd/system/info-board-update.timer
+#
+#  Fires info-board-update.service:
+#    • 45 seconds after every boot  (gives network time to stabilise)
+#    • Every hour while the Pi is running
+#
+#  Adjust OnBootSec / OnUnitActiveSec to your preferred cadence.
+#
+#  Install:
+#    sudo cp info-board-update.timer /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now info-board-update.timer
+#
+#  Status:
+#    systemctl list-timers info-board-update.timer
+# =============================================================================
+
+[Unit]
+Description=TEC Info Board — Periodic Git Update Timer
+Documentation=https://github.com/alex404hm/info_board
+
+[Timer]
+# First fire: 45 s after boot (network should be up by then on Pi 5)
+OnBootSec=45s
+
+# Subsequent fires: every hour after the last successful activation
+OnUnitActiveSec=1h
+
+# If the Pi was off during a scheduled window, fire as soon as it wakes up
+Persistent=true
+
+# Which service to activate
+Unit=info-board-update.service
+
+# Randomise the exact fire time within a 60-second window to avoid
+# thundering-herd if multiple Pis share the same repo
+RandomizedDelaySec=60s
+
+[Install]
+WantedBy=timers.target

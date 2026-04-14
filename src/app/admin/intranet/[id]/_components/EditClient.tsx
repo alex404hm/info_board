@@ -57,8 +57,6 @@ export default function AdminIntranetEditPage() {
     enabled: hasUnsavedChanges,
     title: "Forlad redigering?",
     description: "Hvis du forlader siden nu, mister du dine ændringer.",
-    confirmText: "Forlad",
-    cancelText: "Bliv her",
   })
 
   useEffect(() => {

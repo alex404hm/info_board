@@ -169,6 +169,7 @@ export const calendarEvent = pgTable("calendar_event", {
   location: text("location"),
   description: text("description"),
   category: text("category"),
+  repeatDays: json("repeat_days").$type<number[]>().default([]),
   authorId: text("authorId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),

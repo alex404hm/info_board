@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Kalam, Inter } from "next/font/google";
+import Script from "next/script";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmDialogProvider } from "@/components/confirm-dialog-provider";
 import "./globals.css";
@@ -39,12 +40,14 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="da" data-scroll-behavior="smooth" className={cn("font-sans", inter.variable, geistSans.variable, geistMono.variable, kalam.variable)} style={{ "--font-sans": "var(--font-inter)" } as any}>
       <head>
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
-        {/* Runs before paint to prevent admin theme flash when using system theme */}
-        <script dangerouslySetInnerHTML={{ __html: adminThemeInitScript }} />
       </head>
-      <body
-        className="antialiased"
-      >
+      <body className="antialiased">
+        {/* Runs before paint to prevent admin theme flash — beforeInteractive injects into <head> during SSR */}
+        <Script
+          id="admin-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: adminThemeInitScript }}
+        />
         <TooltipProvider>
           <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
         </TooltipProvider>

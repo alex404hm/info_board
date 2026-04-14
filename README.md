@@ -419,21 +419,6 @@ pnpm db:push
 
 This applies the schema directly without generating migration files. Use `pnpm db:generate` + `pnpm db:migrate` for migration-based workflows.
 
-### 4. Seed the initial admin user
-
-```bash
-pnpm seed
-```
-
-This creates the first admin account:
-
-| Field | Value |
-|---|---|
-| Email | `admin@tec.dk` |
-| Password | `rozbym-2vodsa-jakDox` |
-| Role | `admin` |
-
-> **Important:** Change this password immediately after first login in any non-local environment.
 
 ### 5. Start the development server
 
@@ -537,37 +522,6 @@ pnpm start
 ```
 
 Run behind a reverse proxy (nginx, Caddy) that handles TLS. Set `COOKIE_DOMAIN` if admin and infoboard run on separate subdomains.
-
-### Docker (manual)
-
-No `Dockerfile` is included. A minimal multi-stage build:
-
-```dockerfile
-FROM node:20-alpine AS base
-RUN corepack enable
-
-FROM base AS deps
-WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN pnpm build
-
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-EXPOSE 3000
-CMD ["node", "server.js"]
-```
-
-> Enable `output: 'standalone'` in `next.config.ts` for the standalone Docker output.
 
 ### Database Migrations in CI/CD
 

@@ -326,26 +326,36 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
   const [confirmPw, setConfirmPw] = useState("")
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [pwLoading, setPwLoading] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
   const [pwError, setPwError] = useState("")
 
   const pwHints = [
-    { ok: newPw.length >= 10, label: "Mindst 10 tegn" },
+    { ok: newPw.length >= 8, label: "Mindst 8 tegn" },
     { ok: /[A-Z]/.test(newPw), label: "Ét stort bogstav" },
     { ok: /[0-9]/.test(newPw), label: "Ét tal" },
-    { ok: confirmPw === newPw && confirmPw.length > 0, label: "Adgangskoder stemmer overens" },
+    { ok: newPw.length > 0 && newPw !== currentPw, label: "Forskellig fra nuværende adgangskode" },
+    { ok: confirmPw.length > 0 && confirmPw === newPw, label: "Adgangskoder stemmer overens" },
   ]
-  const pwStrong = pwHints.every((h) => h.ok)
+  const pwValid = newPw.length >= 8 && confirmPw === newPw && newPw !== currentPw
+  const canSubmitPw = Boolean(currentPw && newPw && confirmPw && pwValid)
 
   async function handleSavePassword() {
     setPwError("")
-    if (newPw !== confirmPw) { setPwError("Adgangskoderne stemmer ikke overens."); return }
-    if (newPw.length < 10) { setPwError("Ny adgangskode skal være mindst 10 tegn."); return }
+    if (!currentPw) { setPwError("Indtast din nuværende adgangskode."); return }
+    if (newPw.length < 8) { setPwError("Ny adgangskode skal være mindst 8 tegn."); return }
+    if (newPw === currentPw) { setPwError("Den nye adgangskode må ikke være den samme som den nuværende."); return }
+    if (newPw !== confirmPw) { setPwError("De to nye adgangskoder stemmer ikke overens."); return }
     setPwLoading(true)
     const { error } = await authClient.changePassword({ currentPassword: currentPw, newPassword: newPw, revokeOtherSessions: false })
     if (error) {
-      setPwError(error.message ?? "Kunne ikke ændre adgangskode.")
+      const msg = error.message ?? ""
+      if (msg.toLowerCase().includes("incorrect") || msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("wrong")) {
+        setPwError("Den nuværende adgangskode er forkert.")
+      } else {
+        setPwError(msg || "Kunne ikke ændre adgangskode. Prøv igen.")
+      }
     } else {
       setPwSaved(true)
       setCurrentPw(""); setNewPw(""); setConfirmPw("")
@@ -420,8 +430,6 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
     enabled: hasUnsavedChanges,
     title: "Er du sikker på, at du vil forlade siden?",
     description: "Hvis du forlader siden nu, mister du dine ændringer.",
-    confirmText: "Forlad",
-    cancelText: "Bliv og gem",
   })
 
   const eyeBtn = (show: boolean, toggle: () => void) => (
@@ -619,7 +627,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
           <Field label="Nuværende adgangskode">
             <TextInput
               value={currentPw}
-              onChange={setCurrentPw}
+              onChange={(v) => { setCurrentPw(v); setPwError("") }}
               type={showCurrent ? "text" : "password"}
               placeholder="••••••••••"
               right={eyeBtn(showCurrent, () => setShowCurrent((v) => !v))}
@@ -630,33 +638,35 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
             <Field label="Ny adgangskode">
               <TextInput
                 value={newPw}
-                onChange={setNewPw}
+                onChange={(v) => { setNewPw(v); setPwError("") }}
                 type={showNew ? "text" : "password"}
-                placeholder="Min. 10 tegn"
+                placeholder="Min. 8 tegn"
                 right={eyeBtn(showNew, () => setShowNew((v) => !v))}
               />
             </Field>
             <Field label="Bekræft ny adgangskode">
               <TextInput
                 value={confirmPw}
-                onChange={setConfirmPw}
-                type={showNew ? "text" : "password"}
+                onChange={(v) => { setConfirmPw(v); setPwError("") }}
+                type={showConfirm ? "text" : "password"}
                 placeholder="Gentag ny adgangskode"
+                right={eyeBtn(showConfirm, () => setShowConfirm((v) => !v))}
               />
             </Field>
           </div>
 
-          {newPw && (
-            <ul className="space-y-1.5 text-xs">
+          {/* Hints — only shown when the user has started typing a new password */}
+          {newPw.length > 0 && (
+            <ul className="space-y-1.5 text-xs rounded-lg bg-muted/10 border border-border/40 px-4 py-3">
               {pwHints.map((hint) => (
                 <li key={hint.label} className="flex items-center gap-2">
-                  <span
+                  <CheckCircle
                     className={cn(
-                      "h-1.5 w-1.5 rounded-full shrink-0 transition-colors",
-                      hint.ok ? "bg-emerald-400" : "bg-muted",
+                      "h-3.5 w-3.5 shrink-0 transition-colors",
+                      hint.ok ? "text-emerald-400" : "text-muted opacity-40",
                     )}
                   />
-                  <span className={hint.ok ? "text-foreground" : "text-muted"}>
+                  <span className={cn("transition-colors", hint.ok ? "text-foreground" : "text-muted")}>
                     {hint.label}
                   </span>
                 </li>
@@ -669,7 +679,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
           {pwSaved && (
             <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5">
               <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-              <p className="text-sm text-emerald-400">Adgangskode er ændret.</p>
+              <p className="text-sm text-emerald-400">Adgangskode ændret.</p>
             </div>
           )}
 
@@ -677,7 +687,7 @@ export default function SettingsClient({ initialUser }: { initialUser: InitialUs
             onClick={handleSavePassword}
             loading={pwLoading}
             saved={false}
-            disabled={!currentPw || !newPw || !confirmPw || !pwStrong}
+            disabled={!canSubmitPw}
             label="Skift adgangskode"
           />
         </div>

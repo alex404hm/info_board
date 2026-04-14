@@ -17,7 +17,7 @@ export function useUnsavedChangesGuard({
   title = "Er du sikker på, at du vil forlade siden?",
   description = "Hvis du forlader siden nu, mister du dine ændringer.",
   confirmText = "Forlad uden at gemme",
-  cancelText = "Annullere",
+  cancelText = "Annuller",
   onConfirmLeave,
 }: UnsavedChangesGuardOptions) {
   const confirm = useConfirmDialog()

@@ -45,6 +45,7 @@ export async function PATCH(
         ...(body.location !== undefined && { location: body.location }),
         ...(body.description !== undefined && { description: body.description }),
         ...(body.category !== undefined && { category: body.category }),
+        ...(body.repeatDays !== undefined && { repeatDays: Array.isArray(body.repeatDays) ? body.repeatDays : [] }),
         updatedAt: now,
       })
       .where(eq(calendarEvent.id, id))
