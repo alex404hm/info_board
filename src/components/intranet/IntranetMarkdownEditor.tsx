@@ -38,12 +38,6 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
   Tooltip,
@@ -62,7 +56,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 // ─── Toolbar button ───────────────────────────────────────────────────────────
 
@@ -188,9 +181,9 @@ function HeadingDropdown({ editor }: { editor: Editor | null }) {
   )
 }
 
-// ─── Link dialog ──────────────────────────────────────────────────────────────
+// ─── Link panel (inline, no portal) ──────────────────────────────────────────
 
-function LinkDialog({
+function LinkPanel({
   initial,
   onConfirm,
   onCancel,
@@ -201,57 +194,79 @@ function LinkDialog({
 }) {
   const [value, setValue] = useState(initial)
   const inputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const isEdit = Boolean(initial)
 
   useEffect(() => {
     const t = window.setTimeout(() => {
       inputRef.current?.focus()
       if (initial) inputRef.current?.select()
-    }, 60)
+    }, 40)
     return () => window.clearTimeout(t)
   }, [initial])
 
-  return (
-    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent showCloseButton={false} className="gap-4 max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Rediger link" : "Indsæt link"}</DialogTitle>
-        </DialogHeader>
+  // Close on outside click
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (!panelRef.current?.contains(e.target as Node)) onCancel()
+    }
+    document.addEventListener("mousedown", onDown)
+    return () => document.removeEventListener("mousedown", onDown)
+  }, [onCancel])
 
+  return (
+    <div
+      ref={panelRef}
+      className={cn(
+        "border-b border-border/60",
+        "bg-card px-4 py-3 animate-in fade-in-0 slide-in-from-top-1 duration-100",
+      )}
+    >
+      <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {isEdit ? "Rediger link" : "Indsæt link"}
+      </p>
+      <div className="flex items-center gap-2">
         <Input
           ref={inputRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="https://..."
+          className="h-8 flex-1 rounded-lg text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); onConfirm(value) }
             if (e.key === "Escape") { e.preventDefault(); onCancel() }
           }}
         />
-
-        <div className="flex items-center justify-between gap-2">
-          {isEdit ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:text-destructive"
-              onClick={() => onConfirm("")}
-            >
-              Fjern link
-            </Button>
-          ) : <span />}
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onCancel}>
-              Annuller
-            </Button>
-            <Button type="button" size="sm" onClick={() => onConfirm(value)}>
-              {isEdit ? "Opdater" : "Indsæt"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        {isEdit && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onMouseDown={(e) => { e.preventDefault(); onConfirm("") }}
+          >
+            Fjern
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 shrink-0"
+          onMouseDown={(e) => { e.preventDefault(); onCancel() }}
+        >
+          Annuller
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 shrink-0"
+          onMouseDown={(e) => { e.preventDefault(); onConfirm(value) }}
+        >
+          {isEdit ? "Opdater" : "Indsæt"}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -637,13 +652,22 @@ export function IntranetMarkdownEditor({
           )}
         </div>
 
+        {/* Link panel — inline, no portal */}
+        {linkDialog && (
+          <LinkPanel
+            initial={linkDialog.href}
+            onConfirm={applyLink}
+            onCancel={() => setLinkDialog(null)}
+          />
+        )}
+
         {/* Editor area */}
-        <ScrollArea
-          className="h-105 bg-background"
+        <div
+          className="h-105 overflow-y-auto bg-background"
           onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY }) }}
         >
-          <EditorContent editor={editor} className="h-full" />
-        </ScrollArea>
+          <EditorContent editor={editor} />
+        </div>
 
         {/* Right-click context menu */}
         {contextMenu && editor && (
@@ -656,14 +680,6 @@ export function IntranetMarkdownEditor({
         )}
       </div>
 
-      {/* Link dialog */}
-      {linkDialog && (
-        <LinkDialog
-          initial={linkDialog.href}
-          onConfirm={applyLink}
-          onCancel={() => setLinkDialog(null)}
-        />
-      )}
     </TooltipProvider>
   )
 }

@@ -105,6 +105,15 @@ export function AdminThemeProvider({
     [theme, resolvedTheme, setThemeAndPersist, toggle],
   )
 
+  // Keep document.documentElement in sync so Radix portals (Dialog, Popover,
+  // DropdownMenu etc.) rendered at body-level also inherit the dark/light vars.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    document.documentElement.classList.toggle("dark", resolvedTheme === "dark")
+    document.documentElement.classList.toggle("light", resolvedTheme === "light")
+    document.documentElement.setAttribute("data-admin-theme", resolvedTheme)
+  }, [resolvedTheme])
+
   // On the server, resolve "system" using the cookie-derived initialTheme.
   // For "system" we don't know OS preference server-side, so we fall back to
   // "dark" (the admin default). The inline script already set data-admin-theme

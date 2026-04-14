@@ -17,6 +17,9 @@ import {
   Send,
   Clock,
   Check,
+  Link2,
+  Copy,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -123,7 +126,7 @@ function RoleDropdown({
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  return new Date(d).toLocaleDateString("da-DK", { day: "numeric", month: "short", year: "numeric" })
 }
 
 function initials(name: string | null, email: string) {
@@ -138,6 +141,9 @@ function initials(name: string | null, email: string) {
 
 type Toast = { id: number; type: "success" | "error"; message: string }
 
+// Invite modal mode
+type InviteMode = "email" | "link"
+
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function UsersPage() {
@@ -147,11 +153,14 @@ export default function UsersPage() {
 
   // Invite modal
   const [showInvite, setShowInvite] = useState(false)
+  const [inviteMode, setInviteMode] = useState<InviteMode>("email")
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState("teacher")
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState("")
   const [inviteSent, setInviteSent] = useState(false)
+  const [inviteLink, setInviteLink] = useState("")
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // Create user modal
   const [showCreate, setShowCreate] = useState(false)
@@ -224,11 +233,14 @@ export default function UsersPage() {
     setCreating(false)
   }
 
-  function openInvite() {
+  function openInvite(mode: InviteMode = "email") {
+    setInviteMode(mode)
     setInviteEmail("")
     setInviteRole("teacher")
     setInviteError("")
     setInviteSent(false)
+    setInviteLink("")
+    setLinkCopied(false)
     setShowInvite(true)
   }
 
@@ -239,19 +251,33 @@ export default function UsersPage() {
       return
     }
     setInviting(true)
-    const res = await apiFetch("/api/admin/invite", {
+
+    const endpoint = inviteMode === "link"
+      ? "/api/admin/invite/link"
+      : "/api/admin/invite"
+
+    const res = await apiFetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
     })
     const data = await res.json()
     if (!res.ok) {
-      setInviteError(data.error ?? "Kunne ikke sende invitation.")
+      setInviteError(data.error ?? "Kunne ikke oprette invitation.")
     } else {
+      setInviteLink(data.inviteLink ?? "")
       setInviteSent(true)
       void loadUsers()
     }
     setInviting(false)
+  }
+
+  function copyLink() {
+    if (!inviteLink) return
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    })
   }
 
   async function handleResendInvite(email: string) {
@@ -338,10 +364,17 @@ export default function UsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={openInvite}>
+          {/* Send e-mail invite */}
+          <Button onClick={() => openInvite("email")} title="Inviter bruger via e-mail">
             <Mail className="h-4 w-4" />
-            Inviter bruger
+            Inviter via e-mail
           </Button>
+          {/* Generate link invite */}
+          <Button variant="outline" onClick={() => openInvite("link")} title="Generer invitationslink">
+            <Link2 className="h-4 w-4" />
+            Generer link
+          </Button>
+          {/* Manual create */}
           <Button variant="outline" size="icon" onClick={openCreate} title="Opret bruger manuelt">
             <Plus className="h-4 w-4" />
           </Button>
@@ -465,24 +498,56 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Invite modal */}
+      {/* ── Invite modal ──────────────────────────────────────────────────────── */}
       {showInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="admin-panel w-full max-w-md p-6">
+            {/* Modal header */}
             <div className="flex items-start justify-between mb-5">
               <div>
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-emerald-400" />
-                  Inviter bruger
+                  {inviteMode === "email" ? (
+                    <Mail className="h-4 w-4 text-emerald-400" />
+                  ) : (
+                    <Link2 className="h-4 w-4 text-sky-400" />
+                  )}
+                  {inviteMode === "email" ? "Inviter via e-mail" : "Generer invitationslink"}
                 </h3>
                 <p className="text-xs text-muted mt-0.5">
-                  De modtager et link til at oprette deres konto.
+                  {inviteMode === "email"
+                    ? "Brugeren modtager et link direkte i sin indbakke."
+                    : "Kopier linket og send det manuelt til brugeren."}
                 </p>
               </div>
               <Button variant="ghost" size="icon-sm" onClick={() => setShowInvite(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
+            {/* Mode toggle */}
+            {!inviteSent && (
+              <div className="mb-5 flex gap-1 rounded-xl border border-border/40 bg-muted/20 p-1">
+                {(["email", "link"] as InviteMode[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => { setInviteMode(m); setInviteError("") }}
+                    className={cn(
+                      "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                      inviteMode === m
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {m === "email" ? (
+                      <><Mail className="h-3.5 w-3.5" /> Send e-mail</>
+                    ) : (
+                      <><Link2 className="h-3.5 w-3.5" /> Kopier link</>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {!inviteSent ? (
               <div className="space-y-4">
@@ -539,10 +604,16 @@ export default function UsersPage() {
                   <Button onClick={handleInvite} disabled={inviting} className="flex-1">
                     {inviting ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
+                    ) : inviteMode === "email" ? (
                       <Send className="h-4 w-4" />
+                    ) : (
+                      <Link2 className="h-4 w-4" />
                     )}
-                    {inviting ? "Sender…" : "Send invitation"}
+                    {inviting
+                      ? "Behandler…"
+                      : inviteMode === "email"
+                      ? "Send invitation"
+                      : "Generer link"}
                   </Button>
                   <Button variant="outline" onClick={() => setShowInvite(false)}>
                     Annuller
@@ -550,18 +621,65 @@ export default function UsersPage() {
                 </div>
               </div>
             ) : (
+              /* ── Success state ── */
               <div className="space-y-4">
-                <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-6 text-center dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
-                    <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                {inviteMode === "email" ? (
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-5 text-center dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                      <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Invitation sendt!</p>
+                      <p className="mt-0.5 text-xs text-emerald-600/80 dark:text-emerald-400/70">
+                        En e-mail er sendt til <strong>{inviteEmail}</strong>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Invitation sendt!</p>
-                    <p className="mt-0.5 text-xs text-emerald-600/80 dark:text-emerald-400/70">
-                      En e-mail er sendt til <strong>{inviteEmail}</strong>
-                    </p>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-sky-500/30 bg-sky-50 px-4 py-5 text-center dark:border-sky-500/20 dark:bg-sky-500/10">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-500/20">
+                      <Link2 className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-sky-700 dark:text-sky-400">Link genereret!</p>
+                      <p className="mt-0.5 text-xs text-sky-600/80 dark:text-sky-400/70">
+                        Kopier linket og send det manuelt til <strong>{inviteEmail}</strong>
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Link display (shown for both modes) */}
+                {inviteLink && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Invitationslink <span className="text-muted-foreground/60">(udløber om 7 dage)</span>
+                    </label>
+                    <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground font-mono">
+                        {inviteLink}
+                      </span>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        onClick={copyLink}
+                        title="Kopier link"
+                        className={cn(
+                          "shrink-0 transition-colors",
+                          linkCopied ? "text-emerald-400" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {linkCopied ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <Button variant="outline" className="w-full" onClick={() => setShowInvite(false)}>
                   Færdig
                 </Button>
@@ -571,7 +689,7 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Create user modal */}
+      {/* ── Create user modal ─────────────────────────────────────────────────── */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="admin-panel w-full max-w-md p-6">
@@ -678,7 +796,7 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Delete confirmation */}
+      {/* ── Delete confirmation ────────────────────────────────────────────────── */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="admin-panel mx-4 w-full max-w-sm p-6">

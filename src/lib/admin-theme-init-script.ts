@@ -10,6 +10,8 @@ export const adminThemeInitScript = `
     var theme = stored || 'system';
     var resolved = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
     document.documentElement.setAttribute('data-admin-theme', resolved);
+    document.documentElement.classList.toggle('dark', resolved === 'dark');
+    document.documentElement.classList.toggle('light', resolved === 'light');
   } catch (e) {}
 })()
 `

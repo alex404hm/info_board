@@ -11,6 +11,7 @@ import {
   Users,
   Coffee,
   FileText,
+  Activity,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -37,8 +38,9 @@ const adminSections = [
   {
     label: "Administration",
     items: [
-      { title: "Oversigt",    url: "/admin/dashboard", icon: LayoutDashboard },
-      { title: "Brugere",     url: "/admin/users",    icon: Users },
+      { title: "Oversigt",      url: "/admin/dashboard",  icon: LayoutDashboard },
+      { title: "Brugere",       url: "/admin/users",      icon: Users },
+      { title: "Aktivitet",     url: "/admin/activity",   icon: Activity },
     ],
   },
 ]

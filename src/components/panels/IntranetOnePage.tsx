@@ -1,12 +1,13 @@
 "use client"
 
 import { AnimatePresence, motion } from "framer-motion"
-import { ArrowUp } from "lucide-react"
+import { ArrowUp, ExternalLink, FileText } from "lucide-react"
 import { useEffect, useState } from "react"
 import { apiFetch } from "@/lib/api-fetch"
 
 import { IntranetFaqMarkdown } from "@/components/intranet/IntranetFaqMarkdown"
 import { DEFAULT_INTRANET_FAQ_ITEMS, type IntranetFaqItem } from "@/lib/intranet-faq"
+import { type IntranetDocument } from "@/lib/intranet-documents"
 
 const EASE_SMOOTH = [0.22, 1, 0.36, 1] as const
 
@@ -14,6 +15,7 @@ export function IntranetOnePage() {
   const [openId, setOpenId] = useState<string>("")
   const [showJumpTop, setShowJumpTop] = useState(false)
   const [items, setItems] = useState<IntranetFaqItem[]>(DEFAULT_INTRANET_FAQ_ITEMS)
+  const [docs, setDocs] = useState<IntranetDocument[]>([])
 
   useEffect(() => {
     let mounted = true
@@ -23,6 +25,14 @@ export function IntranetOnePage() {
       .then((data) => {
         if (!mounted || !Array.isArray(data) || !data.length) return
         setItems(data)
+      })
+      .catch(() => {})
+
+    apiFetch("/api/intranet-documents", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!mounted || !Array.isArray(data)) return
+        setDocs(data)
       })
       .catch(() => {})
 
@@ -165,6 +175,68 @@ export function IntranetOnePage() {
           </div>
         </div>
       </section>
+
+      {/* Documents section */}
+      {docs.length > 0 && (
+        <section className="w-full pt-4 pb-8">
+          <div className="grid items-start gap-16 grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)]">
+            {/* Left — label */}
+            <div className="sticky top-0 self-start pt-6 pl-8">
+              <h2
+                className="text-[clamp(1.9rem,4.8vw,3rem)] leading-[0.95] tracking-[-0.045em] text-foreground font-bold"
+                style={{ fontFamily: '"TEC Sans", sans-serif' }}
+              >
+                Dokumenter
+              </h2>
+              <p
+                className="mt-4 text-[clamp(0.95rem,2vw,1.2rem)] leading-[1.4] tracking-[-0.01em]"
+                style={{ color: "var(--foreground-muted)", fontFamily: '"TEC Sans", sans-serif' }}
+              >
+                PDF-dokumenter og vejledninger til dig som lærling.
+              </p>
+            </div>
+
+            {/* Right — document links */}
+            <div
+              className="flex flex-col"
+              style={{ borderTop: "1px solid var(--divider)", borderBottom: "1px solid var(--divider)" }}
+            >
+              {docs.map((doc, index) => (
+                <a
+                  key={doc.id}
+                  href={`/intranet/dokument/${doc.id}`}
+                  className="group flex items-center justify-between gap-4 px-6 py-5 transition-colors hover:bg-white/[0.03]"
+                  style={{
+                    borderTop: index === 0 ? "none" : "1px solid var(--divider)",
+                  }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{ background: "color-mix(in srgb, var(--accent-strong) 10%, transparent)" }}
+                    >
+                      <FileText
+                        className="h-4 w-4"
+                        style={{ color: "var(--accent-strong)" }}
+                      />
+                    </div>
+                    <span
+                      className="truncate text-[1.05rem] font-semibold leading-snug tracking-[-0.02em] group-hover:text-(--accent-strong) transition-colors"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      {doc.title || doc.originalName}
+                    </span>
+                  </div>
+                  <ExternalLink
+                    className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity"
+                    style={{ color: "var(--foreground-muted)" }}
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <button
         type="button"
