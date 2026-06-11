@@ -38,41 +38,33 @@ export function decodeHtmlEntities(html: string): string {
  * Get style colors for a transit line badge
  */
 export function lineBadgeStyle(line: string): { bg: string; text: string } {
-  // DSB/Regional train lines
-  if (line === "A" || line === "Lijn A") return { bg: "#FF5733", text: "#fff" }
-  if (line === "B" || line === "Lijn B") return { bg: "#33B5FF", text: "#fff" }
-  if (line === "C" || line === "Lijn C") return { bg: "#FFAA00", text: "#000" }
-  if (line === "E" || line === "Lijn E") return { bg: "#00AA44", text: "#fff" }
-  if (line === "F" || line === "Lijn F") return { bg: "#AA0044", text: "#fff" }
-  if (line === "H" || line === "Lijn H") return { bg: "#005599", text: "#fff" }
-  if (line === "Bx" || line === "Lijn Bx") return { bg: "#FF6600", text: "#fff" }
-  if (line === "RX" || line === "Lijn RX") return { bg: "#003366", text: "#fff" }
+  const u = line.toUpperCase().trim()
 
-  // Metro/S-train lines based on line numbers
-  const lineNum = parseInt(line, 10)
-  if (!isNaN(lineNum)) {
-    // S-train lines
-    if (lineNum === 1 || lineNum === 2 || lineNum === 3) {
-      return { bg: "#005099", text: "#fff" }
-    }
-    // Metro lines M1-M4
-    if (lineNum === 4 || lineNum === 5 || lineNum === 6) {
-      return { bg: "#FF5733", text: "#fff" }
-    }
+  // DSB S-tog letter lines
+  const stog: Record<string, { bg: string; text: string }> = {
+    A:  { bg: "#E3000B", text: "#fff" },
+    B:  { bg: "#0054A5", text: "#fff" },
+    BX: { bg: "#FF6600", text: "#fff" },
+    C:  { bg: "#00A651", text: "#fff" },
+    E:  { bg: "#9B5EA2", text: "#fff" },
+    F:  { bg: "#F7941D", text: "#000" },
+    H:  { bg: "#00AEEF", text: "#fff" },
   }
+  if (stog[u]) return stog[u]
 
-  // Bus lines (default styling)
-  if (line.startsWith("1") || line.startsWith("2") || line.startsWith("3")) {
-    return { bg: "#CCCCCC", text: "#000" }
-  }
+  // Regional/intercity
+  if (u === "RX" || u === "RE") return { bg: "#003366", text: "#fff" }
 
-  // Night buses
-  if (line.startsWith("N")) {
-    return { bg: "#1a1a1a", text: "#fff" }
-  }
+  // Metro lines
+  if (u === "M1" || u === "M2") return { bg: "#007F66", text: "#fff" }
+  if (u === "M3")                return { bg: "#F16E2B", text: "#fff" }
+  if (u === "M4")                return { bg: "#004E95", text: "#fff" }
 
-  // Default fallback
-  return { bg: "#666666", text: "#fff" }
+  // Night buses (N-prefix)
+  if (u.startsWith("N") && u.length > 1) return { bg: "#1a1a2e", text: "#fff" }
+
+  // All Movia bus lines (500S, 200S, 139, 5A, etc.) — official Movia red
+  return { bg: "#E30613", text: "#fff" }
 }
 
 /**

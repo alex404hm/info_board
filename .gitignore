@@ -62,3 +62,4 @@ next-env.d.ts
 .unreach
 
 .env
+/generated/prisma

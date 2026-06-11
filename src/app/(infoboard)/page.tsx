@@ -3,6 +3,7 @@ import { TopCarousel } from "@/components/TopCarousel"
 import { NavTiles } from "@/components/NavTiles"
 import { InfoBoardIdleGuard } from "@/components/InfoBoardIdleGuard"
 import { LatestMessageBlock } from "@/components/LatestMessageBlock"
+import { DeparturesWidget } from "@/components/DeparturesWidget"
 export default function InfoBoardHome() {
   return (
     <div className="home-theme h-screen flex flex-col overflow-hidden bg-background">
@@ -19,8 +20,20 @@ export default function InfoBoardHome() {
 
         <NavTiles />
 
+        {/* Top-left: Departures widget */}
         <div
-          className="block"
+          style={{
+            position: "absolute",
+            left: "1.5rem",
+            top: "1.25rem",
+            zIndex: 10,
+          }}
+        >
+          <DeparturesWidget />
+        </div>
+
+        {/* Top-right: Latest message */}
+        <div
           style={{
             position: "absolute",
             right: "1.5rem",

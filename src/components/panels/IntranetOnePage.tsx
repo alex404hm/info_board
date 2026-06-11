@@ -62,22 +62,24 @@ export function IntranetOnePage() {
   return (
     <>
       <section className="w-full pb-8">
-        <div className="grid items-start gap-16 grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)]">
+        <div className="grid gap-16 grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)]">
 
           {/* Left — sticky intro column */}
-          <div className="sticky top-0 self-start pt-6 pl-8">
-            <h2
-              className="text-[clamp(1.9rem,4.8vw,3rem)] leading-[0.95] tracking-[-0.045em] text-foreground font-bold"
-              style={{ fontFamily: '"TEC Sans", sans-serif' }}
-            >
-              Praktisk information
-            </h2>
-            <p
-              className="mt-4 text-[clamp(0.95rem,2vw,1.2rem)] leading-[1.4] tracking-[-0.01em]"
-              style={{ color: "var(--foreground-muted)", fontFamily: '"TEC Sans", sans-serif' }}
-            >
-              Her er god viden til dig, der skal starte i skoleoplæringen.
-            </p>
+          <div className="h-full">
+            <div className="sticky top-6 pt-6 pl-8">
+              <h2
+                className="text-[clamp(1.9rem,4.8vw,3rem)] leading-[0.95] tracking-[-0.045em] text-foreground font-bold"
+                style={{ fontFamily: '"TEC Sans", sans-serif' }}
+              >
+                Praktisk information
+              </h2>
+              <p
+                className="mt-4 text-[clamp(0.95rem,2vw,1.2rem)] leading-[1.4] tracking-[-0.01em]"
+                style={{ color: "var(--foreground-muted)", fontFamily: '"TEC Sans", sans-serif' }}
+              >
+                Her er god viden til dig, der skal starte i skoleoplæringen.
+              </p>
+            </div>
           </div>
 
           {/* Right — accordion column */}
@@ -179,21 +181,23 @@ export function IntranetOnePage() {
       {/* Documents section */}
       {docs.length > 0 && (
         <section className="w-full pt-4 pb-8">
-          <div className="grid items-start gap-16 grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)]">
+          <div className="grid gap-16 grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)]">
             {/* Left — label */}
-            <div className="sticky top-0 self-start pt-6 pl-8">
-              <h2
-                className="text-[clamp(1.9rem,4.8vw,3rem)] leading-[0.95] tracking-[-0.045em] text-foreground font-bold"
-                style={{ fontFamily: '"TEC Sans", sans-serif' }}
-              >
-                Dokumenter
-              </h2>
-              <p
-                className="mt-4 text-[clamp(0.95rem,2vw,1.2rem)] leading-[1.4] tracking-[-0.01em]"
-                style={{ color: "var(--foreground-muted)", fontFamily: '"TEC Sans", sans-serif' }}
-              >
-                PDF-dokumenter og vejledninger til dig som lærling.
-              </p>
+            <div className="h-full">
+              <div className="sticky top-6 pt-6 pl-8">
+                <h2
+                  className="text-[clamp(1.9rem,4.8vw,3rem)] leading-[0.95] tracking-[-0.045em] text-foreground font-bold"
+                  style={{ fontFamily: '"TEC Sans", sans-serif' }}
+                >
+                  Dokumenter
+                </h2>
+                <p
+                  className="mt-4 text-[clamp(0.95rem,2vw,1.2rem)] leading-[1.4] tracking-[-0.01em]"
+                  style={{ color: "var(--foreground-muted)", fontFamily: '"TEC Sans", sans-serif' }}
+                >
+                  PDF-dokumenter og vejledninger til dig som lærling.
+                </p>
+              </div>
             </div>
 
             {/* Right — document links */}

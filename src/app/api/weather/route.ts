@@ -96,7 +96,7 @@ export async function GET() {
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "TEC-InfoBoard/1.0 contact@example.com",
+        "User-Agent": "TEC-InfoBoard/1.0 alexander.hm404@gmail.com",
         Accept: "application/json",
       },
       next: { revalidate: 900 },

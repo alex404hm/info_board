@@ -29,6 +29,7 @@ type ShellProps = {
   children: React.ReactNode
   noHeader?: boolean
   fullWidth?: boolean
+  fillHeight?: boolean
   backHref?: string
   headerAlign?: "contained" | "edge"
 }
@@ -39,6 +40,7 @@ export function SectionPageShell({
   children,
   noHeader,
   fullWidth = false,
+  fillHeight = false,
   backHref = "/",
   headerAlign = "contained",
 }: ShellProps) {
@@ -110,11 +112,28 @@ export function SectionPageShell({
       )}
 
       {/* Main content */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none custom-scrollbar relative">
-        <div className={`${fullWidth ? "w-full px-8 pb-12 pt-8" : "mx-auto w-full max-w-350 px-10 pb-12 pt-8"}`} style={{ paddingBottom: "3rem" }}>
+      <main
+        ref={mainRef}
+        className={
+          fillHeight
+            ? "flex-1 overflow-hidden flex flex-col relative"
+            : "flex-1 overflow-y-auto overscroll-none custom-scrollbar relative"
+        }
+      >
+        <div
+          className={
+            fullWidth
+              ? fillHeight
+                ? "w-full px-8 pt-6 pb-4 flex-1 flex flex-col min-h-0"
+                : "w-full px-8 pb-12 pt-8"
+              : fillHeight
+                ? "mx-auto w-full max-w-350 px-10 pt-6 pb-4 flex-1 flex flex-col min-h-0"
+                : "mx-auto w-full max-w-350 px-10 pb-12 pt-8"
+          }
+          style={fillHeight ? undefined : { paddingBottom: "3rem" }}
+        >
           {children}
         </div>
-
       </main>
 
     </div>

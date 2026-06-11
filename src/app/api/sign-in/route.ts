@@ -332,7 +332,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       success: false,
-      message: `Forkert e-mail eller adgangskode. ${attemptsRemaining} forsøg tilbage.`,
+      message: `Forkert e-mail eller adgangskode.`,
       attemptsRemaining,
     },
     { status: 401 }

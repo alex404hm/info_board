@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "@prisma/client": "^7.8.0",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@tiptap/core": "^3.20.5",
     "@tiptap/extension-link": "^3.20.5",
@@ -61,6 +62,7 @@
     "eslint-config-next": "16.2.1",
     "knip": "^6.3.1",
     "postcss": "^8.5.8",
+    "prisma": "^7.8.0",
     "sass": "^1.98.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
